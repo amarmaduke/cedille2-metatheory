@@ -67,10 +67,18 @@ namespace Cedille
     rewrite [h]; rfl
   }
 
-  @[simp] lemma delta_not_app : delta t1 ≠ app m t2 t3 := by {
+  @[simp] lemma deltatop_not_app : deltatop t1 ≠ app m t2 t3 := by {
     intro h
-    unfold delta at h; unfold app at h
-    apply (@ctor_inv _ Constructor.delta (Constructor.app m) t1 kindu kindu t2 t3 kindu)
+    unfold deltatop at h; unfold app at h
+    apply (@ctor_inv _ Constructor.deltatop (Constructor.app m) t1 kindu kindu t2 t3 kindu)
+    intro h2; injection h2
+    rewrite [h]; rfl
+  }
+
+  @[simp] lemma deltabot_not_app : deltabot t1 ≠ app m t2 t3 := by {
+    intro h
+    unfold deltabot at h; unfold app at h
+    apply (@ctor_inv _ Constructor.deltabot (Constructor.app m) t1 kindu kindu t2 t3 kindu)
     intro h2; injection h2
     rewrite [h]; rfl
   }
@@ -113,6 +121,29 @@ namespace Cedille
     apply (@ctor_inv _ (Constructor.app m0) (Constructor.app mf) t1 t2 kindu t3 t4 kindu)
     intro h; injection h with h2; injection h2
     rewrite [h]; rfl
+  }
+
+  @[simp] lemma typeu_not_cbool : typeu ≠ cbool := by {
+    intro h; unfold cbool at h; unfold typeu at h; injection h
+  }
+
+  @[simp] lemma kindu_not_cbool : kindu ≠ cbool := by {
+    intro h; unfold cbool at h; unfold kindu at h; injection h
+  }
+
+  @[simp] lemma inter_not_cbool : inter A B ≠ cbool := by {
+    intro h; unfold cbool at h; unfold inter at h; injection h with _ e; injection e
+  }
+
+  @[simp] lemma eq_not_cbool : eq A t1 t2 ≠ cbool := by {
+    intro h; unfold cbool at h; unfold eq at h; injection h
+  }
+
+  @[simp] lemma eqind_t_not_cbool : eqind_t ≠ cbool := by sorry
+
+  @[simp] lemma idt_not_cbool : idt ≠ cbool := by {
+    intro h; unfold cbool at h; unfold idt at h; injection h with _ _ _ e
+    injection e with _ _ _ e; injection e
   }
 
 end Cedille

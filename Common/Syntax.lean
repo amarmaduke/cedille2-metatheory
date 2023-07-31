@@ -182,6 +182,51 @@ namespace Syntax
       = ctor k ({i <-| v} t1) ({i <-| v} t2) ({i <-| v} t3)
     := by congr
 
+  @[simp] lemma cls_head_const {α β γ : Sort _} {n} (x : Name) (c : γ)
+    : {_<-| v}(@const α β γ n c) = const c
+    := by congr
+
+  @[simp] lemma cls_head_free {α β γ : Sort _} {n} (x : Name)
+    : {_<-| v}(@free α β γ n x) = if x == v then bound n else free x
+    := by {
+      unfold HasHClose.hcls; unfold instHasHCloseSyntax; simp
+      unfold cls_head
+      simp [*]
+    }
+  
+  @[simp] lemma cls_head_bound {α β γ : Sort _} {n} (j : Fin n) (v : Name)
+    : {_<-| v}(@bound α β γ n j) = @bound α β γ (n + 1) j
+    := by congr
+    
+    -- by {
+    --   unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp
+    --   unfold opn_head
+    --   simp [*]
+    -- }
+
+  @[simp] lemma cls_head_bind {α β γ n} (k : α) (v : Name)
+    (t1 : @Syntax α β γ n) (t2 : @Syntax α β γ (n + 1))
+    : {_<-| v} @bind α β γ n k t1 t2 = @bind α β γ (n + 1) k ({_<-| v} t1) ({_<-| v} t2)
+    := by {
+      generalize h : {_<-| v} @bind α β γ n k t1 t2 = t
+      unfold HasHClose.hcls at h; unfold instHasHCloseSyntax at h; simp at h
+      unfold cls_head at h
+      unfold HasHClose.hcls; unfold instHasHCloseSyntax; simp
+      rw [<-h]
+    }
+
+  @[simp] lemma cls_head_ctor {α β γ n} (k : β) (v : Name)
+    (t1 t2 t3 : @Syntax α β γ n)
+    : {_<-| v} @ctor α β γ n k t1 t2 t3
+      = @ctor α β γ (n + 1) k ({_<-| v} t1) ({_<-| v} t2) ({_<-| v} t3)
+    := by {
+      generalize h : {_<-| v}ctor k t1 t2 t3 = t
+      unfold HasHClose.hcls at h; unfold instHasHCloseSyntax at h; simp at h
+      unfold cls_head at h
+      unfold HasHClose.hcls; unfold instHasHCloseSyntax; simp
+      rw [<-h]
+    }
+
   @[simp] theorem oc1 {α β γ n} (i : Fin n) (a b : Name) (x : @Syntax α β γ n)
     : {i |-> a}{i |-> b}x = {i |-> b}x := by
     induction x with
@@ -223,6 +268,10 @@ namespace Syntax
     } 
     | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
 
+  @[simp] theorem oc3h {α β γ n} (a : Name) (x : @Syntax α β γ (n + 1))
+    : {_<-| a}{_|-> a}x = x
+  := by sorry
+
   @[simp] theorem oc3 {α β γ n} (i : Fin n) (a : Name) (x : @Syntax α β γ n)
     : {i <-| a}{i |-> a}x = {i <-| a}x := by
     induction x with
@@ -243,6 +292,42 @@ namespace Syntax
     | const c => { constructor }
     | bind k t1 t2 t1_ih t2_ih => { simp [*] } 
     | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
+
+  @[simp] theorem oc4h {α β γ n} (a : Name) (x : @Syntax α β γ n)
+    : {_|-> a}{_<-| a}x = x
+  := @Syntax.rec α β γ
+    (λ m s => {_|-> a}{_<-| a}s = s)
+    (by {
+      intros m i; simp
+      unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp
+      unfold opn_head; simp; intro h2
+      have lem := i.isLt
+      linarith
+    })
+    (by {
+      intros m b; simp
+      cases (Name.decEq b a)
+      case isFalse h2 => {
+        have lem : (b == a) = false := Name.beq_of_not_eq h2
+        rewrite [lem]; simp
+      }
+      case isTrue h2 => {
+        rewrite [h2]; simp
+        unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp
+        unfold opn_head; simp
+      }
+    })
+    (by simp)
+    (by {
+      intros m k t1 t2 ih1 ih2; simp
+      rewrite [ih1, ih2]; simp
+    })
+    (by {
+      intros m k t2 t3 t4 ih1 ih2 ih3; simp
+      rewrite [ih1, ih2, ih3]; simp
+    })
+    n
+    x
 
   @[simp] theorem oc4 {α β γ n} (i : Fin n) (a : Name) (x : @Syntax α β γ n)
     : {i |-> a}{i <-| a}x = {i |-> a}x := by
@@ -489,7 +574,7 @@ namespace Syntax
     | bind k t1 t2 t1_ih t2_ih => { simp [*] } 
     | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }  
 
-  def fv {α β γ n} (x : @Syntax α β γ n) : FvSet :=
+  def fv {α β γ n} (x : @Syntax α β γ n) : FvSet! :=
     match x with
     | bound _ => List.nil
     | free x => [x]

@@ -12,14 +12,15 @@ namespace Cedille
   @[simp] lemma pi_refold : Syntax.bind (Binder.pi m) t1 t2 = pi m t1 t2 := by congr
   @[simp] lemma inter_refold : Syntax.bind Binder.inter t1 t2 = inter t1 t2 := by congr
   @[simp] lemma app_refold : Syntax.ctor (Constructor.app m) t1 t2 kindu = app m t1 t2 := by congr
-  @[simp] lemma pair_refold : Syntax.ctor Constructor.pair t1 t2 kindu = pair t1 t2 := by congr
+  @[simp] lemma pair_refold : Syntax.ctor Constructor.pair t1 t2 t3 = pair t1 t2 t3 := by congr
   @[simp] lemma fst_refold : Syntax.ctor Constructor.fst t kindu kindu = fst t := by congr
   @[simp] lemma snd_refold : Syntax.ctor Constructor.snd t kindu kindu = snd t := by congr
-  @[simp] lemma eq_refold : Syntax.ctor Constructor.eq t1 t2 kindu = eq t1 t2 := by congr
+  @[simp] lemma eq_refold : Syntax.ctor Constructor.eq t1 t2 t3 = eq t1 t2 t3 := by congr
   @[simp] lemma refl_refold : Syntax.ctor Constructor.refl t kindu kindu = refl t := by congr
   @[simp] lemma J_refold {n} : Syntax.ctor Constructor.eqind kindu kindu kindu = @J n := by congr
   @[simp] lemma promote_refold : Syntax.ctor Constructor.promote t kindu kindu = promote t := by congr
-  @[simp] lemma delta_refold : Syntax.ctor Constructor.delta t kindu kindu = delta t := by congr
+  @[simp] lemma deltatop_refold : Syntax.ctor Constructor.deltatop t kindu kindu = deltatop t := by congr
+  @[simp] lemma deltabot_refold : Syntax.ctor Constructor.deltabot t kindu kindu = deltabot t := by congr
   @[simp] lemma phi_refold : Syntax.ctor Constructor.phi t1 t2 t3 = phi t1 t2 t3 := by congr
 
   @[simp] lemma const_size {n} : size (@const n k) = 0 := by congr
@@ -31,14 +32,15 @@ namespace Cedille
   @[simp] lemma pi_size : size (pi m t1 t2) = size t1 + size t2 + 1 := by congr
   @[simp] lemma inter_size : size (inter t1 t2) = size t1 + size t2 + 1 := by congr
   @[simp] lemma app_size : size (app m t1 t2) = size t1 + size t2 + 1 := by congr
-  @[simp] lemma pair_size : size (pair t1 t2) = size t1 + size t2 + 1 := by congr
+  @[simp] lemma pair_size : size (pair t1 t2 t3) = size t1 + size t2 + size t3 + 1 := by congr
   @[simp] lemma fst_size : size (fst t) = size t + 1 := by congr
   @[simp] lemma snd_size : size (snd t) = size t + 1 := by congr
-  @[simp] lemma eq_size : size (eq t1 t2) = size t1 + size t2 + 1 := by congr
+  @[simp] lemma eq_size : size (eq t1 t2 t3) = size t1 + size t2 + size t3 + 1 := by congr
   @[simp] lemma refl_size : size (refl t) = size t + 1 := by congr
   @[simp] lemma J_size {n} : size (@J n) = 1 := by congr
   @[simp] lemma promote_size : size (promote t) = size t + 1 := by congr
-  @[simp] lemma delta_size : size (delta t) = size t + 1 := by congr
+  @[simp] lemma deltatop_size : size (deltatop t) = size t + 1 := by congr
+  @[simp] lemma deltabot_size : size (deltabot t) = size t + 1 := by congr
   @[simp] lemma phi_size : size (phi t1 t2 t3) = size t1 + size t2 + size t3 + 1 := by congr
 
   @[simp] lemma bind_size : size (Syntax.bind k t1 t2) = size t1 + size t2 + 1 := by congr

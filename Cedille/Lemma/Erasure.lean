@@ -60,7 +60,7 @@ namespace Cedille
     unfold erase; simp only; subst h; rfl
   }
 
-  @[simp] lemma erase_pair : erase (pair t1 t2) = erase t1 := by generalize erase t1 = t; rfl
+  @[simp] lemma erase_pair : erase (pair t1 t2 t3) = erase t1 := by generalize erase t1 = t; rfl
   @[simp] lemma erase_pair_unfolded
     : erase (Syntax.ctor Constructor.pair t1 t2 t3) = erase t1
   := by generalize erase t1 = t; rfl
@@ -75,11 +75,11 @@ namespace Cedille
     : erase (Syntax.ctor Constructor.snd t1 t2 t3) = erase t1
   := by generalize erase t1 = t; rfl
 
-  @[simp] lemma erase_eq : erase (eq t1 t2) = eq (erase t1) (erase t2) := by congr
+  @[simp] lemma erase_eq : erase (eq t1 t2 t3) = eq (erase t1) (erase t2) (erase t3) := by congr
   @[simp] lemma erase_eq_unfolded
-    : erase (Syntax.ctor Constructor.eq t1 t2 t3) = eq (erase t1) (erase t2)
+    : erase (Syntax.ctor Constructor.eq t1 t2 t3) = eq (erase t1) (erase t2) (erase t3)
   := by {
-    generalize h : eq (erase t1) (erase t2) = t
+    generalize h : eq (erase t1) (erase t2) (erase t3) = t
     unfold erase; subst h; rfl
   }
 
@@ -98,9 +98,14 @@ namespace Cedille
     : erase (Syntax.ctor Constructor.promote t1 t2 t3) = erase t1
   := by generalize erase t1 = t; rfl
 
-  @[simp] lemma erase_delta : erase (delta t) = erase t := by generalize erase t = s; rfl
-  @[simp] lemma erase_delta_unfolded
-    : erase (Syntax.ctor Constructor.delta t1 t2 t3) = erase t1
+  @[simp] lemma erase_deltatop : erase (deltatop t) = erase t := by generalize erase t = s; rfl
+  @[simp] lemma erase_deltatop_unfolded
+    : erase (Syntax.ctor Constructor.deltatop t1 t2 t3) = erase t1
+  := by generalize erase t1 = t; rfl
+
+  @[simp] lemma erase_deltabot : erase (deltabot t) = erase t := by generalize erase t = s; rfl
+  @[simp] lemma erase_deltabot_unfolded
+    : erase (Syntax.ctor Constructor.deltabot t1 t2 t3) = erase t1
   := by generalize erase t1 = t; rfl
 
   @[simp] lemma erase_phi : erase (phi t1 t2 t3) = erase t1 := by generalize erase t1 = t; rfl
@@ -163,5 +168,14 @@ namespace Cedille
   := sorry
 
   lemma erase_no_eqind : erase f ≠ J @τ t1 @τ t2 @0 t3 @0 t4 @ω t5 := sorry
+
+  lemma erase_free_invariant :
+    x ∉ (fv ∘ erase) ({_|-> x}t) ->
+    (y : Name) -> y ∉ fv t ->
+    erase ({_|-> x}t) = erase ({_|-> y}t)
+  := sorry
+
+  lemma erase_ctt_eq : erase t = erase ctt -> t = lam mf kindu (lam mf kindu (bound 0)) := sorry
+  lemma erase_cff_eq : erase t = erase cff -> t = lam mf kindu (lam mf kindu (bound 1)) := sorry
 
 end Cedille

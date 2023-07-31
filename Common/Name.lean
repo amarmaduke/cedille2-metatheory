@@ -54,42 +54,33 @@ namespace Name
     | (n, i) => (n, i + 1)
 end Name
 
-def FvSet := List Name
-
-instance : Membership Name FvSet where
-  mem := λ n s => List.Mem n s
-
-instance : HAppend FvSet FvSet FvSet where
-  hAppend := λ x y => List.append x y
-
-instance : HasSubset FvSet where
-  Subset := List.Subset
+notation:300 "FvSet!" => List Name
 
 namespace FvSet
-  def Disjoint (l1 l2 : FvSet) : Prop := List.Disjoint l1 l2
+  def Disjoint (l1 l2 : FvSet!) : Prop := List.Disjoint l1 l2
 
   def not_mem_nil : x ∉ [] := sorry
 
-  def not_mem_left {A B : FvSet} : x ∉ A ++ B -> x ∉ A := sorry
+  def not_mem_left {A B : FvSet!} : x ∉ A ++ B -> x ∉ A := sorry
 
-  def not_mem_right {A B : FvSet} : x ∉ A ++ B -> x ∉ B := sorry
+  def not_mem_right {A B : FvSet!} : x ∉ A ++ B -> x ∉ B := sorry
 
-  def not_mem_head {A : FvSet} : x ∉ y :: A -> x ≠ y := sorry
+  def not_mem_head {A : FvSet!} : x ∉ y :: A -> x ≠ y := sorry
 
-  def not_mem_cons {A : FvSet} : x ∉ y :: A -> x ∉ A := sorry 
+  def not_mem_cons {A : FvSet!} : x ∉ y :: A -> x ∉ A := sorry 
 
 end FvSet
 
 namespace Name
 
-  def fresh_with_seed (set : FvSet) (x : Name) : Name :=
+  def fresh_with_seed (set : FvSet!) (x : Name) : Name :=
     match set with
     | List.nil => x
     | List.cons n tail => if n == x
       then fresh_with_seed tail (inc x)
       else fresh_with_seed tail x
   
-  def fresh (set : FvSet) : Name :=
+  def fresh (set : FvSet!) : Name :=
     match set with
     | List.nil => ("x", 0)
     | List.cons n tail => fresh_with_seed tail n 

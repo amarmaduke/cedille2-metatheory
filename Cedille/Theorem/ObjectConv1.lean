@@ -67,10 +67,10 @@ namespace Cedille
     erase (f @ω a) -β> s ->
     ∃ k, f @ω a -β>* k ∧ erase k = s
   := by {
-    intros j ih1 ih2 s j2 step
+    intros _ ih1 ih2 s j2 step
     simp at step
     refine (@Red.rec
-      (λ x y j => x = erase f @ω erase a -> y = s -> ∃ k, f @ω a -β>* k ∧ erase k = y)
+      (λ x y _ => x = erase f @ω erase a -> y = s -> ∃ k, f @ω a -β>* k ∧ erase k = y)
       ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
       (erase f @ω erase a) s step rfl rfl
     ) <;> intros <;> intros <;> simp at *
@@ -109,12 +109,12 @@ namespace Cedille
         case ctor3 s step => cases step
       }
     }
-    case _ t1 t2 t3 t4 t5 t6 e1 e2 => {
+    case _ t1 t2 t3 t4 t5 t6 e1 _e2 => {
       injection e1 with _ _ e1 e3 _
       have lem := erase_no_eqind (symm e1)
       contradiction
     }
-    case _ t1 t1' c t2 t2' step _ e1 e2 => {
+    case _ t1 t1' c t2 t2' step _ e1 _e2 => {
       injection e1 with _ ce t1e t2e t2'e; rewrite [ce, t2e, t2'e]; simp
       have lem := ih1 t1' (by subst t1e; apply step)
       casesm* ∃ _, _, _ ∧ _
@@ -122,7 +122,7 @@ namespace Cedille
       exists (k @ω a); simp [*]
       apply (red_app1 kstep)
     }
-    case _ t1 t1' c t2 t2' step _ e1 e2 => {
+    case _ t1 t1' c t2 t2' step _ e1 _e2 => {
       injection e1 with _ ce t1e t2e t2'e; rewrite [ce, t1e, t2'e]; simp
       have lem := ih2 t1' (by subst t2e; apply step)
       casesm* ∃ _, _, _ ∧ _
@@ -130,7 +130,7 @@ namespace Cedille
       exists (f @ω k); simp [*]
       apply (red_app2 kstep)
     }
-    case _ t1 t1' c t2 t2' step _ e1 e2 => {
+    case _ t1 t1' c t2 t2' step _ e1 _e2 => {
       injection e1 with _ _ _ _ e; subst e; cases step
     }
   }
@@ -144,10 +144,10 @@ namespace Cedille
     erase (f @τ a) -β> s ->
     ∃ k, f @τ a -β>* k ∧ erase k = s
   := by {
-    intros j ih1 ih2 s j2 step
+    intros _ ih1 ih2 s j2 step
     simp at step
     refine (@Red.rec
-      (λ x y j => x = erase f @τ erase a -> y = s -> ∃ k, f @τ a -β>* k ∧ erase k = y)
+      (λ x y _ => x = erase f @τ erase a -> y = s -> ∃ k, f @τ a -β>* k ∧ erase k = y)
       ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_ ?_
       (erase f @τ erase a) s step rfl rfl
     ) <;> intros <;> intros <;> simp at *
@@ -187,7 +187,7 @@ namespace Cedille
         case ctor3 s step => cases step
       }
     }
-    case _ t1 t1' c t2 t2' step _ e1 e2 => {
+    case _ t1 t1' c t2 t2' step _ e1 _e2 => {
       injection e1 with _ ce t1e t2e t2'e; rewrite [ce, t2e, t2'e]; simp
       have lem := ih1 t1' (by subst t1e; apply step)
       casesm* ∃ _, _, _ ∧ _
@@ -195,7 +195,7 @@ namespace Cedille
       exists (k @τ a); simp [*]
       apply (red_app1 kstep)
     }
-    case _ t1 t1' c t2 t2' step _ e1 e2 => {
+    case _ t1 t1' c t2 t2' step _ e1 _e2 => {
       injection e1 with _ ce t1e t2e t2'e; rewrite [ce, t1e, t2'e]; simp
       have lem := ih2 t1' (by subst t2e; apply step)
       casesm* ∃ _, _, _ ∧ _
@@ -203,7 +203,7 @@ namespace Cedille
       exists (f @τ k); simp [*]
       apply (red_app2 kstep)
     }
-    case _ t1 t1' c t2 t2' step _ e1 e2 => {
+    case _ t1 t1' c t2 t2' step _ e1 _e2 => {
       injection e1 with _ _ _ _ e; subst e; cases step
     }
   }
@@ -216,23 +216,28 @@ namespace Cedille
       erase ({_|-> x}t) -β> s ->
       ∃ k, {_|-> x}t -β>* k ∧ erase k = s) ->
     (s : _) ->
-    ((x : Name) -> x ∉ S -> let t' := erase ({_|-> x}t); x ∉ fv t') ->
+    ((x : Name) -> x ∉ fv t -> x ∉ (fv ∘ erase) ({_|-> x}t)) ->
     (erase (lam m0 A t) -β> s) ->
     ∃ k, lam m0 A t -β>* k ∧ erase k = s
   := by {
     intros j1 j2 ih1 ih2 s ih3 step
     simp at step
-    let x := Name.fresh (S ++ (fv t))
-    have xe : Name.fresh (S ++ (fv t)) = x := by simp
-    have xfresh := @Name.fresh_is_fresh (S ++ (fv t))
-    have xn1 := FvSet.not_mem_left xfresh
-    have xn2 := FvSet.not_mem_right xfresh
-    have step2 : erase ({_|-> x}t) -β> s := sorry
-    have lem := ih2 x xn1 s step2
+    let x := Name.fresh ((fv t) ++ S)
+    have xe : Name.fresh ((fv t) ++ S) = x := by simp
+    have xfresh := @Name.fresh_is_fresh ((fv t) ++ S)
+    have xn1 := FvSet.not_mem_right xfresh
+    have xn2 := FvSet.not_mem_left xfresh
+    have fn := ih3 (Name.fresh (fv t)) Name.fresh_is_fresh
+    have lem := erase_free_invariant fn x xn2
+    rewrite [lem] at step
+    have lem := ih2 x xn1 s step
     casesm* ∃ _, _, _ ∧ _
     case _ k kstep ke =>
     exists (lam m0 A ({_<-| x}k)); simp; rewrite [xe]
-    have e2 : erase ({_|-> Name.fresh (fv ({_<-| x}k))}{_<-| x}k) = erase k := sorry
+    generalize ydef : Name.fresh (fv ({_<-| x}k)) = y
+    have fn2 : y ∉ (fv ∘ erase) ({_|-> y}{_<-| x}k) := sorry
+    have xn3 : x ∉ fv ({_<-| x}k) := sorry
+    have e2 := erase_free_invariant fn2 x xn3; simp at e2
     rewrite [e2]; simp [*]
     apply (red_lam2 kstep)
   }
@@ -346,13 +351,14 @@ namespace Cedille
       }
     })
     (by {
-      intros _ t _ s _ _ _ _ ih1 _ s' step
-      simp at step
-      have lem := ih1 s' step
-      casesm* ∃ _, _, _ ∧ _
-      case _ k kstep ke =>
-      exists (pair k s); simp [*]
-      apply (red_pair1 kstep)
+      sorry
+      -- intros _ t _ s _ _ _ _ ih1 _ s' step
+      -- simp at step
+      -- have lem := ih1 s' step
+      -- casesm* ∃ _, _, _ ∧ _
+      -- case _ k kstep ke =>
+      -- exists (pair k s); simp [*]
+      -- apply (red_pair1 kstep)
     })
     (by {
       intros _ t _ _ _ ih s step
@@ -475,20 +481,22 @@ namespace Cedille
     (erase t) -β>* s ->
     ∃ k, t -β>* k ∧ (erase k) = s
   := λ j step => @RedStar.rec
-    (λ a b _ => (t : _) -> erase t = a -> Γ ⊢ t : A -> ∃ k, t -β>* k ∧ (erase k) = b)
+    (λ a b _ => (A t : _) -> erase t = a -> Γ ⊢ t : A -> ∃ k, t -β>* k ∧ (erase k) = b)
     (by {
-      intros a t e _
+      intros a _A t e _
       exists t; simp [*]
       apply RedStar.refl
     })
     (by {
-      intros a b c step _ ih t e j
+      intros a b c step _ ih A t e j
       subst e
       have lem1 := object_red_to_proof_red_step j step
       casesm* ∃ _, _, _ ∧ _
       case _ k kstep ke =>
-      have j2 := Cedille.preservation j kstep
-      have lem2 := ih k ke j2
+      have j2 := preservation (infer_implies_check j) kstep
+      cases j2
+      case check D j2 e2 =>
+      have lem2 := ih D k ke j2
       casesm* ∃ _, _, _ ∧ _
       case _ k2 k2step k2e =>
       exists k2; simp [*]
@@ -497,6 +505,7 @@ namespace Cedille
     (erase t)
     s
     step
+    A
     t
     rfl
     j

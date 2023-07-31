@@ -1,7 +1,6 @@
 
 import Cedille.Def
 import Cedille.Lemma
-import Cedille.Theorem.Preservation
 
 namespace Cedille
 
@@ -15,7 +14,14 @@ namespace Cedille
     Γ ⊢ t : A ->
     t -β>* s ->
     (erase t) -β>* (erase s)
-  := sorry
+  := by {
+    intros j step
+    induction step
+    case refl => apply RedStar.refl
+    case step t1 t2 t3 t4 step ih => {
+      sorry
+    }
+  }
 
   theorem proof_to_object_conv :
     Γ ⊢ t : A ->

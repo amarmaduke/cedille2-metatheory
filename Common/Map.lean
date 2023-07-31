@@ -7,6 +7,10 @@ import Common.Notation
 notation:300 "Map!" α:300 => List (Name × α)
 
 namespace Map
+  def single (x : Name) (t : α) : Map! α := List.cons (x, t) List.nil
+
+  notation "[" x ":" t "]" => single x t
+
   def mem (m : Map! α) (x : Name) : Bool :=
     match m with
     | List.nil => false
@@ -50,6 +54,15 @@ namespace Map
       if n == x then tail else
         List.cons (n, t) (remove tail x)
 
+  def fv (m : Map! α) : FvSet! :=
+    match m with
+    | List.nil => List.nil
+    | List.cons (n, _) tail => List.cons n (fv tail)
+
+  @[simp] lemma fv_append : fv (Γ ++ Δ) = fv Γ ++ fv Δ := sorry
+
+  @[simp] lemma fv_single : fv (single x A) = [x] := sorry
+
   def subst [HasSubst α α] (v : Name) (w : α) (Γ : Map! α) : Map! α :=
     match Γ with
     | List.nil => List.nil
@@ -63,6 +76,23 @@ namespace Map
   @[simp] lemma subst_append [HasSubst α α] {t : α} {Γ Δ : Map! α}
     : [x := t](Γ ++ Δ) = [x := t]Γ ++ [x := t]Δ
     := sorry
+
+  def rename [HasHOpen α] [HasHClose α] (x y : Name) (Γ : Map! (α n)) : Map! (α n) :=
+    match Γ with
+    | List.nil => List.nil
+    | List.cons (n, t) tail => if x == n
+      then List.cons (y, {_|-> y}{_<-| y}t) (rename x y tail)
+      else List.cons (n, {_|-> y}{_<-| y}t) (rename x y tail)
+
+  notation:200 "[" x:200 "|->" y:200 "]" t:200 => rename x y t
+
+  @[simp] lemma rename_append [HasHOpen α] [HasHClose α] {Γ Δ : Map! (α n)}
+    : [x |-> y](Γ ++ Δ) = [x |-> y]Γ ++ [x |-> y]Δ
+  := sorry
+
+  @[simp] lemma rename_single [HasHOpen α] [HasHClose α] {A : (α n)}
+    : [x |-> y][x : A] = [y : {_|-> y}{_<-| x}A]
+  := sorry
 
   def size (m : Map! α) : Nat :=
     match m with
@@ -94,15 +124,6 @@ namespace Map
       }
     }
   }
-
-  def fv (m : Map! α) : FvSet :=
-    match m with
-    | List.nil => List.nil
-    | List.cons (n, _) tail => List.cons n (fv tail)
-
-  def single (x : Name) (t : α) : Map! α := List.cons (x, t) List.nil
-
-  notation "[" x ":" t "]" => single x t
 
   @[simp] lemma subst_single [HasSubst α α] {t A : α}
     : [x := t][y : A] = [y : [x := t]A]

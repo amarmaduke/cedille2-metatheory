@@ -26,7 +26,8 @@ namespace Cedille
   | refl
   | eqind
   | promote
-  | delta
+  | deltatop
+  | deltabot
   | phi
 
   inductive Constant where
@@ -48,30 +49,20 @@ namespace Cedille
   def inter {n} (t1 : Term n) (t2 : Term (n + 1)) : Term n := Syntax.bind Binder.inter t1 t2
   def app {n} (m : Mode) (t1 t2 : Term n) : Term n
     := Syntax.ctor (Constructor.app m) t1 t2 kindu
-  def pair {n} (t1 t2 : Term n) : Term n := Syntax.ctor Constructor.pair t1 t2 kindu
+  def pair {n} (t1 t2 t3 : Term n) : Term n := Syntax.ctor Constructor.pair t1 t2 t3
   def fst {n} (t : Term n) : Term n := Syntax.ctor Constructor.fst t kindu kindu
   def snd {n} (t : Term n) : Term n := Syntax.ctor Constructor.snd t kindu kindu
-  def eq {n} (t1 t2 : Term n) : Term n := Syntax.ctor Constructor.eq t1 t2 kindu
+  def eq {n} (t1 t2 t3 : Term n) : Term n := Syntax.ctor Constructor.eq t1 t2 t3
   def refl {n} (t : Term n) : Term n := Syntax.ctor Constructor.refl t kindu kindu
   def J {n} : Term n := Syntax.ctor Constructor.eqind kindu kindu kindu
   def promote {n} (t : Term n) : Term n := Syntax.ctor Constructor.promote t kindu kindu
-  def delta {n} (t : Term n) : Term n := Syntax.ctor Constructor.delta t kindu kindu
+  def deltatop {n} (t : Term n) : Term n := Syntax.ctor Constructor.deltatop t kindu kindu
+  def deltabot {n} (t : Term n) : Term n := Syntax.ctor Constructor.deltabot t kindu kindu
   def phi {n} (t1 t2 t3 : Term n) : Term n := Syntax.ctor Constructor.phi t1 t2 t3
 
   def fv {n} (t : Term n) := Syntax.fv t
   def size {n} (t : Term n) := Syntax.size t
 
-  @[simp] lemma contra_typeu_kindu {n} : @typeu n = @kindu n -> False := by {
-    intro h
-    let unwrap (t : Term n) := match t with
-      | Syntax.const k => k
-      | _ => Constant.kindU
-    have lem1 := congrArg unwrap h
-    unfold typeu at lem1; unfold kindu at lem1
-    simp only at lem1
-  }
-
-  -- \ dot 
   notation:400 a:400 " @ω " b:401 => app mf a b
   notation:400 a:400 " @0 " b:401 => app m0 a b
   notation:400 a:400 " @τ " b:401 => app mt a b
@@ -83,15 +74,15 @@ namespace Cedille
       pi m0 (
         pi mt (bound 0) (
           pi mt (bound 1) (
-            pi mt (eq (bound 0) (bound 1)) typeu
+            pi mt (eq (bound 0) (bound 1) (bound 0)) typeu
           )
         )
       ) (
         pi m0 (bound 1) (
           pi m0 (bound 2) (
-            pi mf (eq (bound 1) (bound 2)) (
+            pi mf (eq (bound 1) (bound 2) (bound 0)) (
               pi mf (
-                pi m0 (bound 6) (eq (bound 0) (bound 0))
+                pi m0 (bound 6) (eq (bound 0) (bound 0) (bound 0))
               ) (
                 (bound 4 /- P -/)
                   @τ (bound 4 /- x -/)
@@ -140,11 +131,12 @@ namespace Cedille
     | Syntax.ctor Constructor.pair t1 _t2 _ => erase t1
     | Syntax.ctor Constructor.fst t _ _ => erase t
     | Syntax.ctor Constructor.snd t _ _ => erase t
-    | Syntax.ctor Constructor.eq t1 t2 _ => eq (erase t1) (erase t2)
+    | Syntax.ctor Constructor.eq t1 t2 t3 => eq (erase t1) (erase t2) (erase t3)
     | Syntax.ctor Constructor.refl _t _ _ => lam mf kindu (bound 0)
     | Syntax.ctor Constructor.eqind _ _ _ => lam mf kindu (bound 0)
     | Syntax.ctor Constructor.promote t _ _ => erase t
-    | Syntax.ctor Constructor.delta t _ _ => erase t
+    | Syntax.ctor Constructor.deltatop t _ _ => erase t
+    | Syntax.ctor Constructor.deltabot t _ _ => erase t
     | Syntax.ctor Constructor.phi t1 _t2 _t3 => erase t1
   termination_by _ => Syntax.size t
   decreasing_by {
@@ -152,16 +144,16 @@ namespace Cedille
     all_goals (try linarith)
   }
 
-  inductive Red : Term -> Term -> Prop where
+  inductive Red : Term n -> Term n -> Prop where
   | beta : Red (app m (lam m t1 t2) t3) ([_:= t3]t2)
-  | fst : Red (fst (pair t1 t2)) t1
-  | snd : Red (snd (pair t1 t2)) t2
-  | eqind : Red (J @τ t1 @τ t2 @0 t3 @0 t4 @ω (refl t5) @ω t6) (t6 @τ t5)
+  | fst : Red (fst (pair t1 t2 t3)) t1
+  | snd : Red (snd (pair t1 t2 t3)) t2
+  | eqind : Red (J @0 t1 @0 t2 @0 t3 @0 t4 @ω (refl t5) @ω t6) (t6 @0 t5)
   | promote : Red (promote (refl (fst t))) (refl t)
-  | delta : Red (delta (refl t)) (lam m0 typeu (lam mf (bound 0) (bound 0)))
-  | phi : (erase t3) = (erase t4) -> Red (phi t1 t2 t3) t2
+  | delta : Red (deltatop (refl t)) (lam m0 typeu (lam mf (bound 0) (bound 0)))
+  | phi : (erase t1) = (erase t2) -> Red (phi t1 t2 t3) t2
   | bind1 : Red t1 t1' -> Red (Syntax.bind k t1 t2) (Syntax.bind k t1' t2)
-  | bind2 {S : FvSet} :
+  | bind2 {S : FvSet!} :
     ((x : Name) -> ¬ x ∈ S -> Red ({_|-> x}t2) ({_|-> x}t2')) ->
     Red (Syntax.bind k t1 t2) (Syntax.bind k t1 t2')
   | ctor1 : Red t1 t1' -> Red (Syntax.ctor k t1 t2 t3) (Syntax.ctor k t1' t2 t3)
@@ -170,15 +162,27 @@ namespace Cedille
 
   notation:150 t1:150 " -β> " t2:150 => Red t1 t2
 
-  inductive RedStar : Term -> Term -> Prop where
-  | refl : RedStar t t
-  | step : t1 -β> t2 -> RedStar t2 t3 -> RedStar t1 t3
+  inductive RedStar : Term n -> Term n -> Prop where
+  | refl {t : Term n} : RedStar t t
+  | step {t1 t2 t3 : Term n} : t1 -β> t2 -> RedStar t2 t3 -> RedStar t1 t3
 
   notation:150 t1:150 " -β>* " t2:150 => RedStar t1 t2
   notation:150 t1:150 " -β>+ " t2:150 => ∃ k : Term, t1 -β> k ∧ k -β>* t2
 
-  inductive Conv : Term -> Term -> Prop where
-  | conv :
+  inductive Normal : Term n -> Prop where
+  | free : Normal (free x)
+  | bound : Normal (bound i)
+  | const : Normal (const c)
+  | bind {t1 : Term n} : Normal t1 -> Normal t2 -> Normal (Syntax.bind m t1 t2)
+  | ctor {t1 t2 t3 t : Term n} :
+    Normal t1 -> Normal t2 -> Normal t3 ->
+    ((t : Term n) -> ¬ (Syntax.ctor k t1 t2 t3) -β> t) ->
+    Normal (Syntax.ctor k t1 t2 t3)
+
+  def SN : Term n -> Prop := λ t => ∃ z, t -β>* z ∧ Normal z 
+
+  inductive Conv : Term n -> Term n -> Prop where
+  | conv {t1 t1' t2 t2' : Term n} :
     t1 -β>* t1' ->
     t2 -β>* t2' ->
     (erase t1') = (erase t2') ->
@@ -218,29 +222,30 @@ namespace Cedille
     Γ = Γ1 ++ [x : A] ++ Γ2 ->
     Infer Γ (free x) A
   -- Functions
-  | pi {S : FvSet} :
+  | pi {S : FvSet!} :
     ConInfer Γ A (Mode.pi_domain m K) ->
     ((x : Name) -> x ∉ S -> ConInfer (Γ ++ [x:A]) ({_|-> x}B) (Mode.pi_codomain m)) ->
     Infer Γ (pi m A B) (Mode.pi_codomain m)
-  | lam {S : FvSet} :
+  | lam {S : FvSet!} :
     ConInfer Γ A (const K) ->
     ((x : Name) -> x ∉ S -> Infer (Γ ++ [x:A]) ({_|-> x}t) ({_|-> x}B)) ->
-    (m = m0 -> (x : Name) -> x ∉ S -> let t' := erase ({_|-> x}t); x ∉ (fv t')) ->
+    (m = m0 -> (x : Name) -> x ∉ fv t -> x ∉ (fv ∘ erase) ({_|-> x}t)) ->
     Infer Γ (lam m A t) (pi m A B)
-  | app {S : FvSet} :
+  | app {S : FvSet!} :
     ConInfer Γ f (pi m A B) ->
     Check Γ a A ->
     Infer Γ (app m f a) ([_:= a]B)
   -- Intersections
-  | inter {S : FvSet} :
+  | inter {S : FvSet!} :
     ConInfer Γ A typeu ->
     ((x : Name) -> x ∉ S -> ConInfer (Γ ++ [x:A]) ({_|-> x}B) typeu) ->
     Infer Γ (inter A B) typeu
   | pair :
-    Infer Γ t A ->
-    Infer Γ s ([_:= t]B) ->
+    ConInfer Γ T (pi mt A B) ->
+    Check Γ t A ->
+    Check Γ s ([_:= t]B) ->
     t =β= s ->
-    Infer Γ (pair t s) (inter A B)
+    Infer Γ (pair t s T) (inter A B)
   | fst :
     ConInfer Γ t (inter A B) ->
     Infer Γ (fst t) A
@@ -249,30 +254,31 @@ namespace Cedille
     Infer Γ (snd t) ([_:= fst t]B)
   -- Equality
   | eq :
-    Infer Γ a A ->
+    Check Γ a A ->
     Check Γ b A ->
-    Infer Γ (eq a b) typeu
+    Infer Γ (eq A a b) typeu
   | refl :
     Infer Γ t A ->
-    Infer Γ (refl t) (eq t t)
+    Infer Γ (refl t) (eq A t t)
   | eqind : Infer Γ J eqind_t
   | promote :
-    ConInfer Γ e (eq (fst a) (fst b)) ->
-    Infer Γ (promote e) (eq a b)
+    ConInfer Γ e (eq T (fst a) (fst b)) ->
+    ConInfer Γ a (inter A B) ->
+    Infer Γ (promote e) (eq (inter A B) a b)
   | phi :
     ConInfer Γ b (inter A B) ->
     Check Γ a A ->
-    Check Γ e (eq a (fst b)) ->
+    Check Γ e (eq A a (fst b)) ->
     (fv (erase b)) ⊆ (fv (erase a)) ->
     (fv (erase e)) ⊆ (fv (erase a)) ->
     Infer Γ (phi a b e) (inter A B)
   | deltatop :
-    ConInfer Γ e (eq a b) ->
+    ConInfer Γ e (eq A a b) ->
     a =β= b ->
-    Infer Γ (delta e) idt
+    Infer Γ (deltatop e) idt
   | deltabot :
-    Check Γ e (eq ctt cff) ->
-    Infer Γ (delta e) (pi m0 typeu (bound 0))
+    Check Γ e (eq cbool ctt cff) ->
+    Infer Γ (deltabot e) (pi m0 typeu (bound 0))
 
   inductive ConInfer : (Map! (Term)) -> Term -> Term -> Prop where
   | infer :
