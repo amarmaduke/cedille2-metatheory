@@ -31,7 +31,7 @@ namespace SystemFOmega
   inductive Red : ωTerm -> ωTerm -> Sort _ where
   | beta : Red (app (lam t1 t2) t3) ([_:= t3]t2)
   | bind1 : Red t1 t1' -> Red (Syntax.bind k t1 t2) (Syntax.bind k t1' t2)
-  | bind2 {S : FvSet} : ((x : Name) -> ¬ x ∈ S -> Red ({_|-> x}t2) ({_|-> x}t2'))
+  | bind2 {S : FvSet!} : ((x : Name) -> ¬ x ∈ S -> Red ({_|-> x}t2) ({_|-> x}t2'))
     -> Red (Syntax.bind k t1 t2) (Syntax.bind k t1 t2')
   | ctor1 : Red t1 t1' -> Red (Syntax.ctor k t1 t2 t3) (Syntax.ctor k t1' t2 t3)
   | ctor2 : Red t2 t2' -> Red (Syntax.ctor k t1 t2 t3) (Syntax.ctor k t1 t2' t3)
@@ -60,15 +60,15 @@ namespace SystemFOmega
     Wf Γ ->
     Γ = Γ1 ++ [x : A] ++ Γ2 ->
     Infer Γ (free x) A
-  | pi1 {S : FvSet} :
+  | pi1 {S : FvSet!} :
     Check Γ A kindu ->
     ((x : Name) -> x ∉ S -> Check (Γ ++ [x : A]) ({_|-> x}B) kindu) ->
     Infer Γ (pi A B) kindu
-  | pi2 {S : FvSet} :
+  | pi2 {S : FvSet!} :
     ConInfer Γ A (const K) ->
     ((x : Name) -> x ∉ S -> Check (Γ ++ [x : A]) ({_|-> x}B) typeu) ->
     Infer Γ (pi A B) typeu
-  | lam {S : FvSet} :
+  | lam {S : FvSet!} :
     ConInfer Γ A (const K) ->
     ((x : Name) -> x ∉ S -> Infer (Γ ++ [x : A]) ({_|-> x}N) ({_|-> x}B)) ->
     Infer Γ (lam A N) (pi A B)

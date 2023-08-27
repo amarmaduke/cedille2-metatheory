@@ -33,15 +33,16 @@ namespace Cedille
     apply Check.check j lem
   }
 
-  lemma cinfer_destruct : Γ ⊢ t >: B -> ∃ A, Γ ⊢ t : A ∧ A -β>* B := by {
-    intros j; cases j
-    case _ B j step => exists B
-  }
-
-  lemma rename_ctx_invariant {Γ : Map! Term} : (y : Name) -> x ∉ Map.fv Γ -> [x |-> y]Γ = Γ
+  lemma rename_ctx_invariant {Γ : Map! Term n} :
+    (y : Name) ->
+    x ∉ Map.fv Γ ->
+    [x |-> y]Γ = Γ
   := sorry
 
-  lemma rename_term_invariant {A : Term} : (y : Name) -> x ∉ fv A -> {_|-> y}{_<-| x}A = A
+  lemma rename_term_invariant {A : Term n} :
+    (y : Name) ->
+    x ∉ fv A ->
+    {_|-> y}{_<-| x}A = A
   := sorry
 
   lemma rename_infer (x : Name) :

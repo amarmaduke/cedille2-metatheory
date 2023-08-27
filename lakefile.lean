@@ -1,7 +1,7 @@
 import Lake
 open Lake DSL
 
-require mathlib from git "https://github.com/leanprover-community/mathlib4"
+require mathlib from git "https://github.com/leanprover-community/mathlib4"@"c532d7b"
 
 package «cedille2» {
   -- add package configuration options here
@@ -15,3 +15,8 @@ lean_lib SystemFOmega where
 
 lean_lib Cedille where
   roots := #[`Cedille]
+
+@[default_target]
+lean_exe «cedille» {
+  root := `Main
+}

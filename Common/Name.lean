@@ -1,5 +1,5 @@
 
-import «Mathlib»
+import Common.Mathlib
 import Common.Util
 
 def Name := String × Nat
@@ -59,7 +59,7 @@ notation:300 "FvSet!" => List Name
 namespace FvSet
   def Disjoint (l1 l2 : FvSet!) : Prop := List.Disjoint l1 l2
 
-  def not_mem_nil : x ∉ [] := sorry
+  def not_mem_nil : x ∉ [] := by simp
 
   def not_mem_left {A B : FvSet!} : x ∉ A ++ B -> x ∉ A := sorry
 

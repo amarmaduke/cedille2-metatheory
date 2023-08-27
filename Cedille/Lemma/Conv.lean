@@ -29,6 +29,7 @@ namespace Cedille.Conv
       apply Conv.conv lem s4 e2
     }
   }
+
   lemma refl : A =β= A := Conv.conv RedStar.refl RedStar.refl rfl
 
   lemma symm : A =β= B -> B =β= A := by {

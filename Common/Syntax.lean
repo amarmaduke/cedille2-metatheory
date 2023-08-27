@@ -1,5 +1,5 @@
 
-import «Mathlib»
+import Common.Mathlib
 import Common.Util
 import Common.Name
 import Common.Notation
@@ -197,12 +197,6 @@ namespace Syntax
   @[simp] lemma cls_head_bound {α β γ : Sort _} {n} (j : Fin n) (v : Name)
     : {_<-| v}(@bound α β γ n j) = @bound α β γ (n + 1) j
     := by congr
-    
-    -- by {
-    --   unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp
-    --   unfold opn_head
-    --   simp [*]
-    -- }
 
   @[simp] lemma cls_head_bind {α β γ n} (k : α) (v : Name)
     (t1 : @Syntax α β γ n) (t2 : @Syntax α β γ (n + 1))
@@ -267,10 +261,6 @@ namespace Syntax
       exact (t2_ih (Fin.succ i) (Fin.succ j))
     } 
     | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
-
-  @[simp] theorem oc3h {α β γ n} (a : Name) (x : @Syntax α β γ (n + 1))
-    : {_<-| a}{_|-> a}x = x
-  := by sorry
 
   @[simp] theorem oc3 {α β γ n} (i : Fin n) (a : Name) (x : @Syntax α β γ n)
     : {i <-| a}{i |-> a}x = {i <-| a}x := by
@@ -615,16 +605,52 @@ namespace Syntax
     | ctor k t1 t2 t3 => ctor k
       (hsubst w t1) (hsubst w t2) (hsubst w t3)
 
+
   instance {α β γ} : HasHSubst (@Syntax α β γ) (@Syntax α β γ) where
     hsubst := hsubst
 
-  @[simp] theorem open_subst {α β γ n} {N : @Syntax α β γ n} {B : @Syntax α β γ (n + 1)}
-    : x ≠ y -> {_|-> y}[x := weaken N 1]B = [x := N]{_|-> y}B
-    := sorry
+  @[simp] lemma hsubst_const {α β γ : Sort _} {n} (c : γ) (v : @Syntax α β γ n)
+    : [_:= v](@const α β γ (n + 1) c) = const c
+  := by congr
 
-  theorem subst_head_subst {α β γ n} {U V : @Syntax α β γ n} {B : @Syntax α β γ (n + 1)}
-    : [x := U][_:= V]B = [_:= [x := U]V][x := weaken U 1]B
-    := sorry
+  @[simp] lemma hsubst_free {α β γ : Sort _} {n} (x : Name) (v : @Syntax α β γ n)
+    : [_:= v](@free α β γ (n + 1) x) = free x
+  := by congr
+  
+  -- @[simp] lemma hsubst_bound {α β γ : Sort _} {n} (j : Fin n) (v : @Syntax α β γ n)
+  --   : [_:= v](@bound α β γ (n + 1) n) = v
+  -- := by {
+  --   sorry
+  -- }
+
+  @[simp] lemma hsubst_bind {α β γ n} (k : α)
+    (v : @Syntax α β γ n) (t1 : @Syntax α β γ (n + 1)) (t2 : @Syntax α β γ (n + 2))
+    : [_:= v] @bind α β γ (n + 1) k t1 t2 = @bind α β γ n k ([_:= v]t1) ([_:= (weaken v 1)]t2)
+  := by {
+    generalize rhsdef : bind k ([_:= v]t1) ([_:= weaken v 1]t2) = u
+    unfold HasHSubst.hsubst; unfold instHasHSubstSyntax; simp
+    unfold HasHSubst.hsubst at *; unfold instHasHSubstSyntax at *; simp at *
+    unfold hsubst; rw [rhsdef]
+  }
+
+  @[simp] lemma hsubst_ctor {α β γ n} (k : β) (v : @Syntax α β γ n)
+    (t1 t2 t3 : @Syntax α β γ (n + 1))
+    : [_:= v] @ctor α β γ (n + 1) k t1 t2 t3
+      = @ctor α β γ n k ([_:= v]t1) ([_:= v]t2) ([_:= v]t3)
+  := by {
+    generalize rhsdef : ctor k ([_:= v]t1) ([_:= v]t2) ([_:= v]t3) = u
+    unfold HasHSubst.hsubst; unfold instHasHSubstSyntax; simp
+    unfold HasHSubst.hsubst at *; unfold instHasHSubstSyntax at *; simp at *
+    unfold hsubst; rw [rhsdef]
+  }
+
+  -- @[simp] theorem open_subst {α β γ n} {N : @Syntax α β γ n} {B : @Syntax α β γ (n + 1)}
+  --   : x ≠ y -> {_|-> y}[x := weaken N 1]B = [x := N]{_|-> y}B
+  --   := sorry
+
+  -- theorem subst_head_subst {α β γ n} {U V : @Syntax α β γ n} {B : @Syntax α β γ (n + 1)}
+  --   : [x := U][_:= V]B = [_:= [x := U]V][x := weaken U 1]B
+  --   := sorry
 
   def size {α β γ n} (t : @Syntax α β γ n) : Nat :=
     match t with
@@ -642,7 +668,7 @@ namespace Syntax
     = (size t1) + (size t2) + (size t3) + 1
   := by congr
 
-  lemma size_opn_head' {t : @Syntax α β γ m}: (h : m = n + 1)
+  lemma size_opn_head' {t : @Syntax α β γ m} : (h : m = n + 1)
     -> @size α β γ n ({_|-> x} (by rw [<-h]; exact t)) = @size α β γ m t
   := by {
     intros h
@@ -693,5 +719,66 @@ namespace Syntax
   }
 
   @[simp] lemma size_opn_head : @size α β γ n ({_|-> x} t) = size t := size_opn_head' rfl
+
+  @[simp↓ high] lemma rename_bound {α β γ n} {i : Fin n}
+    : {_|-> x}{_<-| y}(@bound α β γ n i) = bound i
+  := by {
+    simp
+    unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp at *
+    unfold opn_head; simp at *
+    intro h
+    cases i; case _ iv il =>
+    simp at h
+    linarith
+  }
+
+  lemma rename_free_neq : z ≠ y -> {_|-> x}{_<-| y}(@free α β γ n z) = free z := by {
+    intro h; simp; split
+    case _ h2 => {
+      have h3 : z = y := LawfulBEq.eq_of_beq h2
+      exfalso
+      apply h h3
+    }
+    case _ h2 => {
+      unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp at *
+      unfold opn_head; simp at *
+    }
+  }
+
+  lemma rename_free_eq : {_|-> x}{_<-| y}(@free α β γ n y) = free x := by {
+    simp
+    unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp at *
+    unfold opn_head; simp at *
+  }
+
+  @[simp] lemma weaken_rename
+    : {_|-> x}{_<-| y}(weaken t 1) = weaken ({_|-> x}{_<-| y}t) 1
+  := by {
+    induction t
+    case bound n i => unfold weaken; simp
+    case free n z => {
+      generalize hdef : weaken (free z) 1 = h
+      unfold weaken at hdef; rw [<-hdef]
+      cases Name.decEq z y
+      case isFalse h => {
+        rw [rename_free_neq h, rename_free_neq h]
+        unfold weaken; simp
+      }
+      case isTrue h => {
+        subst h
+        rw [rename_free_eq, rename_free_eq]
+        unfold weaken; simp
+      }
+    }
+    case const => unfold weaken; simp
+    case bind k u1 u2 ih1 ih2 => {
+      simp; unfold weaken; simp
+      rw [ih1, ih2]; simp
+    }
+    case ctor c u1 u2 u3 ih1 ih2 ih3 => {
+      simp; unfold weaken; simp
+      rw [ih1, ih2, ih3]; simp
+    }
+  }
 
 end Syntax

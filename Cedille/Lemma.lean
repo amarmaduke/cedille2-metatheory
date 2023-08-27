@@ -8,3 +8,4 @@ import Cedille.Lemma.Red
 import Cedille.Lemma.RedErasure
 import Cedille.Lemma.Refold
 import Cedille.Lemma.Rule
+import Cedille.Lemma.Syntax

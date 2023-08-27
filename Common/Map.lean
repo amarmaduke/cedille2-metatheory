@@ -1,5 +1,5 @@
 
-import «Mathlib»
+import Common.Mathlib
 import Common.Util
 import Common.Syntax
 import Common.Notation
@@ -59,9 +59,18 @@ namespace Map
     | List.nil => List.nil
     | List.cons (n, _) tail => List.cons n (fv tail)
 
-  @[simp] lemma fv_append : fv (Γ ++ Δ) = fv Γ ++ fv Δ := sorry
+  @[simp] lemma fv_append : fv (Γ ++ Δ) = fv Γ ++ fv Δ := by {
+    induction Γ <;> simp
+    case nil => unfold fv; simp
+    case cons h t ih => {
+      generalize fΔdef : fv Δ = fΔ
+      unfold fv; simp; rw [ih]; simp [*]
+    }
+  }
 
-  @[simp] lemma fv_single : fv (single x A) = [x] := sorry
+  @[simp] lemma fv_single : fv (single x A) = [x] := by {
+    unfold single; unfold fv; simp; unfold fv; simp
+  }
 
   def subst [HasSubst α α] (v : Name) (w : α) (Γ : Map! α) : Map! α :=
     match Γ with
@@ -71,11 +80,23 @@ namespace Map
   instance [HasSubst α α] : HasSubst α (Map! α) where
     subst := subst
 
-  @[simp] lemma subst_nil [HasSubst α α] {t : α} : [x := t](@List.nil (Name × α)) = [] := sorry
+  @[simp] lemma subst_nil [HasSubst α α] {t : α} : [x := t](@List.nil (Name × α)) = [] := by {
+    unfold HasSubst.subst; unfold instHasSubstListProdName; unfold subst; simp
+  }
 
   @[simp] lemma subst_append [HasSubst α α] {t : α} {Γ Δ : Map! α}
     : [x := t](Γ ++ Δ) = [x := t]Γ ++ [x := t]Δ
-    := sorry
+  := by {
+    induction Γ
+    case nil => simp
+    case cons hd tl ih => {
+      generalize wdef : [x := t]Δ = w
+      unfold HasSubst.subst; unfold instHasSubstListProdName; unfold subst; simp
+      have r1 : subst x t (tl ++ Δ) = [x := t](tl ++ Δ) := by congr
+      have r2 : subst x t tl = [x := t]tl := by congr
+      rw [r1, r2, ih, <-wdef]
+    }
+  }
 
   def rename [HasHOpen α] [HasHClose α] (x y : Name) (Γ : Map! (α n)) : Map! (α n) :=
     match Γ with
@@ -86,13 +107,13 @@ namespace Map
 
   notation:200 "[" x:200 "|->" y:200 "]" t:200 => rename x y t
 
-  @[simp] lemma rename_append [HasHOpen α] [HasHClose α] {Γ Δ : Map! (α n)}
-    : [x |-> y](Γ ++ Δ) = [x |-> y]Γ ++ [x |-> y]Δ
-  := sorry
+  -- @[simp] lemma rename_append [HasHOpen α] [HasHClose α] {Γ Δ : Map! (α n)}
+  --   : [x |-> y](Γ ++ Δ) = [x |-> y]Γ ++ [x |-> y]Δ
+  -- := sorry
 
-  @[simp] lemma rename_single [HasHOpen α] [HasHClose α] {A : (α n)}
-    : [x |-> y][x : A] = [y : {_|-> y}{_<-| x}A]
-  := sorry
+  -- @[simp] lemma rename_single [HasHOpen α] [HasHClose α] {A : (α n)}
+  --   : [x |-> y][x : A] = [y : {_|-> y}{_<-| x}A]
+  -- := sorry
 
   def size (m : Map! α) : Nat :=
     match m with
@@ -114,7 +135,7 @@ namespace Map
       case isFalse h' => {
         rewrite [mem_cons_not h'] at h
         unfold remove
-        have lem1 : (y1 == x) = false := sorry
+        have lem1 : (y1 == x) = false := Name.beq_of_not_eq h'
         rewrite [lem1]; simp
         have lem2 := t_ih h
         linarith
@@ -127,13 +148,34 @@ namespace Map
 
   @[simp] lemma subst_single [HasSubst α α] {t A : α}
     : [x := t][y : A] = [y : [x := t]A]
-    := sorry
+  := by {
+    generalize Bdef : [x := t]A = B
+    unfold single; unfold HasSubst.subst; unfold instHasSubstListProdName; simp
+    unfold subst; simp [*]; unfold subst; simp
+  }
 
   lemma append_cases (Γ : Map! α)
     : (Γ = []) ∨ (∃ x : Name, ∃ A : α, ∃ Δ : Map! α, Γ = Δ ++ [x:A])
-    := sorry
+  := by {
+    induction Γ
+    case nil => apply Or.inl (by simp)
+    case cons hd tl ih => {
+      cases ih
+      case _ ih => {
+        subst tl; apply Or.inr _
+        cases hd; case _ x a =>
+        exists x; exists a; exists []
+      }
+      case _ ih => {
+        casesm* ∃ _, _; case _ x a tl' ih =>
+        apply Or.inr _
+        exists x; exists a; exists (hd :: tl')
+        rw [ih]; simp
+      }
+    }
+  }
 
-  def Disjoint (Γ1 Γ2 : Map! α) : Prop := FvSet.Disjoint (fv Γ1) (fv Γ2)
+  -- def Disjoint (Γ1 Γ2 : Map! α) : Prop := FvSet.Disjoint (fv Γ1) (fv Γ2)
 
   -- def lookup_implies_Mem : lookup Γ x = some A -> x ∈ (fv Γ) := sorry
 
@@ -143,5 +185,5 @@ namespace Map
   --   :=
   --   sorry
 
-  def mem_disjoint {Γ : Map! α} {a : α} : ¬ x ∈ fv Δ -> Disjoint Γ Δ -> Disjoint ([x : a] ++ Γ) Δ := sorry
+  -- def mem_disjoint {Γ : Map! α} {a : α} : ¬ x ∈ fv Δ -> Disjoint Γ Δ -> Disjoint ([x : a] ++ Γ) Δ := sorry
 end Map
