@@ -86,6 +86,7 @@ namespace SystemFOmega
   inductive Check : (Map! ωTerm) -> ωTerm -> ωTerm -> Prop where
   | check :
     Infer Γ t A ->
+    ConInfer Γ B (const K) ->
     A =β= B ->
     Check Γ t B
 

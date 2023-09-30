@@ -32,8 +32,10 @@ namespace Cedille
     rw [Fin.val_add]; simp
   }
 
-  @[simp] lemma opn_head_typeu : {_|-> x}typeu = @typeu n := by unfold typeu; simp
-  @[simp] lemma opn_head_kindu : {_|-> x}kindu = @kindu n := by unfold kindu; simp
+  @[simp] lemma opn_head_typeu : {_|-> x}typeu = @typeu n
+    := by unfold typeu; rw [Syntax.opn_head_const]
+  @[simp] lemma opn_head_kindu : {_|-> x}kindu = @kindu n
+    := by unfold kindu; rw [Syntax.opn_head_const]
   @[simp] lemma opn_head_lam : {_|-> x}lam m t1 t2 = lam m ({_|-> x}t1) ({_|-> x}t2)
     := by unfold lam; rw [Syntax.opn_head_bind]
   @[simp] lemma opn_head_pi : {_|-> x}pi m t1 t2 = pi m ({_|-> x}t1) ({_|-> x}t2)
@@ -71,8 +73,10 @@ namespace Cedille
     unfold Syntax.cls_head; unfold free; simp
   }
 
-  @[simp] lemma cls_head_typeu : {_<-| x}@typeu n = typeu := by unfold typeu; simp
-  @[simp] lemma cls_head_kindu : {_<-| x}@kindu n = kindu := by unfold kindu; simp
+  @[simp] lemma cls_head_typeu : {_<-| x}@typeu n = typeu
+    := by unfold typeu; rw [Syntax.cls_head_const]
+  @[simp] lemma cls_head_kindu : {_<-| x}@kindu n = kindu
+    := by unfold kindu; rw [Syntax.cls_head_const]
   @[simp] lemma cls_head_lam : {_<-| x}lam m t1 t2 = lam m ({_<-| x}t1) ({_<-| x}t2)
     := by unfold lam; rw [Syntax.cls_head_bind]
   @[simp] lemma cls_head_pi : {_<-| x}pi m t1 t2 = pi m ({_<-| x}t1) ({_<-| x}t2)
@@ -156,7 +160,7 @@ namespace Cedille
           case _ h => {
             simp; cases i; case _ iv il =>
             simp at *; subst h
-            rw [fin_cast il]; exact iv
+            rw [fin_cast il]
           }
           case _ h => simp; rw [<-fin_cast2]
         }
@@ -176,7 +180,7 @@ namespace Cedille
           case _ h => {
             simp; cases i; case _ iv il =>
             simp at *; subst h
-            rw [fin_cast il]; exact iv
+            rw [fin_cast il]
           }
           case _ h => simp; rw [<-fin_cast2]
         }
@@ -221,6 +225,10 @@ namespace Cedille
     exact h2
   }
 
+  lemma to_open {n} (t : Term n) (x : Name) : ∃ s, t = {_|-> x}s := by {
+    sorry
+  }
+
   lemma var_not_in_close {n} {t : Term n} : x ∉ fv ({_<-| x}t) := by {
     intro h
     induction t <;> simp at *
@@ -248,6 +256,113 @@ namespace Cedille
     }
   }
 
+  @[simp] lemma fv_open {n} {t : Term (n + 1)} : fv ({_|-> x}t) ⊆ x :: fv t
+  := @Nat.rec
+    (λ m => ∀ n (t : Term (n + 1)),
+      size t ≤ m ->
+      fv ({_|-> x}t) ⊆ x :: fv t)
+    (by {
+      intro m t s
+      cases t <;> simp at *
+      case bound i => {
+        unfold HasHOpen.hopn; unfold Syntax.instHasHOpenSyntax; simp
+        unfold Syntax.opn_head; unfold bound; simp
+        split <;> simp
+      }
+    })
+    (by {
+      intro m ih n t s
+      cases t
+      case bound => apply ih _ (bound _) (by simp)
+      case free => apply ih _ (free _) (by simp)
+      case const => apply ih _ (const _) (by simp)
+      case bind k u1 u2 => {
+        simp at *
+        have s1 : size u1 ≤ m := by linarith
+        have s2 : size u2 ≤ m := by linarith
+        have ih1 := ih _ u1 s1
+        have ih2 := ih _ u2 s2
+        simp at *
+        apply And.intro _ _
+        apply FvSet.subset_append.2 _; apply FvSet.subset_left _; apply ih1
+        apply FvSet.subset_append.2 _; apply FvSet.subset_right _; apply ih2
+      }
+      case ctor k u1 u2 u3 => {
+        simp at *
+        have s1 : size u1 ≤ m := by linarith
+        have s2 : size u2 ≤ m := by linarith
+        have s3 : size u3 ≤ m := by linarith
+        have ih1 := ih _ u1 s1
+        have ih2 := ih _ u2 s2
+        have ih3 := ih _ u3 s3
+        apply And.intro _ _
+        apply FvSet.subset_append.2 _; apply FvSet.subset_left; apply ih1
+        apply And.intro _ _
+        apply FvSet.subset_append.2 _; apply FvSet.subset_right
+        apply FvSet.subset_append.2 _; apply FvSet.subset_left; apply ih2
+        apply FvSet.subset_append.2 _; apply FvSet.subset_right
+        apply FvSet.subset_append.2 _; apply FvSet.subset_right; apply ih3
+      }
+    })
+    (size t)
+    n
+    t
+    (by simp)
+
+  @[simp] lemma fv_subst {n} {t1 : Term n} {t2 : Term (n + 1)}
+  : fv ([_:= t1]t2) ⊆ fv t1 ++ fv t2
+  := @Nat.rec
+    (λ s => ∀ n (t1 : Term n) (t2 : Term (n + 1)),
+      size t2 ≤ s ->
+      fv ([_:= t1]t2) ⊆ fv t1 ++ fv t2)
+    (by {
+      intro n t1 t2 sh
+      cases t2 <;> simp at *
+      case bound i => {
+        unfold HasHSubst.hsubst; unfold Syntax.instHasHSubstSyntax; simp
+        unfold Syntax.hsubst; unfold bound; simp
+        split <;> simp
+      }
+    })
+    (by {
+      intro s ih n t1 t2 sh
+      cases t2
+      case bound => apply ih _ _ (bound _) (by simp)
+      case free => apply ih _ _ (free _) (by simp)
+      case const => apply ih _ _ (const _) (by simp)
+      case bind k u1 u2 => {
+        simp at *
+        have s1 : size u1 ≤ s := by linarith
+        have s2 : size u2 ≤ s := by linarith
+        apply And.intro _ _
+        rw [<-List.append_assoc]; apply FvSet.subset_left _; apply ih _ _ u1 s1
+        apply FvSet.subset_comm _; simp; apply FvSet.subset_right _
+        apply FvSet.subset_comm _
+        have lem := ih (n + 1) (Syntax.weaken t1 1) u2 s2
+        unfold fv at lem; simp at lem
+        apply lem
+      }
+      case ctor k u1 u2 u3 => {
+        simp at *
+        have s1 : size u1 ≤ s := by linarith 
+        have s2 : size u2 ≤ s := by linarith
+        have s3 : size u3 ≤ s := by linarith
+        apply And.intro _ _
+        rw [<-List.append_assoc]; apply FvSet.subset_left _; apply ih _ _ u1 s1
+        apply And.intro _ _
+        apply FvSet.subset_comm _; simp; apply FvSet.subset_right _
+        apply FvSet.subset_comm _; simp; apply FvSet.subset_right _; apply ih _ _ u2 s2
+        apply FvSet.subset_comm _; rw [<-List.append_assoc]; simp
+        apply FvSet.subset_right _; apply FvSet.subset_right _
+        apply FvSet.subset_comm _; apply ih _ _ u3 s3
+      }
+    })
+    (size t2)
+    n
+    t1
+    t2
+    (by simp)
+
   lemma fv_open_shrink {n} {t1 t2 : Term (n + 1)}
     : x ∉ fv t1 -> fv ({_|-> x}t1) ⊆ fv ({_|-> x}t2) -> fv t1 ⊆ fv t2
   := λ h1 h2 => @Nat.rec
@@ -260,11 +375,10 @@ namespace Cedille
     (by {
       intro m1 m2 t1 t2 e h1 h2
       cases t1 <;> simp at *
-      case free y _ => {
-        cases h2 <;> simp [*]
-        case _ h =>
-        have h : x = y := by rw [h]
-        exfalso; apply h1 h
+      case free y z => {
+        have lem := fv_open h2
+        cases lem <;> simp at *
+        case _ h => exact h
       }
     })
     (by {

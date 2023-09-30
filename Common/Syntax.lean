@@ -120,7 +120,7 @@ namespace Syntax
       = ctor k ({i |-> v} t1) ({i |-> v} t2) ({i |-> v} t3)
     := by congr
 
-  @[simp] lemma opn_head_const {α β γ : Sort _} {n} (x : Name) (c : γ)
+  @[simp] lemma opn_head_const {α β γ : Sort _} {n} (c : γ)
     : @HasHOpen.hopn (@Syntax α β γ) _ n v (const c) = const c
     := by congr
 
@@ -182,7 +182,7 @@ namespace Syntax
       = ctor k ({i <-| v} t1) ({i <-| v} t2) ({i <-| v} t3)
     := by congr
 
-  @[simp] lemma cls_head_const {α β γ : Sort _} {n} (x : Name) (c : γ)
+  @[simp] lemma cls_head_const {α β γ : Sort _} {n} (c : γ)
     : {_<-| v}(@const α β γ n c) = const c
     := by congr
 
@@ -778,6 +778,19 @@ namespace Syntax
     case ctor c u1 u2 u3 ih1 ih2 ih3 => {
       simp; unfold weaken; simp
       rw [ih1, ih2, ih3]; simp
+    }
+  }
+
+  @[simp] lemma weaken_fv : fv (Syntax.weaken t 1) = fv t := by {
+    induction t
+    case bound => unfold weaken; simp; unfold fv; simp
+    case free => unfold weaken; simp; unfold fv; simp
+    case const => unfold weaken; simp; unfold fv; simp
+    case bind k u1 u2 ih1 ih2 => {
+      unfold weaken; simp; unfold fv; rw [ih1, ih2]
+    }
+    case ctor k u1 u2 u3 ih1 ih2 ih3 => {
+      unfold weaken; simp; unfold fv; rw [ih1, ih2, ih3]
     }
   }
 

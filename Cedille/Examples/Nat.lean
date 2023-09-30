@@ -1,4 +1,8 @@
 
 import Cedille.Def
 import Cedille.Lemma
-import Cedille.Theorem
+
+namespace Cedille
+
+
+end Cedille

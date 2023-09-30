@@ -8,30 +8,28 @@ namespace Cedille
     intro j; apply ConInfer.infer j RedStar.refl
   }
 
-  lemma infer_implies_check : Γ ⊢ t : A -> Γ ⊢ t =: A := by {
-    intro j; apply Check.check j Conv.refl
-  }
+  -- lemma infer_implies_check : Γ ⊢ t : A -> Γ ⊢ t =: A := by {
+  --   intro j; apply Check.check j _ _
+  -- }
+  
+  -- lemma cinfer_implies_check : Γ ⊢ t >: A -> Γ ⊢ t =: A := by {
+  --   intro j; cases j
+  --   case _ A' j step =>
+  --   apply Check.check j _
+  --   apply Conv.red_b Conv.refl step
+  -- }
 
-  lemma infer_implies_wf : Γ ⊢ t : A -> ⊢ Γ := sorry
-
-  lemma cinfer_implies_check : Γ ⊢ t >: A -> Γ ⊢ t =: A := by {
-    intro j; cases j
-    case _ A' j step =>
-    apply Check.check j _
-    apply Conv.red_b Conv.refl step
-  }
-
-  lemma check_from_cinfer :
-    Γ ⊢ t >: A ->
-    A =β= B ->
-    Γ ⊢ t =: B
-  := by {
-    intros j e
-    cases j
-    case _ C j step =>
-    have lem := Conv.red_b e step
-    apply Check.check j lem
-  }
+  -- lemma check_from_cinfer :
+  --   Γ ⊢ t >: A ->
+  --   A =β= B ->
+  --   Γ ⊢ t =: B
+  -- := by {
+  --   intros j e
+  --   cases j
+  --   case _ C j step =>
+  --   have lem := Conv.red_b e step
+  --   apply Check.check j lem
+  -- }
 
   lemma rename_ctx_invariant {Γ : Map! Term n} :
     (y : Name) ->

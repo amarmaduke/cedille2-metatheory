@@ -10,9 +10,9 @@ import Cedille.Lemma.Red
 namespace Cedille
 
   lemma erase_free_red :
-    ((x : Name) -> x ∉ fv t -> x ∉ (fv ∘ erase) ({_|-> x}t)) ->
+    ((x : Name) -> x ∉ fv t -> x ∉ (fv ∘ erase x) ({_|-> x}t)) ->
     (∃ x, {_|-> x}t -β>* {_|-> x}t') ->
-    (x : Name) -> x ∉ fv t' -> x ∉ (fv ∘ erase) ({_|-> x}t')
+    (x : Name) -> x ∉ fv t' -> x ∉ (fv ∘ erase x) ({_|-> x}t')
   := sorry
 
   -- lemma red_erasure_step_lam_mf :
@@ -72,124 +72,123 @@ namespace Cedille
   --   h
   --   step
 
-
-  lemma red_erasure_step2 :
-    Γ1 ⊢ t1 : A1 ->
-    Γ2 ⊢ t2 : A2 ->
-    erase t1 = erase t2 ->
-    t1 -β> z1 ->
-    ∃ z2, t2 -β>* z2 ∧ erase z1 = erase z2
-  := λ j1 j2 h step => @Nat.rec
-    (λ n => 
-      ∀ Γ1 t1 A1 Γ2 t2 A2 z1,
-      size t2 ≤ n ->
-      Γ1 ⊢ t1 : A1 ->
-      Γ2 ⊢ t2 : A2 ->
-      erase t1 = erase t2 ->
-      t1 -β> z1 ->
-      ∃ z2, t2 -β>* z2 ∧ erase z1 = erase z2)
-    sorry
-    (by {
-      intros n ih Γ1 t1 A1 Γ2 t2 A2 z1 h j1 j2 e step
-      cases t2 <;> simp at * <;> simp
-      case bound i => apply ih Γ1 t1 A1 Γ2 (bound i) A2 z1 (by simp) j1 j2 e step
-      case free x => apply ih Γ1 t1 A1 Γ2 (free x) A2 z1 (by simp) j1 j2 e step
-      case const k => apply ih Γ1 t1 A1 Γ2 (const k) A2 z1 (by simp) j1 j2 e step
-      case bind k1 u1 u2 => {
-        cases k1
-        case lam m => {
-          cases m <;> simp at * <;> simp
-          case free => {
-            sorry
-            -- have lem := red_erasure_step_lam_mf e step
-            -- casesm* ∃ _, _, _ ∧ _; case _ w step2 e2 =>
-            -- exists lam mf u1 w; apply And.intro _ _
-            -- apply red_lam RedStar.refl step2
-            -- simp [*]
-          }
-          case type => {
-            sorry
-            -- have lem := red_erasure_step_lam_mt e step
-            -- casesm* ∃ _, _, _ ∧ _; case _ w1 w2 wstep1 wstep2 e2 =>
-            -- exists lam mt w1 w2; apply And.intro _ _
-            -- apply red_lam wstep1 wstep2
-            -- simp [*]
-          }
-          case erased => {
-            cases j2; case _ K B S g1 g2 g3 =>
-            have fresh := @Name.fresh_is_fresh (S ++ fv u2)
-            generalize xdef : Name.fresh (S ++ fv u2) = x at *
-            have xn1 := FvSet.not_mem_left fresh
-            have xn2 := FvSet.not_mem_right fresh
-            replace g3 := g3 x xn1
-            have g2r := erase_free_rename (g2 rfl)
-            have su2 : size ({_|-> x}u2) ≤ n := by {
-              have lem1 := Nat.le_of_succ_le_succ h
-              have lem2 := nat_add_le lem1
-              casesm* _ ∧ _; case _ l r =>
-              simp [*]
-            }
-            have e2 : erase t1 = erase ({_|-> x}u2) := by
-              rw [g2r x (Name.fresh (fv u2)) xn2 Name.fresh_is_fresh]; simp [*]
-            have lem := ih Γ1 t1 A1 (Γ2 ++ [x:u1]) ({_|-> x}u2) ({_|-> x}B) z1 su2 j1 g3 e2 step
-            casesm* ∃ _, _, _ ∧ _; case _ u2' ustep ue =>
-            have ustep2 := red_open_forced ustep
-            cases ustep2; case _ z zh =>
-            cases zh; case _ ze zn =>
-            subst ze
-            exists (lam m0 u1 z); apply And.intro _ _
-            apply red_lam RedStar.refl ustep; simp
-            have yfresh := @Name.fresh_is_fresh (fv z)
-            generalize ydef : Name.fresh (fv z) = y at *
-            have g2r2 := erase_free_rename (erase_free_red (g2 rfl) (Exists.intro x ustep))
-            have fv1 : fv z ⊆ fv u2 := fv_open_shrink zn (red_fv ustep)
-            have xn3 := contra (@subset_mem x (fv z) (fv u2) fv1) xn2
-            have e3 := g2r2 x y xn3 yfresh; simp at e3
-            rw [<-e3, ue]
-          }
-        }
-        case pi m => {
-          sorry
-        }
-        case inter => {
-          sorry
-        }
-      }
-      case ctor k u1 u2 u3 => {
-        cases k <;> simp at * <;> simp
-        case app => sorry
-        case pair => sorry
-        case fst => sorry
-        case snd => sorry
-        case eq => sorry
-        case refl => sorry
-        case eqind => sorry
-        case promote => sorry
-        case delta => sorry
-        case phi => {
-          cases j2; case _ A B g1 g2 g3 g4 g5 =>
-          cases g1; case _ A' g eq =>
-          have lem := ih Γ1 t1 A1 Γ2 u1 A' z1 sorry j1 g e step
-          casesm* ∃ _, _, _ ∧ _; case _ w step e =>
-          exists (phi w u2 u3); apply And.intro _ _
-          apply red_phi step RedStar.refl RedStar.refl
-          simp [*]
-        }
-      }
-    })
-    (size t2)
-    Γ1
-    t1
-    A1
-    Γ2
-    t2
-    A2
-    z1
-    (by simp)
-    j1
-    j2
-    h
-    step
+  -- lemma red_erasure_step2 :
+  --   Γ1 ⊢ t1 : A1 ->
+  --   Γ2 ⊢ t2 : A2 ->
+  --   erase t1 = erase t2 ->
+  --   t1 -β> z1 ->
+  --   ∃ z2, t2 -β>* z2 ∧ erase z1 = erase z2
+  -- := λ j1 j2 h step => @Nat.rec
+  --   (λ n => 
+  --     ∀ Γ1 t1 A1 Γ2 t2 A2 z1,
+  --     size t2 ≤ n ->
+  --     Γ1 ⊢ t1 : A1 ->
+  --     Γ2 ⊢ t2 : A2 ->
+  --     erase t1 = erase t2 ->
+  --     t1 -β> z1 ->
+  --     ∃ z2, t2 -β>* z2 ∧ erase z1 = erase z2)
+  --   sorry
+  --   (by {
+  --     intros n ih Γ1 t1 A1 Γ2 t2 A2 z1 h j1 j2 e step
+  --     cases t2 <;> simp at * <;> simp
+  --     case bound i => apply ih Γ1 t1 A1 Γ2 (bound i) A2 z1 (by simp) j1 j2 e step
+  --     case free x => apply ih Γ1 t1 A1 Γ2 (free x) A2 z1 (by simp) j1 j2 e step
+  --     case const k => apply ih Γ1 t1 A1 Γ2 (const k) A2 z1 (by simp) j1 j2 e step
+  --     case bind k1 u1 u2 => {
+  --       cases k1
+  --       case lam m => {
+  --         cases m <;> simp at * <;> simp
+  --         case free => {
+  --           sorry
+  --           -- have lem := red_erasure_step_lam_mf e step
+  --           -- casesm* ∃ _, _, _ ∧ _; case _ w step2 e2 =>
+  --           -- exists lam mf u1 w; apply And.intro _ _
+  --           -- apply red_lam RedStar.refl step2
+  --           -- simp [*]
+  --         }
+  --         case type => {
+  --           sorry
+  --           -- have lem := red_erasure_step_lam_mt e step
+  --           -- casesm* ∃ _, _, _ ∧ _; case _ w1 w2 wstep1 wstep2 e2 =>
+  --           -- exists lam mt w1 w2; apply And.intro _ _
+  --           -- apply red_lam wstep1 wstep2
+  --           -- simp [*]
+  --         }
+  --         case erased => {
+  --           cases j2; case _ K B S g1 g2 g3 =>
+  --           have fresh := @Name.fresh_is_fresh (S ++ fv u2)
+  --           generalize xdef : Name.fresh (S ++ fv u2) = x at *
+  --           have xn1 := FvSet.not_mem_left fresh
+  --           have xn2 := FvSet.not_mem_right fresh
+  --           replace g3 := g3 x xn1
+  --           have g2r := erase_free_rename (g2 rfl)
+  --           have su2 : size ({_|-> x}u2) ≤ n := by {
+  --             have lem1 := Nat.le_of_succ_le_succ h
+  --             have lem2 := nat_add_le lem1
+  --             casesm* _ ∧ _; case _ l r =>
+  --             simp [*]
+  --           }
+  --           have e2 : erase t1 = erase ({_|-> x}u2) := by
+  --             rw [g2r x (Name.fresh (fv u2)) xn2 Name.fresh_is_fresh]; simp [*]
+  --           have lem := ih Γ1 t1 A1 (Γ2 ++ [x:u1]) ({_|-> x}u2) ({_|-> x}B) z1 su2 j1 g3 e2 step
+  --           casesm* ∃ _, _, _ ∧ _; case _ u2' ustep ue =>
+  --           have ustep2 := red_open_forced ustep
+  --           cases ustep2; case _ z zh =>
+  --           cases zh; case _ ze zn =>
+  --           subst ze
+  --           exists (lam m0 u1 z); apply And.intro _ _
+  --           apply red_lam RedStar.refl ustep; simp
+  --           have yfresh := @Name.fresh_is_fresh (fv z)
+  --           generalize ydef : Name.fresh (fv z) = y at *
+  --           have g2r2 := erase_free_rename (erase_free_red (g2 rfl) (Exists.intro x ustep))
+  --           have fv1 : fv z ⊆ fv u2 := fv_open_shrink zn (red_fv ustep)
+  --           have xn3 := contra (@subset_mem x (fv z) (fv u2) fv1) xn2
+  --           have e3 := g2r2 x y xn3 yfresh; simp at e3
+  --           rw [<-e3, ue]
+  --         }
+  --       }
+  --       case pi m => {
+  --         sorry
+  --       }
+  --       case inter => {
+  --         sorry
+  --       }
+  --     }
+  --     case ctor k u1 u2 u3 => {
+  --       cases k <;> simp at * <;> simp
+  --       case app => sorry
+  --       case pair => sorry
+  --       case fst => sorry
+  --       case snd => sorry
+  --       case eq => sorry
+  --       case refl => sorry
+  --       case eqind => sorry
+  --       case promote => sorry
+  --       case delta => sorry
+  --       case phi => {
+  --         cases j2; case _ A B g1 g2 g3 g4 g5 =>
+  --         cases g1; case _ A' g eq =>
+  --         have lem := ih Γ1 t1 A1 Γ2 u1 A' z1 sorry j1 g e step
+  --         casesm* ∃ _, _, _ ∧ _; case _ w step e =>
+  --         exists (phi w u2 u3); apply And.intro _ _
+  --         apply red_phi step RedStar.refl RedStar.refl
+  --         simp [*]
+  --       }
+  --     }
+  --   })
+  --   (size t2)
+  --   Γ1
+  --   t1
+  --   A1
+  --   Γ2
+  --   t2
+  --   A2
+  --   z1
+  --   (by simp)
+  --   j1
+  --   j2
+  --   h
+  --   step
 
   -- lemma red_erasure_step {n} {t1 t2 z1 : Term n} :
   --   erase t1 = erase t2 ->
@@ -254,10 +253,12 @@ namespace Cedille
   --   h
   --   step
 
-  lemma red_erasure :
-    erase t1 = erase t2 ->
+  lemma red_erasure (S : FvSet!) :
+    Γ1 ⊢ t1 : A1 ->
+    Γ2 ⊢ t2 : A2 ->
+    ((x : Name) -> x ∉ S -> erase x t1 = erase x t2) ->
     t1 -β>* z1 ->
-    ∃ z2, t2 -β>* z2 ∧ erase z1 = erase z2
+    ∃ z2, t2 -β>* z2 ∧ (∀ x, x ∉ S -> erase x z1 = erase x z2)
   := by sorry
   -- := by {
   --   intro h step

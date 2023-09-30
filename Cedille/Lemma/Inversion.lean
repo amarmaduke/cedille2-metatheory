@@ -137,9 +137,9 @@ namespace Cedille
   @[simp] lemma lam_not_kindu : lam m t1 t2 ≠ kindu := by inv
   @[simp] lemma lam_not_free : lam m t1 t2 ≠ free x := by inv
   @[simp] lemma lam_not_bound : lam m t1 t2 ≠ bound i := by inv
-  @[simp] lemma lam_not_pi : lam m t1 t2 ≠ pi m t3 t4 := by inv
+  @[simp] lemma lam_not_pi : lam m1 t1 t2 ≠ pi m2 t3 t4 := by inv
   @[simp] lemma lam_not_inter : lam m t1 t2 ≠ inter t3 t4 := by inv
-  @[simp] lemma lam_not_app : lam m t1 t2 ≠ app m t3 t4 := by inv
+  @[simp] lemma lam_not_app : lam m1 t1 t2 ≠ app m2 t3 t4 := by inv
   @[simp] lemma lam_not_pair : lam m t1 t2 ≠ pair t3 t4 t5 := by inv
   @[simp] lemma lam_not_fst : lam m t1 t2 ≠ fst t := by inv
   @[simp] lemma lam_not_snd : lam m t1 t2 ≠ snd t := by inv
@@ -163,9 +163,9 @@ namespace Cedille
   @[simp] lemma pi_not_kindu : pi m t1 t2 ≠ kindu := by inv
   @[simp] lemma pi_not_free : pi m t1 t2 ≠ free x := by inv
   @[simp] lemma pi_not_bound : pi m t1 t2 ≠ bound i := by inv
-  @[simp] lemma pi_not_lam : pi m t1 t2 ≠ lam m t3 t4 := by inv
+  @[simp] lemma pi_not_lam : pi m1 t1 t2 ≠ lam m2 t3 t4 := by inv
   @[simp] lemma pi_not_inter : pi m t1 t2 ≠ inter t3 t4 := by inv
-  @[simp] lemma pi_not_app : pi m t1 t2 ≠ app m t3 t4 := by inv
+  @[simp] lemma pi_not_app : pi m1 t1 t2 ≠ app m2 t3 t4 := by inv
   @[simp] lemma pi_not_pair : pi m t1 t2 ≠ pair t3 t4 t5 := by inv
   @[simp] lemma pi_not_fst : pi m t1 t2 ≠ fst t := by inv
   @[simp] lemma pi_not_snd : pi m t1 t2 ≠ snd t := by inv
@@ -208,8 +208,8 @@ namespace Cedille
   @[simp] lemma app_not_kindu : app m t1 t2 ≠ kindu := by inv
   @[simp] lemma app_not_free : app m t1 t2 ≠ free x := by inv
   @[simp] lemma app_not_bound : app m t1 t2 ≠ bound i := by inv
-  @[simp] lemma app_not_lam : app m t1 t2 ≠ lam m t3 t4 := by inv
-  @[simp] lemma app_not_pi : app m t1 t2 ≠ pi m t3 t4 := by inv
+  @[simp] lemma app_not_lam : app m1 t1 t2 ≠ lam m2 t3 t4 := by inv
+  @[simp] lemma app_not_pi : app m1 t1 t2 ≠ pi m2 t3 t4 := by inv
   @[simp] lemma app_not_inter : app m t1 t2 ≠ inter t3 t4 := by inv
   @[simp] lemma app_not_pair : app m t1 t2 ≠ pair t3 t4 t5 := by inv
   @[simp] lemma app_not_fst : app m t1 t2 ≠ fst t := by inv

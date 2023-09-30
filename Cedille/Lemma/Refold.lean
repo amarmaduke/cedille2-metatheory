@@ -22,6 +22,9 @@ namespace Cedille
   @[simp low] lemma refold_delta : Syntax.ctor Constructor.delta t kindu kindu = delta t := by congr
   @[simp low] lemma refold_phi : Syntax.ctor Constructor.phi t1 t2 t3 = phi t1 t2 t3 := by congr
 
+  @[simp low] lemma const_to_typeu {n} : const Constant.typeU = @typeu n := by congr
+  @[simp low] lemma const_to_kindu {n} : const Constant.kindU = @kindu n := by congr
+
   @[simp] lemma size_const {n} : size (@const n k) = 0 := by congr
   @[simp] lemma size_typeu {n} : size (@typeu n) = 0 := by congr
   @[simp] lemma size_kindu {n} : size (@kindu n) = 0 := by congr
