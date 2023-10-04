@@ -17,7 +17,10 @@ namespace Cedille
   @[simp low] lemma refold_snd : Syntax.ctor Constructor.snd t kindu kindu = snd t := by congr
   @[simp low] lemma refold_eq : Syntax.ctor Constructor.eq t1 t2 t3 = eq t1 t2 t3 := by congr
   @[simp low] lemma refold_refl : Syntax.ctor Constructor.refl t kindu kindu = refl t := by congr
-  @[simp low] lemma refold_J {n} : Syntax.ctor Constructor.eqind kindu kindu kindu = @J n := by congr
+  @[simp low] lemma refold_Jh : Syntax.ctor Constructor.eqind t1 t2 t3 = Jh t1 t2 t3 := by congr
+  @[simp low] lemma refold_J0 : Syntax.ctor Constructor.j0 t1 t2 kindu = J0 t1 t2 := by congr
+  @[simp low] lemma refold_Jω : Syntax.ctor Constructor.jω t1 t2 kindu = Jω t1 t2 := by congr
+  @[simp low] lemma refold_J : Jh (J0 t1 t2) (J0 t3 t4) (Jω t5 t6) = J t1 t2 t3 t4 t5 t6 := by congr
   @[simp low] lemma refold_promote : Syntax.ctor Constructor.promote t kindu kindu = promote t := by congr
   @[simp low] lemma refold_delta : Syntax.ctor Constructor.delta t kindu kindu = delta t := by congr
   @[simp low] lemma refold_phi : Syntax.ctor Constructor.phi t1 t2 t3 = phi t1 t2 t3 := by congr
@@ -39,7 +42,12 @@ namespace Cedille
   @[simp] lemma size_snd : size (snd t) = size t + 1 := by congr
   @[simp] lemma size_eq : size (eq t1 t2 t3) = size t1 + size t2 + size t3 + 1 := by congr
   @[simp] lemma size_refl : size (refl t) = size t + 1 := by congr
-  @[simp] lemma size_J {n} : size (@J n) = 1 := by congr
+  @[simp] lemma size_Jh : size (Jh t1 t2 t3) = size t1 + size t2 + size t3 + 1 := by congr
+  @[simp] lemma size_J0 : size (J0 t1 t2) = size t1 + size t2 + 1 := by congr
+  @[simp] lemma size_Jω : size (Jω t1 t2) = size t1 + size t2 + 1 := by congr
+  @[simp] lemma size_J : size (J t1 t2 t3 t4 t5 t6) = size t1 + size t2 + size t3 + size t4 + size t5 + size t6 + 4 := by {
+    unfold J; rw [size_Jh, size_J0, size_J0, size_Jω]; linarith
+  }
   @[simp] lemma size_promote : size (promote t) = size t + 1 := by congr
   @[simp] lemma size_delta : size (delta t) = size t + 1 := by congr
   @[simp] lemma size_phi : size (phi t1 t2 t3) = size t1 + size t2 + size t3 + 1 := by congr
@@ -82,7 +90,16 @@ namespace Cedille
   @[simp] lemma fv_refl : fv (refl t) = fv t := by {
     unfold refl; rw [@fv_ctor _ _ t _ _]; simp; repeat rw [List.append_nil]
   }
-  @[simp] lemma fv_J {n} : fv (@J n) = [] := by congr
+  @[simp] lemma fv_Jh : fv (Jh t1 t2 t3) = fv t1 ++ fv t2 ++ fv t3 := by congr
+  @[simp] lemma fv_J0 : fv (J0 t1 t2) = fv t1 ++ fv t2 := by {
+    unfold J0; rw [@fv_ctor _ _ t1 t2 _]; simp
+  }
+  @[simp] lemma fv_Jω : fv (Jω t1 t2) = fv t1 ++ fv t2 := by {
+    unfold Jω; rw [@fv_ctor _ _ t1 t2 _]; simp
+  }
+  @[simp] lemma fv_J : fv (J t1 t2 t3 t4 t5 t6) = fv t1 ++ fv t2 ++ fv t3 ++ fv t4 ++ fv t5 ++ fv t6 := by {
+    unfold J; rw [fv_Jh, fv_J0, fv_J0, fv_Jω]; simp
+  }
   @[simp] lemma fv_promote : fv (promote t) = fv t := by {
     unfold promote; rw [@fv_ctor _ _ t _ _]; simp; repeat rw [List.append_nil]
   }

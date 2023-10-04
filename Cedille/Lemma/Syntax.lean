@@ -54,8 +54,14 @@ namespace Cedille
     := by unfold eq; rw [Syntax.opn_head_ctor]
   @[simp] lemma opn_head_refl : {_|-> x}refl t = refl ({_|-> x}t)
     := by unfold refl; rw [Syntax.opn_head_ctor]; simp
-  @[simp] lemma opn_head_J {n} : {_|-> x}J = @J n
-    := by unfold J; rw [Syntax.opn_head_ctor]; simp
+  @[simp] lemma opn_head_Jh : {_|-> x}Jh t1 t2 t3 = Jh ({_|-> x}t1) ({_|-> x}t2) ({_|-> x}t3)
+    := by unfold Jh; rw [Syntax.opn_head_ctor]
+  @[simp] lemma opn_head_J0 : {_|-> x}J0 t1 t2 = J0 ({_|-> x}t1) ({_|-> x}t2)
+    := by unfold J0; rw [Syntax.opn_head_ctor]; simp
+  @[simp] lemma opn_head_Jω : {_|-> x}Jω t1 t2 = Jω ({_|-> x}t1) ({_|-> x}t2)
+    := by unfold Jω; rw [Syntax.opn_head_ctor]; simp
+  @[simp] lemma opn_head_J : {_|-> x}J t1 t2 t3 t4 t5 t6 = J ({_|-> x}t1) ({_|-> x}t2) ({_|-> x}t3) ({_|-> x}t4) ({_|-> x}t5) ({_|-> x}t6)
+    := by unfold J; rw [opn_head_Jh, opn_head_J0, opn_head_J0, opn_head_Jω]
   @[simp] lemma opn_head_promote : {_|-> x}promote t = promote ({_|-> x}t) 
     := by unfold promote; rw [Syntax.opn_head_ctor]; simp
   @[simp] lemma opn_head_delta : {_|-> x}delta t = delta ({_|-> x}t)
@@ -95,8 +101,14 @@ namespace Cedille
     := by unfold eq; rw [Syntax.cls_head_ctor]
   @[simp] lemma cls_head_refl : {_<-| x}refl t = refl ({_<-| x}t)
     := by unfold refl; rw [Syntax.cls_head_ctor]; simp
-  @[simp] lemma cls_head_J {n} : {_<-| x}@J n = J
-    := by unfold J; rw [Syntax.cls_head_ctor]; simp
+  @[simp] lemma cls_head_Jh : {_<-| x}Jh t1 t2 t3 = Jh ({_<-| x}t1) ({_<-| x}t2) ({_<-| x}t3)
+    := by unfold Jh; rw [Syntax.cls_head_ctor]
+  @[simp] lemma cls_head_J0 : {_<-| x}J0 t1 t2 = J0 ({_<-| x}t1) ({_<-| x}t2)
+    := by unfold J0; rw [Syntax.cls_head_ctor]; simp
+  @[simp] lemma cls_head_Jω : {_<-| x}Jω t1 t2 = Jω ({_<-| x}t1) ({_<-| x}t2)
+    := by unfold Jω; rw [Syntax.cls_head_ctor]; simp
+  @[simp] lemma cls_head_J : {_<-| x}J t1 t2 t3 t4 t5 t6 = J ({_<-| x}t1) ({_<-| x}t2) ({_<-| x}t3) ({_<-| x}t4) ({_<-| x}t5) ({_<-| x}t6)
+    := by unfold J; rw [cls_head_Jh, cls_head_J0, cls_head_J0, cls_head_Jω]
   @[simp] lemma cls_head_promote : {_<-| x}promote t = promote ({_<-| x}t) 
     := by unfold promote; rw [Syntax.cls_head_ctor]; simp
   @[simp] lemma cls_head_delta : {_<-| x}delta t = delta ({_<-| x}t)
@@ -134,8 +146,14 @@ namespace Cedille
     := by unfold eq; rw [Syntax.hsubst_ctor]
   @[simp] lemma hsubst_refl {v : Term n} : [_:= v]refl t = refl ([_:= v]t)
     := by unfold refl; rw [Syntax.hsubst_ctor]; simp
-  @[simp] lemma hsubst_J {n} {v : Term n} : [_:= v]@J (n + 1) = J
-    := by unfold J; rw [Syntax.hsubst_ctor]; simp
+  @[simp] lemma hsubst_head_Jh {v : Term n} : [_:= v]Jh t1 t2 t3 = Jh ([_:= v]t1) ([_:= v]t2) ([_:= v]t3)
+    := by unfold Jh; rw [Syntax.hsubst_ctor]
+  @[simp] lemma hsubst_head_J0 {v : Term n} : [_:= v]J0 t1 t2 = J0 ([_:= v]t1) ([_:= v]t2)
+    := by unfold J0; rw [Syntax.hsubst_ctor]; simp
+  @[simp] lemma hsubst_head_Jω {v : Term n} : [_:= v]Jω t1 t2 = Jω ([_:= v]t1) ([_:= v]t2)
+    := by unfold Jω; rw [Syntax.hsubst_ctor]; simp
+  @[simp] lemma hsubst_head_J {v : Term n} : [_:= v]J t1 t2 t3 t4 t5 t6 = J ([_:= v]t1) ([_:= v]t2) ([_:= v]t3) ([_:= v]t4) ([_:= v]t5) ([_:= v]t6)
+    := by unfold J; rw [hsubst_head_Jh, hsubst_head_J0, hsubst_head_J0, hsubst_head_Jω]
   @[simp] lemma hsubst_promote {v : Term n} : [_:= v]promote t = promote ([_:= v]t) 
     := by unfold promote; rw [Syntax.hsubst_ctor]; simp
   @[simp] lemma hsubst_delta {v : Term n} : [_:= v]delta t = delta ([_:= v]t)

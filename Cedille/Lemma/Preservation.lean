@@ -277,6 +277,8 @@ namespace Cedille
         case eq => sorry
         case refl => sorry
         case eqind => sorry
+        case j0 => sorry
+        case jω => sorry
         case promote => sorry
         case delta => sorry
         case phi => sorry
@@ -339,20 +341,6 @@ namespace Cedille
     }
     case eqind u1 u2 u3 u4 u5 u6 => {
       cases tproof
-      case app A1 B1 S1 j1 j2 => {
-        cases j1; case _ D1 j1 s1 =>
-        cases j1; case _ A2 B2 S2 j4 j5 =>
-        cases j4; case _ D2 j4 s2 =>
-        cases j4; case _ A3 B3 S3 j6 j7 =>
-        cases j6; case _ D3 j6 s3 =>
-        cases j6; case _ A4 B4 S4 j8 j9 =>
-        cases j8; case _ D4 j8 s4 =>
-        cases j8; case _ A5 B5 S5 j8 j11 =>
-        cases j8; case _ D5 j8 s5 =>
-        cases j8; case _ A6 B6 S6 j8 j13 =>
-        cases j8; case _ D6 j8 s6 => 
-        cases j8
-      }
       case eqind j1 j2 j3 j4 j5 j6 => {
         cases j5; case _ D j5 c1 =>
         cases j5; case _ A j =>

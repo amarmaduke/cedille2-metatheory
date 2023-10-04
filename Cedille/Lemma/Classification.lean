@@ -163,10 +163,9 @@ namespace Cedille
         case refl => {
           sorry
         }
-        case eqind => {
-          cases j; case _ A' j step =>
-          cases j
-        }
+        case eqind => sorry
+        case j0 => sorry
+        case jω => sorry
         case promote => sorry
         case delta => sorry
         case phi => sorry

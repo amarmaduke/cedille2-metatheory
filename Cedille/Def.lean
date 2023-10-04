@@ -25,6 +25,8 @@ namespace Cedille
   | eq
   | refl
   | eqind
+  | j0
+  | jω
   | promote
   | delta
   | phi
@@ -52,7 +54,10 @@ namespace Cedille
   def snd {n} (t : Term n) : Term n := Syntax.ctor Constructor.snd t kindu kindu
   def eq {n} (t1 t2 t3 : Term n) : Term n := Syntax.ctor Constructor.eq t1 t2 t3
   def refl {n} (t : Term n) : Term n := Syntax.ctor Constructor.refl t kindu kindu
-  def J {n} : Term n := Syntax.ctor Constructor.eqind kindu kindu kindu
+  def Jh {n} (t1 t2 t3 : Term n) : Term n := Syntax.ctor Constructor.eqind t1 t2 t3
+  def J0 {n} (t1 t2 : Term n) : Term n := Syntax.ctor Constructor.j0 t1 t2 kindu
+  def Jω {n} (t1 t2 : Term n) : Term n := Syntax.ctor Constructor.jω t1 t2 kindu
+  def J {n} (t1 t2 t3 t4 t5 t6 : Term n) : Term n := Jh (J0 t1 t2) (J0 t3 t4) (Jω t5 t6)
   def promote {n} (t : Term n) : Term n := Syntax.ctor Constructor.promote t kindu kindu
   def delta {n} (t : Term n) : Term n := Syntax.ctor Constructor.delta t kindu kindu
   def phi {n} (t1 t2 t3 : Term n) : Term n := Syntax.ctor Constructor.phi t1 t2 t3
@@ -64,25 +69,25 @@ namespace Cedille
   notation:400 a:400 " @0 " b:401 => app m0 a b
   notation:400 a:400 " @τ " b:401 => app mt a b
 
-  def eqind_t : Term 0 :=
-    let A := ("A", 0)
-    let P := ("P", 0)
-    let x := ("x", 0)
-    let y := ("y", 0)
-    let r := ("r", 0)
-    let w := ("w", 0)
-    let eqt : Term 0 := eq (free A) (free x) (free y);
-    let Pt : Term 0 := pi mt (free A) (pi mt (free A) (pi mt ({_<-| x}{_<-| y}eqt) typeu))
-    let indt : Term 0 := pi m0 (free A) ((free P) @τ (bound 0) @τ (bound 0) @τ (refl (bound 0)))
-    let result : Term 0 := (free P) @τ (free x) @τ (free y) @τ (free r)
-    @pi 0 m0 typeu
-      (@pi 1 m0 ({_<-| A}Pt)
-        (@pi 2 m0 ({_<-| A}{_<-| P}free A)
-          (@pi 3 m0 ({_<-| A}{_<-| P}{_<-| x}free A)
-            (@pi 4 mf ({_<-| A}{_<-| P}{_<-| x}{_<-| y}eqt)
-              (@pi 5 mf ({_<-| A}{_<-| P}{_<-| x}{_<-| y}{_<-| r}indt)
-                ({_<-| A}{_<-| P}{_<-| x}{_<-| y}{_<-| r}{_<-| w}result)
-    )))))
+  -- def eqind_t : Term 0 :=
+  --   let A := ("A", 0)
+  --   let P := ("P", 0)
+  --   let x := ("x", 0)
+  --   let y := ("y", 0)
+  --   let r := ("r", 0)
+  --   let w := ("w", 0)
+  --   let eqt : Term 0 := eq (free A) (free x) (free y);
+  --   let Pt : Term 0 := pi mt (free A) (pi mt (free A) (pi mt ({_<-| x}{_<-| y}eqt) typeu))
+  --   let indt : Term 0 := pi m0 (free A) ((free P) @τ (bound 0) @τ (bound 0) @τ (refl (bound 0)))
+  --   let result : Term 0 := (free P) @τ (free x) @τ (free y) @τ (free r)
+  --   @pi 0 m0 typeu
+  --     (@pi 1 m0 ({_<-| A}Pt)
+  --       (@pi 2 m0 ({_<-| A}{_<-| P}free A)
+  --         (@pi 3 m0 ({_<-| A}{_<-| P}{_<-| x}free A)
+  --           (@pi 4 mf ({_<-| A}{_<-| P}{_<-| x}{_<-| y}eqt)
+  --             (@pi 5 mf ({_<-| A}{_<-| P}{_<-| x}{_<-| y}{_<-| r}indt)
+  --               ({_<-| A}{_<-| P}{_<-| x}{_<-| y}{_<-| r}{_<-| w}result)
+  --   )))))
 
   def idt : Term 0 := pi m0 typeu (pi mf (bound 0) (bound 1))
 
@@ -105,18 +110,15 @@ namespace Cedille
     | Syntax.ctor (Constructor.app m) t1 t2 _ =>
       match m with
       | m0 => erase x t1
-      | m =>
-        let lhs := erase x t1
-        let rhs := erase x t2
-        match lhs with
-        | Syntax.ctor Constructor.eqind _ _ _ => rhs
-        | _ => app m lhs rhs
+      | m => app m (erase x t1) (erase x t2)
     | Syntax.ctor Constructor.pair t1 _t2 _ => erase x t1
     | Syntax.ctor Constructor.fst t _ _ => erase x t
     | Syntax.ctor Constructor.snd t _ _ => erase x t
     | Syntax.ctor Constructor.eq t1 t2 t3 => eq (erase x t1) (erase x t2) (erase x t3)
     | Syntax.ctor Constructor.refl _t _ _ => lam mf kindu (bound 0)
-    | Syntax.ctor Constructor.eqind _ _ _ => J
+    | Syntax.ctor Constructor.eqind _ _ t3 => erase x t3
+    | Syntax.ctor Constructor.j0 _ _ _ => kindu
+    | Syntax.ctor Constructor.jω t1 t2 _ => (erase x t1) @ω (erase x t2)
     | Syntax.ctor Constructor.promote t _ _ => erase x t
     | Syntax.ctor Constructor.delta t _ _ => erase x t
     | Syntax.ctor Constructor.phi t1 _t2 _t3 => erase x t1
@@ -130,7 +132,7 @@ namespace Cedille
   | beta : Red (app m (lam m t1 t2) t3) ([_:= t3]t2)
   | fst : Red (fst (pair t1 t2 t3)) t1
   | snd : Red (snd (pair t1 t2 t3)) t2
-  | eqind : Red (J @0 t1 @0 t2 @0 t3 @0 t4 @ω (refl t5) @ω t6) (t6 @0 t5)
+  | eqind : Red (J t1 t2 t3 t4 (refl t5) t6) (t6 @0 t5)
   | promote : Red (promote (refl (fst t))) (refl t)
   | phi {S : FvSet!} :
     ((x : Name) -> x ∉ S -> (erase x t1) = (erase x t2)) ->
@@ -235,12 +237,13 @@ namespace Cedille
     Check Γ y A ->
     Check Γ r (eq A x y) ->
     Check Γ w (pi m0 A ((Syntax.weaken P 1) @τ (bound 0) @τ (bound 0) @τ (refl (bound 0)))) ->
-    Infer Γ (J @0 A @0 P @0 x @0 y @ω r @ω w) (P @τ x @τ y @τ r)
+    Infer Γ (J A P x y r w) (P @τ x @τ y @τ r)
   | promote :
     ConInfer Γ e (eq T (fst a) (fst b)) ->
-    ConInfer Γ a (inter A B) ->
-    Check Γ b (inter A B) ->
-    T =β= A ->
+    -- Not clear these are needed --|
+    ConInfer Γ a (inter A B) -> ----|
+    Check Γ b (inter A B) -> -------|
+    T =β= A -> ---------------------|
     Infer Γ (promote e) (eq (inter A B) a b)
   | phi {S : FvSet!} :
     ConInfer Γ b (inter A B) ->
