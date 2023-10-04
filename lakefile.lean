@@ -16,6 +16,9 @@ lean_lib SystemFOmega where
 lean_lib Cedille where
   roots := #[`Cedille]
 
+lean_lib Normalization where
+  roots := #[`Normalization]
+
 @[default_target]
 lean_exe «cedille» {
   root := `Main

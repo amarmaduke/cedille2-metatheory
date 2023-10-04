@@ -105,13 +105,18 @@ namespace Cedille
     | Syntax.ctor (Constructor.app m) t1 t2 _ =>
       match m with
       | m0 => erase x t1
-      | m => app m (erase x t1) (erase x t2)
+      | m =>
+        let lhs := erase x t1
+        let rhs := erase x t2
+        match lhs with
+        | Syntax.ctor Constructor.eqind _ _ _ => rhs
+        | _ => app m lhs rhs
     | Syntax.ctor Constructor.pair t1 _t2 _ => erase x t1
     | Syntax.ctor Constructor.fst t _ _ => erase x t
     | Syntax.ctor Constructor.snd t _ _ => erase x t
     | Syntax.ctor Constructor.eq t1 t2 t3 => eq (erase x t1) (erase x t2) (erase x t3)
     | Syntax.ctor Constructor.refl _t _ _ => lam mf kindu (bound 0)
-    | Syntax.ctor Constructor.eqind _ _ _ => lam mf kindu (bound 0)
+    | Syntax.ctor Constructor.eqind _ _ _ => J
     | Syntax.ctor Constructor.promote t _ _ => erase x t
     | Syntax.ctor Constructor.delta t _ _ => erase x t
     | Syntax.ctor Constructor.phi t1 _t2 _t3 => erase x t1

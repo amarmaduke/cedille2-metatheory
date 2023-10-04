@@ -46,19 +46,39 @@ namespace Cedille
     : erase x (Syntax.ctor (Constructor.app m0) t1 t2 t3) = erase x t1
   := by rfl
 
-  @[simp] lemma erase_app_mf : erase x (t1 @ω t2) = (erase x t1) @ω (erase x t2) := by congr
-  @[simp] lemma erase_app_mf_unfolded
-    : erase x (Syntax.ctor (Constructor.app mf) t1 t2 t3) = app mf (erase x t1) (erase x t2)
+  @[simp] lemma erase_app_mf : erase x t1 ≠ J -> erase x (t1 @ω t2) = (erase x t1) @ω (erase x t2)
   := by {
-    generalize h : (erase x t1) @ω (erase x t2) = t
+    sorry
+  }
+  @[simp] lemma erase_app_mf_unfolded
+    : erase x t1 ≠ J ->
+      erase x (Syntax.ctor (Constructor.app mf) t1 t2 t3) = app mf (erase x t1) (erase x t2)
+  := by {
+    sorry
+  }
+
+  @[simp] lemma erase_app_mt : erase x t1 ≠ J -> erase x (t1 @τ t2) = (erase x t1) @τ (erase x t2)
+  := by sorry
+  @[simp] lemma erase_app_mt_unfolded
+    : erase x t1 ≠ J ->
+      erase x (Syntax.ctor (Constructor.app mt) t1 t2 t3) = app mt (erase x t1) (erase x t2)
+  := by {
+    sorry
+  }
+
+  @[simp] lemma erase_app_mf_J : erase x (J @ω t2) = erase x t2 := by sorry
+  @[simp] lemma erase_app_mf_J_unfolded
+    : erase x (Syntax.ctor (Constructor.app mf) J t2 t3) = erase x t2
+  := by {
+    generalize h : erase x t2 = t
     unfold erase; simp only; subst h; rfl
   }
 
-  @[simp] lemma erase_app_mt : erase x (t1 @τ t2) = (erase x t1) @τ (erase x t2) := by congr
-  @[simp] lemma erase_app_mt_unfolded
-    : erase x (Syntax.ctor (Constructor.app mt) t1 t2 t3) = app mt (erase x t1) (erase x t2)
+  @[simp] lemma erase_app_mt_J : erase x (J @τ t2) = erase x t2 := by sorry
+  @[simp] lemma erase_app_mt_J_unfolded
+    : erase x (Syntax.ctor (Constructor.app mt) J t2 t3) = erase x t2
   := by {
-    generalize h : (erase x t1) @τ (erase x t2) = t
+    generalize h : erase x t2 = t
     unfold erase; simp only; subst h; rfl
   }
 
@@ -92,10 +112,33 @@ namespace Cedille
     : erase x (Syntax.ctor Constructor.refl t1 t2 t3) = lam mf kindu (bound 0)
   := by congr
 
-  @[simp] lemma erase_eqind {n} : erase x (@J n) = lam mf kindu (bound 0) := by congr
+  @[simp] lemma erase_eqind {n} : erase x (@J n) = J := by congr
   @[simp] lemma erase_eqind_unfolded
-    : erase x (Syntax.ctor Constructor.eqind t1 t2 t3) = lam mf kindu (bound 0)
+    : erase x (Syntax.ctor Constructor.eqind t1 t2 t3) = J
   := by congr
+
+  @[simp] lemma erase_eqind_applied
+    : (∀ t1 t2 t3, erase z r ≠ Syntax.ctor Constructor.eqind t1 t2 t3) ->
+    erase z (J @0 A @0 P @0 x @0 y @ω r @ω w) = (erase z r) @ω (erase z w)
+  := by {
+    sorry
+    -- intro h
+    -- generalize rhsdef : (erase z r) @ω (erase z w) = rhs
+    -- unfold erase; unfold app; simp
+    -- split
+    -- case _ lhs t1 t2 t3 e => {
+    --   exfalso
+    --   unfold erase at e; unfold app at e; simp at e
+    --   unfold J at e; simp at e
+    --   apply h t1 t2 t3 e
+    -- }
+    -- case _ lhs _ => {
+    --   generalize qdef : erase z w = q
+    --   unfold erase; unfold app; simp
+    --   unfold J; simp
+    --   rw [<- rhsdef, <- qdef]
+    -- }
+  }
 
   @[simp] lemma erase_promote : erase x (promote t) = erase x t := by rfl
   @[simp] lemma erase_promote_unfolded
@@ -130,8 +173,7 @@ namespace Cedille
         have h2 : size t2 ≤ n := by linarith
         have h3 : size t3 ≤ n := by linarith
         cases k <;> simp [*]
-        case app m =>
-        cases m <;> simp [*]
+        case app m => sorry
       }
     })
     (size t)
@@ -190,18 +232,12 @@ namespace Cedille
         cases k <;> simp at * <;> try rw [ih _ u1 s1]
         case app m => {
           cases m <;> simp at *
-          case free => rw [ih _ u1 s1, ih _ u2 s2]
+          case free => sorry
           case erased => rw [ih _ u1 s1]
-          case type => rw [ih _ u1 s1, ih _ u2 s2]
+          case type => sorry
         }
         case eq => rw [ih _ u2 s2, ih _ u3 s3]
         case refl => {
-          unfold HasHOpen.hopn; unfold Syntax.instHasHOpenSyntax; simp
-          unfold Syntax.opn_head; unfold bound; simp
-          split <;> simp
-          exfalso; linarith
-        }
-        case eqind => {
           unfold HasHOpen.hopn; unfold Syntax.instHasHOpenSyntax; simp
           unfold Syntax.opn_head; unfold bound; simp
           split <;> simp

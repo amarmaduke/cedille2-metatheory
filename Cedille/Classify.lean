@@ -20,51 +20,50 @@ namespace Cedille
     @[simp] lemma demote_term : demote term = term := by congr
   end Class
 
-  -- def classify' (t : Term 0) (m : Map Class) : Class :=
-  --   match t with
-  --   | Syntax.bound _i => Class.kind
-  --   | Syntax.free x =>
-  --     if h : Map.mem m x
-  --     then Class.demote (Map.lookup m x h)
-  --     else Class.kind
-  --   | Syntax.const (Constant.typeU) => Class.kind
-  --   | Syntax.const (Constant.kindU) => Class.kind
-  --   | Syntax.bind Binder.lam _t1 _t2 => Class.term
-  --   | Syntax.bind Binder.tlam _t1 _t2 => Class.type
-  --   | Syntax.bind Binder.elam _t1 _t2 => Class.term
-  --   | Syntax.bind Binder.pi t1 t2 =>
-  --     let x := Name.fresh (Map.fv m ++ Cedille.fv t2 ++ Cedille.fv t1)
-  --     let k := classify' t1 m
-  --     classify' ({_|-> x}t2) ((x, k) :: m)
-  --   | Syntax.bind Binder.epi _t1 _t2 => Class.type
-  --   | Syntax.bind Binder.inter _t1 _t2 => Class.type
-  --   | Syntax.ctor Constructor.app t1 _t2 _ _ _ _ => classify' t1 m
-  --   | Syntax.ctor Constructor.eapp _t1 _t2 _ _ _ _ => Class.term
-  --   | Syntax.ctor Constructor.pair _t1 _t2 _ _ _ _ => Class.term
-  --   | Syntax.ctor Constructor.fst _t1 _t2 _t3 _ _ _ => Class.term
-  --   | Syntax.ctor Constructor.snd _t1 _t2 _t3 _ _ _ => Class.term
-  --   | Syntax.ctor Constructor.eq _t1 _t2 _t3 _ _ _ => Class.type
-  --   | Syntax.ctor Constructor.refl _t1 _t2 _ _ _ _ => Class.term
-  --   | Syntax.ctor Constructor.eqind _t1 _t2 _t3 _t4 _t5 _t6 => Class.term
-  --   | Syntax.ctor Constructor.promote _t1 _t2 _t3 _t4 _t5 _ => Class.term
-  --   | Syntax.ctor Constructor.deltatop _t1 _t2 _t3 _ _ _ => Class.term
-  --   | Syntax.ctor Constructor.deltabot _t1 _ _ _ _ _ => Class.term
-  --   | Syntax.ctor Constructor.phi _t1 _t2 _t3 _t4 _t5 _ => Class.term
-  -- termination_by _ => Syntax.size t
-  -- decreasing_by {
-  --   simp_wf
-  --   all_goals (try linarith)
-  -- }
+  def classify_inner (t : Term 0) (Γ : Map! Class) : Class :=
+    match t with
+    | Syntax.bound _i => Class.kind
+    | Syntax.free x =>
+      if h : Map.mem Γ x
+      then Class.demote (Map.lookup Γ x h)
+      else Class.kind
+    | Syntax.const (Constant.typeU) => Class.kind
+    | Syntax.const (Constant.kindU) => Class.kind
+    | Syntax.bind (Binder.lam m) _ _ =>
+      match m with
+      | Mode.free => Class.term
+      | Mode.type => Class.type
+      | Mode.erased => Class.term
+    | Syntax.bind (Binder.pi m) _ _ =>
+      match m with
+      | Mode.free => Class.type
+      | Mode.type => Class.kind
+      | Mode.erased => Class.type
+    | Syntax.bind Binder.inter _t1 _t2 => Class.type
+    | Syntax.ctor (Constructor.app m) _ _ _ =>
+      match m with
+      | Mode.free => Class.term
+      | Mode.type => Class.type
+      | Mode.erased => Class.term
+    | Syntax.ctor Constructor.pair _ _ _ => Class.term
+    | Syntax.ctor Constructor.fst _ _ _ => Class.term
+    | Syntax.ctor Constructor.snd _ _ _ => Class.term
+    | Syntax.ctor Constructor.eq _ _ _ => Class.type
+    | Syntax.ctor Constructor.refl _ _ _ => Class.term
+    | Syntax.ctor Constructor.eqind _ _ _ => Class.term
+    | Syntax.ctor Constructor.promote _ _ _=> Class.term
+    | Syntax.ctor Constructor.delta _ _ _ => Class.term
+    | Syntax.ctor Constructor.phi _ _ _ => Class.term
 
-  -- def classify_map (m : Map (Term 0)) : Map Class :=
-  --   List.foldl (λ acc (x, t) =>
-  --     let t' := classify' t acc
-  --     (x, t') :: acc)
-  --     List.nil m
+  def classify_map (m : Map! (Term 0)) : Map! Class :=
+    List.foldl (λ acc (x, t) =>
+      let t' := classify_inner t acc
+      (x, t') :: acc)
+      List.nil m
 
-  -- def classify (t : Term 0) (m : Map (Term 0)) : Class :=
-  --   let m := classify_map m
-  --   classify' t m
+  def classify (t : Term 0) (m : Map! (Term 0)) : Class :=
+    let m := classify_map m
+    classify_inner t m
 
   -- @[simp] lemma classify_free : classify (free x) Γ = k
   --   -> (if h : Map.mem (classify_map Γ) x = true
@@ -106,7 +105,7 @@ namespace Cedille
   --   -> (Map.lookup (classify_map Γ) x h = Class.type) ∨ (Map.lookup (classify_map Γ) x h = Class.kind)
   -- := by sorry
 
-  -- theorem classify_kind : (⊢ Γ) -> Γ ⊢ A : B -> classify A Γ = Class.kind -> B = kindu := by
+  theorem classify_kind : Γ ⊢ t : A -> classify t Γ = Class.kind -> A = kindu := by sorry
   --   intro wf jd cl
   --   induction jd <;> try (simp <;> simp at cl <;> simp [*] <;> contradiction)
   --   case var Γ1 x A' h1 h2 => {
@@ -136,7 +135,7 @@ namespace Cedille
   --     contradiction
   --   }
 
-  -- theorem classify_type : (⊢ Γ) -> Γ ⊢ A : B -> classify A Γ = Class.type -> Γ ⊢ B : kindu := by
+  theorem classify_type : Γ ⊢ t : A -> classify t Γ = Class.type -> Γ ⊢ A >: kindu := by sorry
   --   intro wf jd cl
   --   induction jd <;> try (simp; simp at cl <;> simp [*] <;> contradiction)
   --   case var => sorry
@@ -151,7 +150,7 @@ namespace Cedille
   --   case inter => sorry
   --   case eq => sorry
 
-  -- theorem classify_term : (⊢ Γ) -> Γ ⊢ A : B -> classify A Γ = Class.term -> Γ ⊢ B : typeu := sorry
+  theorem classify_term : Γ ⊢ t : A -> classify t Γ = Class.term -> Γ ⊢ A >: typeu := sorry
 
 
 end Cedille
