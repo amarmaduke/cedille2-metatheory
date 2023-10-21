@@ -36,7 +36,7 @@ namespace Cedille
   @[simp] lemma erase_lam_m0 {n} {a : Term n} {b : Term (n + 1)}
     : erase x (lam m0 a b) = erase x ({_|-> x}b)
   := by {
-    unfold lam; simp only
+    unfold lam
     rfl
   }
 
@@ -123,11 +123,11 @@ namespace Cedille
     (λ n => {m : Nat} -> (t : Term m) -> size t ≤ n -> erase y (erase x t) = erase x t)
     (by {
       intro m t h
-      cases t <;> simp <;> simp at h
+      cases t <;> simp at h <;> try simp [*] 
     })
     (by {
       intros n ih m t h
-      cases t <;> simp <;> simp at h
+      cases t <;> simp at h <;> try simp [*]
       case bind k t1 t2 => {
         have h1 : size t1 ≤ n := by linarith
         have h2 : size t2 ≤ n := by linarith
@@ -139,7 +139,7 @@ namespace Cedille
         have h1 : size t1 ≤ n := by linarith
         have h2 : size t2 ≤ n := by linarith
         have h3 : size t3 ≤ n := by linarith
-        cases k <;> simp [*]
+        cases k <;> try simp [*]
         case app m =>
         cases m <;> simp [*]
       }
@@ -207,7 +207,7 @@ namespace Cedille
         case refl => {
           unfold HasHOpen.hopn; unfold Syntax.instHasHOpenSyntax; simp
           unfold Syntax.opn_head; unfold bound; simp
-          split <;> simp
+          split <;> try simp [*]
           exfalso; linarith
         }
         case eqind => rw [ih _ u3 s3]

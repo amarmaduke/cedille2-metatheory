@@ -356,11 +356,7 @@ namespace Cedille
       exists eq T u u
       apply Infer.refl; simp [*]
     }
-    case phi u1 u2 u3 S er => {
-      cases tproof; case _ A B S j1 j2 f1 f2 j3 =>
-      cases j2; case _ T j2 s1 =>
-      exists T
-    }
+    case phi => sorry
     case bind1 u1 u2 k u3 s1 ih => {
       cases k <;> simp at *
       case lam m => {

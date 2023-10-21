@@ -1,5 +1,40 @@
 # cedille2-metatheory
 
+## Plan for Object Normalization:
+
+Γ ⊢ a : A
+|a| =β= u
+u -β> v
+then
+∃ b, a -β>+ b ∧ |b| =β= v
+
+a non-phi, Normal a -> Normal |a|
+
+
+Proof reduction tracks object reduction up-to beta convertibility
+but for non-phi terms, a normal-form proof implies a normal-form object
+
+For phi-terms, they correspond to a contextually equivalent non-phi term
+Which means they should be normalizing anyway
+
+This argument needs to be fleshed out more
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+## Old:
+
 phi needs to change:
     Phi is basically a function
         1. f : A -> (a : A) /\ P a and

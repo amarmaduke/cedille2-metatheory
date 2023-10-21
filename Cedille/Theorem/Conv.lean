@@ -4,50 +4,41 @@ import Cedille.Lemma
 
 namespace Cedille
 
-  lemma trans :
-    Γ1 ⊢ A : T1 ->
-    Γ2 ⊢ B : T2 ->
-    Γ3 ⊢ C : T3 ->
-    A =β= B ->
-    B =β= C ->
-    A =β= C
-  := by {
-    intros j1 j2 j3 e1 e2
-    cases e1; case _ u1 u2 S1 r1 e1 r2 =>
-    cases e2; case _ v1 v2 S2 s1 e2 s2 =>
-    have confl := confluence r2 s1
-    casesm* ∃ _, _, _ ∧ _; case _ z rz1 rz2 =>
-    have j4 := preservation_of_infer j2 r2
-    have j5 := preservation_of_infer j2 s1
-    have j6 := preservation_of_infer j1 r1
-    have j7 := preservation_of_infer j3 s2
-    casesm* ∃ _, _; case _ T1 wj1 T2 wj2 T3 wj3 T4 wj4 =>
-    have j8 := preservation_of_infer wj1 rz1
-    cases j8; case _ T5 wj5 =>
-    have lem1 := red_erasure S1 wj1 wj3 (λ x xn => Eq.symm (e1 x xn)) rz1
-    have lem2 := red_erasure S2 wj2 wj4 e2 rz2
-    casesm* ∃ _, _, _ ∧ _; case _ w1 w2 wr1 we1 wr2 we2 =>
-    have l := RedStar.trans r1 wr1
-    have r := RedStar.trans s2 wr2
-    apply Conv.conv (S1 ++ S2) l r _
-    intro x xn; simp at xn
-    replace xn := demorgan xn
-    cases xn; case _ xn1 xn2 =>
-    rw [<-we1 x xn1, <-we2 x xn2]
+  lemma trans : Γ ⊢ b : B -> a === b -> b === c -> a === c := by {
+    intro j e1 e2
+    cases e1; case _ u1 u2 r1 e1 r2 =>
+    cases e2; case _ v1 v2 r3 e2 r4 =>
+    have confl := confluence r2 r3
+    casesm* ∃ _, _, _ ∧ _; case _ z w1 w2 =>
+    have e3 := BetaConv.conv w1 w2
+    apply Conv.conv r1 r4
+    intro x
+    simp at *
+    replace e1 := e1 x
+    replace e2 := e2 x
+    have ju2 := preservation_of_infer j r2
+    have jv1 := preservation_of_infer j r3
+    casesm* ∃ _, _; case _ _ ju2 _ jv1 =>
+    replace e3 : u2 === v1 := by {
+      cases e3; case _ z r1 r2 =>
+      apply Conv.conv r1 r2 _
+      intro x; apply BetaConv.refl
+    }
+    replace e3 := conv_by_erase ju2 jv1 e3
+    have e4 := BetaConv.trans e1 (e3 x)
+    have e5 := BetaConv.trans e4 e2
+    simp [*]
   }
 
   lemma red_f :
-    Γ1 ⊢ a : A ->
-    Γ2 ⊢ b : B ->
-    a =β= b ->
+    Γ ⊢ a : A ->
+    a === b ->
     a -β>* a' ->
-    a' =β= b
+    a' === b
   := by {
-    intros aproof bproof h step
-    have lem1 : a =β= a' := Conv.conv [] step (@RedStar.refl a') (by simp)
-    have lem2 := preservation_of_infer aproof step
-    cases lem2; case _ A' j =>
-    apply trans j aproof bproof (Conv.symm lem1) h
+    intros j h step
+    have lem1 : a === a' := Conv.conv step (@RedStar.refl a') (λ _ => BetaConv.refl)
+    apply trans j (Conv.symm lem1) h
   }
 
   @[simp] lemma kindu_not_conv_eq : ¬ (kindu =β= eq A a b) := sorry

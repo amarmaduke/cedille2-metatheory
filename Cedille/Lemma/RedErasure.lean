@@ -6,6 +6,9 @@ import Cedille.Lemma.Refold
 import Cedille.Lemma.Erasure
 import Cedille.Lemma.Inversion
 import Cedille.Lemma.Red
+import Cedille.Lemma.Confluence
+import Cedille.Lemma.Conv
+import Cedille.Lemma.Preservation
 
 namespace Cedille
 
@@ -253,28 +256,146 @@ namespace Cedille
   --   h
   --   step
 
-  lemma red_erasure (S : FvSet!) :
-    Γ1 ⊢ t1 : A1 ->
-    Γ2 ⊢ t2 : A2 ->
-    ((x : Name) -> x ∉ S -> erase x t1 = erase x t2) ->
-    t1 -β>* z1 ->
-    ∃ z2, t2 -β>* z2 ∧ (∀ x, x ∉ S -> erase x z1 = erase x z2)
-  := by sorry
-  -- := by {
-  --   intro h step
-  --   induction step generalizing t2
-  --   case refl t' => {
-  --     exists t2; simp [*]
-  --     apply RedStar.refl
-  --   }
-  --   case step u1 u2 u3 s1 _s2 e => {
-  --     have lem := red_erasure_step h s1
-  --     casesm* ∃ _, _, _ ∧ _; case _ w step e2 =>
-  --     have lem := @e w e2
-  --     casesm* ∃ _, _, _ ∧ _; case _ w' step' e3 =>
-  --     exists w'; simp [*]
-  --     apply RedStar.trans step step'
-  --   }
-  -- }
+  lemma red_erase_step :
+    Γ ⊢ a : A ->
+    a -β> b ->
+    (∀ x, erase x a =β= erase x b)
+  := λ j step => @Infer.rec
+    (λ Γ a A j => ∀ b,
+      a -β> b ->
+      (∀ x, erase x a =β= erase x b))
+    (λ Γ a A j => ∀ b,
+      a -β> b ->
+      (∀ x, erase x a =β= erase x b))
+    (λ Γ a A j => ∀ b,
+      a -β> b ->
+      (∀ x, erase x a =β= erase x b))
+    (λ Γ wf => True)
+    (by {
+      intro Γ wf _ b cv
+      sorry
+    })
+    (by {
+      intro Γ y C wf yn _ b cv
+      sorry
+    })
+    sorry
+    sorry
+    sorry
+    (by {
+      simp at *
+      intro Γ C B S j1 j2 ih1 ih2 b cv
+      sorry
+    })
+    sorry
+    (by {
+      simp
+      intro Γ t A B j ih b r x
+      cases r <;> simp
+      case fst => apply BetaConv.refl
+      case phi t2 t3 => apply BetaConv.refl
+      case ctor1 => sorry
+      case ctor2 => sorry
+      case ctor3 => sorry
+    })
+    (by {
+      simp
+      intro Γ t C B j ih b r
+      cases r
+      case snd t1 t3 => {
+        cases j; case _ _ j _ =>
+        cases j; case _ S2 _ e _ _ _ =>
+        simp [*]
+      }
+      case ctor1 => sorry
+      case ctor2 => sorry
+      case ctor3 => sorry
+    })
+    sorry
+    sorry
+    sorry
+    sorry
+    (by {
+      simp at *
+      intro Γ f A B a e j1 j2 j3 j4 ih1 ih2 ih3 b r x
+      cases r <;> simp
+      case ctor1 a' r => apply ih2 a' r x
+      case ctor2 f' r => apply BetaConv.refl
+      case ctor3 => apply BetaConv.refl
+    })
+    (by {
+      simp
+      intro Γ e j ih b r x
+      cases r <;> simp
+      case ctor1 e' r => apply ih e' r x
+      case ctor2 _ r => cases r
+      case ctor3 _ r => cases r
+    })
+    sorry
+    sorry
+    sorry
+    sorry
+    Γ
+    a
+    A
+    j
+    b
+    step
+
+  lemma red_erase :
+    Γ ⊢ a : A ->
+    a -β>* b ->
+    (∀ x, erase x a =β= erase x b)
+  := by {
+    intro j step x
+    induction step generalizing Γ A
+    case refl => apply BetaConv.refl
+    case step t1 t2 t3 step _ ih => {
+      have jt2 := preservation_of_infer_step j step
+      cases jt2; case _ U j2 =>
+      replace ih := ih j2
+      have lem := red_erase_step j step
+      apply BetaConv.trans (lem x) ih
+    }
+  }
+
+  theorem conv_by_erase :
+    Γ1 ⊢ a : A ->
+    Γ2 ⊢ b : B -> 
+    a === b ->
+    (∀ x, erase x a =β= erase x b)
+  := by {
+    intro ja jb cv x
+    cases cv; case _ u v r1 e r2 =>
+    have lem1 := red_erase ja r1
+    have lem2 := red_erase jb r2
+    have e2 := BetaConv.trans (lem1 x) (e x)
+    apply BetaConv.trans e2
+    apply BetaConv.symm (lem2 x)
+  }
+
+  -- lemma red_erasure (S : FvSet!) :
+  --   Γ1 ⊢ t1 : A1 ->
+  --   Γ2 ⊢ t2 : A2 ->
+  --   ((x : Name) -> x ∉ S -> erase x t1 = erase x t2) ->
+  --   t1 -β>* z1 ->
+  --   ∃ z2, t2 -β>* z2 ∧ (∀ x, x ∉ S -> erase x z1 = erase x z2)
+  -- := by sorry
+  -- -- := by {
+  -- --   intro h step
+  -- --   induction step generalizing t2
+  -- --   case refl t' => {
+  -- --     exists t2; simp [*]
+  -- --     apply RedStar.refl
+  -- --   }
+  -- --   case step u1 u2 u3 s1 _s2 e => {
+  -- --     have lem := red_erasure_step h s1
+  -- --     casesm* ∃ _, _, _ ∧ _; case _ w step e2 =>
+  -- --     have lem := @e w e2
+  -- --     casesm* ∃ _, _, _ ∧ _; case _ w' step' e3 =>
+  -- --     exists w'; simp [*]
+  -- --     apply RedStar.trans step step'
+  -- --   }
+  -- -- }
 
 end Cedille

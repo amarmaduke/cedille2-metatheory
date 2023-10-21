@@ -1,7 +1,7 @@
 import Lake
 open Lake DSL
 
-require mathlib from git "https://github.com/leanprover-community/mathlib4"@"c532d7b"
+require mathlib from git "https://github.com/leanprover-community/mathlib4"@"23a69c7"
 
 package «cedille2» {
   -- add package configuration options here

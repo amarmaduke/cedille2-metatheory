@@ -267,7 +267,6 @@ namespace Syntax
     induction x with
     | bound j => {
       simp [*]
-      simp
       cases (Nat.decEq j i) with
       | isTrue h => {
         have lem1 : j = i := by apply (Fin.mk_eq_mk.mpr h)
@@ -379,7 +378,6 @@ namespace Syntax
           have lem2 : a = b := by rw [<-h2, <-h3]
           contradiction
         }
-        simp [*]
         have lem2 : (f == a) = false := by {
           cases (Name.decEq f a); simp [*]
           intro h3
@@ -784,13 +782,13 @@ namespace Syntax
   @[simp] lemma weaken_fv : fv (Syntax.weaken t 1) = fv t := by {
     induction t
     case bound => unfold weaken; simp; unfold fv; simp
-    case free => unfold weaken; simp; unfold fv; simp
-    case const => unfold weaken; simp; unfold fv; simp
+    case free => unfold weaken; unfold fv; simp
+    case const => unfold weaken; unfold fv; simp
     case bind k u1 u2 ih1 ih2 => {
       unfold weaken; simp; unfold fv; rw [ih1, ih2]
     }
     case ctor k u1 u2 u3 ih1 ih2 ih3 => {
-      unfold weaken; simp; unfold fv; rw [ih1, ih2, ih3]
+      unfold weaken; unfold fv; rw [ih1, ih2, ih3]
     }
   }
 

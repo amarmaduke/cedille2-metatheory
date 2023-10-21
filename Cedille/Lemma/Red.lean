@@ -72,9 +72,6 @@ namespace Cedille
       apply FvSet.subset_right; apply FvSet.subset_right; apply FvSet.subset_right;
       apply FvSet.subset_right; apply FvSet.subset_left; simp
     }
-    case phi z1 z2 z3 => {
-      apply FvSet.subset_right; apply FvSet.subset_left; simp
-    }
     case bind1 z1 z2 k z3 h ih => {
       apply FvSet.subset_left; simp [*]
     }
@@ -122,15 +119,7 @@ namespace Cedille
       case snd => apply Red.snd
       case eqind => apply Red.eqind
       case promote => apply Red.promote
-      case phi t1 t2 t3 S ih => {
-        apply Red.phi _
-        exact [x] ++ S; intro z zn; simp at *
-        replace zn := demorgan zn
-        cases zn; case _ zn1 zn2 =>
-        rw [<-erase_rename_commute x y z (ne_sym zn1)]
-        rw [<-erase_rename_commute x y z (ne_sym zn1)]
-        rw [ih z zn2]
-      }
+      case phi t1 t2 t3 => apply Red.phi
       case bind1 u1 u1' k u2 _ ih => {
         apply Red.bind1
         apply ih
@@ -402,7 +391,7 @@ namespace Cedille
 
   lemma red_force_mode_pi_domain : Mode.pi_domain m K -β>* A -> A = Mode.pi_domain m K := by {
     intro step
-    cases m <;> simp at * <;> cases step <;> simp [*]
+    cases m <;> simp at * <;> cases step <;> try simp [*]
     case _ _ step _ => cases step
     case _ _ step _ => cases step
     case _ _ step _ => cases step
@@ -410,7 +399,7 @@ namespace Cedille
 
   lemma red_force_mode_pi_codomain : Mode.pi_codomain m -β>* A -> A = Mode.pi_codomain m := by {
     intro step
-    cases m <;> simp at * <;> cases step <;> simp [*]
+    cases m <;> simp at * <;> cases step <;> try simp [*]
     case _ _ step _ => cases step
     case _ _ step _ => cases step
     case _ _ step _ => cases step 
@@ -418,7 +407,7 @@ namespace Cedille
 
   lemma red_force_typeu : typeu -β>* A -> A = typeu := by {
     intro step
-    cases step <;> simp [*]
+    cases step <;> try simp [*]
     case _ _ step _ => cases step
   }
 

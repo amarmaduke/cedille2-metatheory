@@ -65,6 +65,8 @@ namespace Cedille
   def fv {n} (t : Term n) := Syntax.fv t
   def size {n} (t : Term n) := Syntax.size t
 
+  notation:5000 t:1 "ʷ" => Syntax.weaken t 1
+
   notation:400 a:400 " @ω " b:401 => app mf a b
   notation:400 a:400 " @0 " b:401 => app m0 a b
   notation:400 a:400 " @τ " b:401 => app mt a b
@@ -134,9 +136,7 @@ namespace Cedille
   | snd : Red (snd (pair t1 t2 t3)) t2
   | eqind : Red (J t1 t2 t3 t4 (refl t5) t6) (t6 @0 t5)
   | promote : Red (promote (refl (fst t))) (refl t)
-  | phi {S : FvSet!} :
-    ((x : Name) -> x ∉ S -> (erase x t1) = (erase x t2)) ->
-    Red (phi t1 t2 t3) t2
+  | phi : Red (fst (phi t1 t2 t3)) t1
   | bind1 : Red t1 t1' -> Red (Syntax.bind k t1 t2) (Syntax.bind k t1' t2)
   | bind2 {S : FvSet!} :
     ((x : Name) -> x ∉ S -> Red ({_|-> x}t2) ({_|-> x}t2')) ->
@@ -154,14 +154,19 @@ namespace Cedille
   notation:150 t1:150 " -β>* " t2:150 => RedStar t1 t2
   notation:150 t1:150 " -β>+ " t2:150 => ∃ k : Term 0, t1 -β> k ∧ k -β>* t2
 
+  inductive BetaConv : Term 0 -> Term 0 -> Prop where
+  | conv : t1 -β>* t -> t2 -β>* t -> BetaConv t1 t2
+
+  notation:150 t1:150 " =β= " t2:150 => BetaConv t1 t2
+
   inductive Conv : Term 0 -> Term 0 -> Prop where
-  | conv (S : FvSet!) :
+  | conv :
     t1 -β>* t1' ->
     t2 -β>* t2' ->
-    ((x : Name) -> x ∉ S -> (erase x t1') = (erase x t2')) ->
+    ((x : Name) -> (erase x t1') =β= (erase x t2')) ->
     Conv t1 t2
 
-  notation:150 t1:150 " =β= " t2:150 => Conv t1 t2
+  notation:150 t1:150 " === " t2:150 => Conv t1 t2
 
   namespace Mode
     def pi_domain (m : Mode) (K : Constant) : Term n :=
@@ -207,11 +212,11 @@ namespace Cedille
     ConInfer Γ A typeu ->
     ((x : Name) -> x ∉ S -> ConInfer (Γ ++ [x:A]) ({_|-> x}B) typeu) ->
     Infer Γ (inter A B) typeu
-  | pair :
+  | pair {S : FvSet!} :
     ConInfer Γ T (pi mt A B) ->
     Check Γ t A ->
     Check Γ s ([_:= t]B) ->
-    t =β= s ->
+    (∀ x, erase x t =β= erase x s) ->
     Infer Γ (pair t s T) (inter A B)
   | fst :
     ConInfer Γ t (inter A B) ->
@@ -231,27 +236,26 @@ namespace Cedille
   | eqind :
     ConInfer Γ A typeu ->
     Check Γ P (pi mt A
-      (pi mt (Syntax.weaken A 1)
+      (pi mt Aʷ
         (pi mt (eq (Syntax.weaken A 2) (bound 0) (bound 1)) typeu))) ->
     Check Γ x A ->
     Check Γ y A ->
     Check Γ r (eq A x y) ->
-    Check Γ w (pi m0 A ((Syntax.weaken P 1) @τ (bound 0) @τ (bound 0) @τ (refl (bound 0)))) ->
+    Check Γ w (pi m0 A (Pʷ @τ (bound 0) @τ (bound 0) @τ (refl (bound 0)))) ->
     Infer Γ (J A P x y r w) (P @τ x @τ y @τ r)
   | promote :
     ConInfer Γ e (eq T (fst a) (fst b)) ->
     -- Not clear these are needed --|
     ConInfer Γ a (inter A B) -> ----|
     Check Γ b (inter A B) -> -------|
-    T =β= A -> ---------------------|
+    T === A -> ---------------------|
     Infer Γ (promote e) (eq (inter A B) a b)
-  | phi {S : FvSet!} :
-    ConInfer Γ b (inter A B) ->
+  | phi :
+    ConInfer Γ f (pi mf A (inter Aʷ Bʷ)) ->
     Check Γ a A ->
-    Check Γ e (eq A a (fst b)) ->
-    ((x : Name) -> x ∉ S -> fv (erase x b) ⊆ fv (erase x a)) ->
-    ((x : Name) -> x ∉ S -> fv (erase x e) ⊆ fv (erase x a)) ->
-    Infer Γ (phi a b e) (inter A B)
+    Check Γ e (pi mf A (eq Aʷ aʷ (fst (fʷ @ω aʷ)))) ->
+    ((x : Name) -> x ∉ fv (erase x e)) ->
+    Infer Γ (phi a f e) (inter A B)
   | delta :
     Check Γ e (eq cbool ctt cff) ->
     Infer Γ (delta e) (pi m0 typeu (bound 0))
@@ -266,7 +270,7 @@ namespace Cedille
   | check :
     Infer Γ t A ->
     ConInfer Γ B (const K) ->
-    A =β= B ->
+    A === B ->
     Check Γ t B
 
   inductive Wf : (Map! (Term 0)) -> Prop where
