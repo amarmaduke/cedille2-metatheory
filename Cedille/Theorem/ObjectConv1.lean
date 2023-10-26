@@ -250,111 +250,111 @@ namespace Cedille
 -- but the proof step must be terminating, so if you assume the erased
 -- reduction is infinite you arrive at a contradiction
 
-  theorem object_red_to_proof_red_step (S : FvSet!) :
-    Γ ⊢ t : A ->
-    (∀ x, x ∉ S -> (erase x t) -β> s) ->
-    ∃ k, t -β>+ k ∧ (∀ x, x ∉ S -> (erase x k) = s)
-  := λ j step => @Infer.rec
-    (λ Γ t A _ => ∀ s,
-      (∀ x, x ∉ S -> (erase x t) -β> s) ->
-      ∃ k, t -β>+ k ∧ (∀ x, x ∉ S -> (erase x k) = s))
-    (λ Γ t A _ => ∀ s,
-      (∀ x, x ∉ S -> (erase x t) -β> s) ->
-      ∃ k, t -β>+ k ∧ (∀ x, x ∉ S -> (erase x k) = s))
-    (λ Γ t A _ => ∀ s,
-      (∀ x, x ∉ S -> (erase x t) -β> s) ->
-      ∃ k, t -β>+ k ∧ (∀ x, x ∉ S -> (erase x k) = s))
-    (λ Γ _ => True)
-    (by {
-      intro Γ wf _ s step
-      have xfresh := @Name.fresh_is_fresh S
-      generalize Name.fresh S = x at *
-      cases (step x xfresh)
-    })
-    (by {
-      intro Γ x A wf xin _ s step
-      have xfresh := @Name.fresh_is_fresh S
-      generalize Name.fresh S = x at *
-      cases (step x xfresh)
-    })
-    sorry
-    sorry
-    (by {
-      intro Γ f m A B a S2 j1 j2 ih1 ih2 s step
-      sorry
-    })
-    sorry
-    sorry
-    (by {
-      intro Γ t A B j ih s step
-      simp at step
-      have lem := ih s step
-      casesm* ∃ _, _, _ ∧ _
-      case _ w1 s1 w2 s2 s3 =>
-      exists (fst w1)
-      apply And.intro _ _
-      exists (fst w2)
-      apply And.intro _ _
-      apply Red.ctor1 s2
-      apply red_ctor1 s3
-      simp; apply s1
-    })
-    sorry
-    sorry
-    sorry
-    (by {
-      intro Γ A P x y r w j1 j2 j3 j4 j5 j6 ih1 ih2 ih3 ih4 ih5 ih6 s step
-      simp at step
-      -- either r -> r' or w -> w' (strucutral, easy)
-      -- or r looks like a lambda, but this means it is refl, so it must be identity
-      -- thus you perform the J reduction, followed by potentially a w -> w'
-      sorry
-    })
-    sorry
-    (by {
-      intro Γ b A B a e S2 j1 j2 j3 f1 f2 ih1 ih2 ih3 s step
-      simp at step
-      have lem := ih2 s step
-      casesm* ∃ _, _, _ ∧ _
-      case _ w1 s1 w2 s2 s3 =>
-      exists (phi w1 b e)
-      apply And.intro _ _
-      exists (phi w2 b e)
-      apply And.intro _ _
-      apply Red.ctor1 s2
-      apply red_ctor1 s3
-      simp; apply s1
-    })
-    (by {
-      intro Γ e a ih s step
-      simp at step
-      have lem := ih s step
-      casesm* ∃ _, _, _ ∧ _
-      case _ w1 e1 w2 s1 s2 =>
-      exists (delta w1)
-      apply And.intro _ _
-      exists (delta w2)
-      apply And.intro _ _
-      apply Red.ctor1 s1
-      apply red_ctor1 s2
-      simp; apply e1
-    })
-    (by {
-      intro Γ t A B j s1 ih s s2
-      apply ih s s2
-    })
-    (by {
-      intro Γ t A B K j1 j2 c1 ih1 ih2 s step
-      apply ih1 s step
-    })
-    (by simp)
-    (by simp)
-    Γ
-    t
-    A
-    j
-    s
-    step
+  -- theorem object_red_to_proof_red_step (S : FvSet!) :
+  --   Γ ⊢ t : A ->
+  --   (∀ x, x ∉ S -> (erase x t) -β> s) ->
+  --   ∃ k, t -β>+ k ∧ (∀ x, x ∉ S -> (erase x k) = s)
+  -- := λ j step => @Infer.rec
+  --   (λ Γ t A _ => ∀ s,
+  --     (∀ x, x ∉ S -> (erase x t) -β> s) ->
+  --     ∃ k, t -β>+ k ∧ (∀ x, x ∉ S -> (erase x k) = s))
+  --   (λ Γ t A _ => ∀ s,
+  --     (∀ x, x ∉ S -> (erase x t) -β> s) ->
+  --     ∃ k, t -β>+ k ∧ (∀ x, x ∉ S -> (erase x k) = s))
+  --   (λ Γ t A _ => ∀ s,
+  --     (∀ x, x ∉ S -> (erase x t) -β> s) ->
+  --     ∃ k, t -β>+ k ∧ (∀ x, x ∉ S -> (erase x k) = s))
+  --   (λ Γ _ => True)
+  --   (by {
+  --     intro Γ wf _ s step
+  --     have xfresh := @Name.fresh_is_fresh S
+  --     generalize Name.fresh S = x at *
+  --     cases (step x xfresh)
+  --   })
+  --   (by {
+  --     intro Γ x A wf xin _ s step
+  --     have xfresh := @Name.fresh_is_fresh S
+  --     generalize Name.fresh S = x at *
+  --     cases (step x xfresh)
+  --   })
+  --   sorry
+  --   sorry
+  --   (by {
+  --     intro Γ f m A B a S2 j1 j2 ih1 ih2 s step
+  --     sorry
+  --   })
+  --   sorry
+  --   sorry
+  --   (by {
+  --     intro Γ t A B j ih s step
+  --     simp at step
+  --     have lem := ih s step
+  --     casesm* ∃ _, _, _ ∧ _
+  --     case _ w1 s1 w2 s2 s3 =>
+  --     exists (fst w1)
+  --     apply And.intro _ _
+  --     exists (fst w2)
+  --     apply And.intro _ _
+  --     apply Red.ctor1 s2
+  --     apply red_ctor1 s3
+  --     simp; apply s1
+  --   })
+  --   sorry
+  --   sorry
+  --   sorry
+  --   (by {
+  --     intro Γ A P x y r w j1 j2 j3 j4 j5 j6 ih1 ih2 ih3 ih4 ih5 ih6 s step
+  --     simp at step
+  --     -- either r -> r' or w -> w' (strucutral, easy)
+  --     -- or r looks like a lambda, but this means it is refl, so it must be identity
+  --     -- thus you perform the J reduction, followed by potentially a w -> w'
+  --     sorry
+  --   })
+  --   sorry
+  --   (by {
+  --     intro Γ b A B a e S2 j1 j2 j3 f1 f2 ih1 ih2 ih3 s step
+  --     simp at step
+  --     have lem := ih2 s step
+  --     casesm* ∃ _, _, _ ∧ _
+  --     case _ w1 s1 w2 s2 s3 =>
+  --     exists (phi w1 b e)
+  --     apply And.intro _ _
+  --     exists (phi w2 b e)
+  --     apply And.intro _ _
+  --     apply Red.ctor1 s2
+  --     apply red_ctor1 s3
+  --     simp; apply s1
+  --   })
+  --   (by {
+  --     intro Γ e a ih s step
+  --     simp at step
+  --     have lem := ih s step
+  --     casesm* ∃ _, _, _ ∧ _
+  --     case _ w1 e1 w2 s1 s2 =>
+  --     exists (delta w1)
+  --     apply And.intro _ _
+  --     exists (delta w2)
+  --     apply And.intro _ _
+  --     apply Red.ctor1 s1
+  --     apply red_ctor1 s2
+  --     simp; apply e1
+  --   })
+  --   (by {
+  --     intro Γ t A B j s1 ih s s2
+  --     apply ih s s2
+  --   })
+  --   (by {
+  --     intro Γ t A B K j1 j2 c1 ih1 ih2 s step
+  --     apply ih1 s step
+  --   })
+  --   (by simp)
+  --   (by simp)
+  --   Γ
+  --   t
+  --   A
+  --   j
+  --   s
+  --   step
     
 
 

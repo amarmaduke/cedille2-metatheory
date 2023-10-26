@@ -1,3 +1,2 @@
 
-import Cedille.Theorem.ObjectConv1
-import Cedille.Theorem.ObjectConv2
+import Cedille.Theorem.ObjectNorm

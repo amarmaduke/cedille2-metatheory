@@ -212,7 +212,7 @@ namespace Cedille
     }
   }
 
-  lemma red_bind2 :
+  lemma red_bind2 (x : Name) :
     x ∉ fv B ++ fv B' ->
     {_|-> x}B -β>* {_|-> x}B' ->
     Syntax.bind k A B -β>* Syntax.bind k A B'
@@ -266,10 +266,10 @@ namespace Cedille
     have xn2 := demorgan xn2'
     cases xn2; case _ xn2 xn3 =>
     have h2 := h x xn1
-    apply red_bind2 (by simp; exact xn2') h2
+    apply red_bind2 x (by simp; exact xn2') h2
   }
 
-  lemma red_bind :
+  lemma red_bind (x : Name) :
     A -β>* A' ->
     x ∉ fv B ++ fv B' ->
     {_|-> x}B -β>* {_|-> x}B' ->
@@ -278,7 +278,7 @@ namespace Cedille
     intro s1 xn s2
     apply RedStar.trans _ _; exact Syntax.bind k A' B
     apply red_bind1 s1
-    apply red_bind2 xn s2
+    apply red_bind2 x xn s2
   }
 
   lemma red_bind' {S : FvSet!} :

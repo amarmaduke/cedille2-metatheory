@@ -256,6 +256,16 @@ namespace Cedille
   --   h
   --   step
 
+  lemma typed_fv_erase :
+    Γ ⊢ a : A ->
+    x ∉ fv (erase x a)
+  := sorry
+
+  lemma typed_fv_erase_bind (S : FvSet!) :
+    (∀ x, x ∉ S -> (Γ ++ [x:C]) ⊢ {_|-> x}a >: A) ->
+    x ∉ fv (erase x a)
+  := sorry
+
   lemma red_erase_step :
     Γ ⊢ a : A ->
     a -β> b ->
@@ -272,20 +282,31 @@ namespace Cedille
       (∀ x, erase x a =β= erase x b))
     (λ Γ wf => True)
     (by {
-      intro Γ wf _ b cv
-      sorry
+      intro Γ wf _ b step
+      cases step
     })
     (by {
-      intro Γ y C wf yn _ b cv
-      sorry
+      intro Γ y C wf yn _ b step
+      cases step
     })
     sorry
     sorry
     sorry
     (by {
       simp at *
-      intro Γ C B S j1 j2 ih1 ih2 b cv
-      sorry
+      intro Γ C B S j1 j2 ih1 ih2 b step
+      cases step
+      case bind1 C' step => {
+        simp at *
+        replace ih1 := ih1 C' step
+        intro x
+        apply BetaConv.bind x (ih1 x) _ BetaConv.refl
+        intro h; simp at h
+        apply typed_fv_erase_bind S j2 h
+      }
+      case bind2 B' S' step => {
+        sorry
+      }
     })
     sorry
     (by {

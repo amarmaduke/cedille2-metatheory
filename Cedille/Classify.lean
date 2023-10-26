@@ -51,6 +51,8 @@ namespace Cedille
     | Syntax.ctor Constructor.eq _ _ _ => Class.type
     | Syntax.ctor Constructor.refl _ _ _ => Class.term
     | Syntax.ctor Constructor.eqind _ _ _ => Class.term
+    | Syntax.ctor Constructor.j0 _ _ _ => Class.term
+    | Syntax.ctor Constructor.jω _ _ _ => Class.term
     | Syntax.ctor Constructor.promote _ _ _=> Class.term
     | Syntax.ctor Constructor.delta _ _ _ => Class.term
     | Syntax.ctor Constructor.phi _ _ _ => Class.term

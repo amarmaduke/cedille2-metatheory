@@ -139,7 +139,6 @@ namespace Cedille
       sorry
     })
     (by {
-      intro Γ b A B a e S j1 j2 j3 er1 er2 ih1 ih2 ih3 S2 s j4 er3; simp at *
       sorry
     })
     (by {
