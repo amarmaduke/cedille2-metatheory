@@ -12,7 +12,7 @@ namespace Cedille
   @[simp] lemma erase_const {n} : erase x (@const n c) = const c := by congr
   @[simp] lemma erase_typeu {n} : erase x (@typeu n) = typeu := by congr
   @[simp] lemma erase_kindu {n} : erase x (@kindu n) = kindu := by congr
-  
+
   @[simp] lemma erase_lam_mf : erase x (lam mf a b) = lam mf kindu (erase x b) := by congr
   @[simp] lemma erase_lam_mf_unfolded
     : erase x (Syntax.bind (Binder.lam mf) a b) = lam mf kindu (erase x b)
@@ -123,7 +123,7 @@ namespace Cedille
     (λ n => {m : Nat} -> (t : Term m) -> size t ≤ n -> erase y (erase x t) = erase x t)
     (by {
       intro m t h
-      cases t <;> simp at h <;> try simp [*] 
+      cases t <;> simp at h <;> try simp [*]
     })
     (by {
       intros n ih m t h
@@ -218,109 +218,45 @@ namespace Cedille
     t
     (by simp)
 
-  -- lemma erase_rename {n} {t1 t2 : Term n} : erase z t1 = erase z t2 ->
-  --   erase z ({_|-> y}{_<-| x}t1) = erase z ({_|-> y}{_<-| x}t2)
-  -- := λ h => @Nat.rec
-  --   (λ s => ∀ n (t1 t2 : Term n),
-  --     size t1 + size t2 ≤ s ->
-  --     erase x t1 = erase x t2 ->
-  --     erase x ({_|-> y}{_<-| x}t1) = erase x ({_|-> y}{_<-| x}t2))
-  --   (by {
-  --     intro n t1 t2 sh h
-  --     cases t1 <;> simp at *
-  --     case bound i => {
-  --       cases t2 <;> simp at *
-  --       case bound i' => injection h; simp [*]
-  --     }
-  --     case free z => {
-  --       cases t2 <;> simp at *
-  --       case free z' => {
-  --         injection h with _ e; subst e
-  --         split <;> simp at *
-  --       }
-  --     }
-  --     case const c => {
-  --       cases t2 <;> simp at *
-  --       case const k' => injection h; simp [*]
-  --     }
-  --   })
-  --   (by {
-  --     intro s ih n t1 t2 sh h
-  --     cases t1
-  --     case bound => sorry
-  --     case free => sorry
-  --     case const => sorry
-  --     case bind k1 u1 u2 => {
-  --       cases k1 <;> simp at *
-  --       case lam m => {
-  --         cases m <;> simp at *
-  --         case free => sorry
-  --         case erased => {
-  --           generalize zdef : Name.fresh (fv u2) = z at *
-  --           have sh : size ({_|-> z}u2) + size t2 ≤ s := by simp; linarith
-  --           have lem := ih _ ({_|-> z}u2) t2 sh h
-  --           rw [<-lem]
-  --         }
-  --         case type => sorry
-  --       }
-  --       case pi m => {
-  --         cases t2 <;> simp at *
-  --         case bind k2 v1 v2 => sorry
-  --         case ctor k2 v1 v2 v3 => {
-  --           cases k2 <;> simp at *
-  --           case app m => {
-  --             cases m <;> simp at *
-  --             case erased => {
-  --               have sh : size u1 + size u2 + 1 + size v1 ≤ s := by linarith
-  --               have lem := ih _ (pi m u1 u2) v1 sh h
-  --               rw [<-lem]; simp
-  --             }
-  --           }
-  --           repeat sorry
-  --         }
-  --       }
-  --       case inter => sorry
-  --     }
-  --     case ctor => sorry
-  --   })
-  --   (size t1 + size t2)
-  --   n
-  --   t1
-  --   t2
-  --   (by simp)
-  --   h
+  lemma erase_sane_open : Sane (erase y ({_|-> x}t)) -> Sane ({_|-> x}(erase y t)) := sorry
 
-  -- lemma erase_free_rename :
-  --   ((x : Name) -> x ∉ fv t -> x ∉ (fv ∘ erase) ({_|-> x}t)) ->
-  --   (x y : Name) -> x ∉ fv t -> y ∉ fv t -> erase x ({_|-> x}t) = erase x ({_|-> y}t)
-  -- := by {
-  --   intro h x y xnin ynin
-  --   have hx := h x xnin
-  --   have hy := h y ynin
-  --   sorry
-  -- }
-
-  -- @[simp] lemma erase_subst : erase x ([_:= a]f) = [_:= erase x a](erase x f) := sorry
-
-  -- lemma erase_close_open : erase x t = {_|-> x}s -> erase x ({_<-| x}t) = s := sorry
-
-  -- lemma erase_forces_lam_mt : erase x f = lam mt t1 t2 ->
-  --   ∃ t1' t2', erase x t1' = t1 ∧ erase x t2' = t2 ∧ f = lam mt t1' t2'
-  -- := sorry
-
-  -- lemma erase_forces_lam_mf : erase x f = lam mf t1 t2 ->
-  --   ∃ t1' t2', erase x t1' = t1 ∧ erase x t2' = t2 ∧ f = lam mf t1' t2'
-  -- := sorry
-
-  -- lemma erase_no_eqind : erase x f ≠ J @τ t1 @τ t2 @0 t3 @0 t4 @ω t5 := sorry
-
-  -- lemma erase_free_invariant :
-  --   x ∉ (fv ∘ erase) ({_|-> x}t) ->
-  --   (y : Name) -> y ∉ fv t ->
-  --   erase x ({_|-> x}t) = erase x ({_|-> y}t)
-  -- := sorry
-
-  -- lemma erase_ctt_eq : erase x t = erase x ctt -> t = lam mf kindu (lam mf kindu (bound 0)) := sorry
-  -- lemma erase_cff_eq : erase x t = erase x cff -> t = lam mf kindu (lam mf kindu (bound 1)) := sorry
+  lemma erase_sane (x : Name) (S : FvSet!) : x ∉ S -> Sane t -> Sane (erase x t) := by {
+    intro xin h
+    induction h
+    case ax => constructor
+    case var => constructor
+    case pi A B m S Ah Bh Aih Bih => {
+      simp; constructor; exact Aih
+      swap; exact S
+      intro x xin; replace Bih := Bih x xin
+      apply erase_sane_open Bih
+    }
+    case lam A t m S' ah th h Aih tih => {
+      cases m
+      case free => {
+        simp; constructor; constructor
+        swap; intro h; contradiction
+        swap; exact S'
+        intro x xin; replace tih := tih x xin
+        apply erase_sane_open tih
+      }
+      case erased => {
+        simp
+        sorry
+      }
+      case type => sorry
+    }
+    case app => sorry
+    case inter => sorry
+    case pair => sorry
+    case fst => sorry
+    case snd => sorry
+    case eq => sorry
+    case refl => sorry
+    case eqind => sorry
+    case promote => sorry
+    case phi => sorry
+    case delta => sorry
+  }
 
 end Cedille

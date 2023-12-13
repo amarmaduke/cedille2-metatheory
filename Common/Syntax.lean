@@ -31,7 +31,7 @@ namespace Syntax
       bound (Fin.mk i.val (by linarith))
     | free x => free x
     | const c => const c
-    | bind k a t => 
+    | bind k a t =>
       have : n + m + 1 = n + 1 + m := by linarith
       bind k (weaken a m) (by rw [this]; exact (weaken t m))
     | ctor k t1 t2 t3 =>
@@ -75,7 +75,7 @@ namespace Syntax
     | bind k t1 t2 => bind k (cls i v t1) (cls (Fin.succ i) v t2)
     | ctor k t1 t2 t3 =>
       ctor k (cls i v t1) (cls i v t2) (cls i v t3)
-  
+
   def cls_head {α β γ n} (v : Name) (t : @Syntax α β γ n) : @Syntax α β γ (n + 1) :=
     match t with
     | bound j => bound j
@@ -104,7 +104,7 @@ namespace Syntax
   @[simp] lemma opn_free {α β γ : Sort _} {n} (i : Fin n) (x : Name)
     : @HasOpen.opn (@Syntax α β γ) _ n i v (free x) = free x
     := by congr
-  
+
   @[simp] lemma opn_bound {α β γ : Sort _} {n} (i j : Fin n) (v : Name)
     : @HasOpen.opn (@Syntax α β γ) _ n i v (bound j) = if j == i then free v else bound j
     := by congr
@@ -127,7 +127,7 @@ namespace Syntax
   @[simp] lemma opn_head_free {α β γ : Sort _} {n} (x : Name)
     : @HasHOpen.hopn (@Syntax α β γ) _ n v (free x) = free x
     := by congr
-  
+
   @[simp] lemma opn_head_bound {α β γ : Sort _} {n} (j : Fin n) (v : Name)
     : {_|-> v}(@bound α β γ (n + 1) j) = if j == n then free v else bound j
     := by {
@@ -193,7 +193,7 @@ namespace Syntax
       unfold cls_head
       simp [*]
     }
-  
+
   @[simp] lemma cls_head_bound {α β γ : Sort _} {n} (j : Fin n) (v : Name)
     : {_<-| v}(@bound α β γ n j) = @bound α β γ (n + 1) j
     := by congr
@@ -235,12 +235,12 @@ namespace Syntax
         simp [lem1]
       }
     }
-    | free f => { constructor } 
+    | free f => { constructor }
     | const c => { constructor }
     | bind k t1 t2 t1_ih t2_ih => {
       simp [t1_ih]
       exact (t2_ih (Fin.succ i))
-    } 
+    }
     | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
 
   @[simp] theorem oc2 {α β γ n} (i j : Fin n) (a : Name) (x : @Syntax α β γ n)
@@ -254,12 +254,12 @@ namespace Syntax
         simp [*]
       }
       | isFalse h => simp [*]
-    } 
+    }
     | const c => { constructor }
     | bind k t1 t2 t1_ih t2_ih => {
       simp [t1_ih]
       exact (t2_ih (Fin.succ i) (Fin.succ j))
-    } 
+    }
     | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
 
   @[simp] theorem oc3 {α β γ n} (i : Fin n) (a : Name) (x : @Syntax α β γ n)
@@ -277,9 +277,9 @@ namespace Syntax
         simp [*]
       }
     }
-    | free f => { simp } 
+    | free f => { simp }
     | const c => { constructor }
-    | bind k t1 t2 t1_ih t2_ih => { simp [*] } 
+    | bind k t1 t2 t1_ih t2_ih => { simp [*] }
     | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
 
   @[simp] theorem oc4h {α β γ n} (a : Name) (x : @Syntax α β γ n)
@@ -327,9 +327,9 @@ namespace Syntax
       cases (Name.decEq f a) with
       | isTrue h => { simp [*] }
       | isFalse h => { simp [*] }
-    } 
+    }
     | const c => { constructor }
-    | bind k t1 t2 t1_ih t2_ih => { simp [*] } 
+    | bind k t1 t2 t1_ih t2_ih => { simp [*] }
     | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
 
   theorem oc5 {α β γ n} (i j : Fin n) (a b : Name) (x : @Syntax α β γ n)
@@ -358,10 +358,10 @@ namespace Syntax
         }
       }
     }
-    | free f => { simp } 
+    | free f => { simp }
     | const c => { simp }
-    | bind k t1 t2 t1_ih t2_ih => { simp [*] } 
-    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }  
+    | bind k t1 t2 t1_ih t2_ih => { simp [*] }
+    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
 
   theorem oc6 {α β γ n} (i j : Fin n) (a b : Name) (x : @Syntax α β γ n)
     : a ≠ b -> {i <-| a}{j <-| b}x = {j <-| b}{i <-| a}x := by
@@ -395,10 +395,10 @@ namespace Syntax
         cases (f == a); simp [*]
         simp
       }
-    } 
+    }
     | const c => { simp }
-    | bind k t1 t2 t1_ih t2_ih => { simp [*] } 
-    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }  
+    | bind k t1 t2 t1_ih t2_ih => { simp [*] }
+    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
 
   theorem oc7 {α β γ n} (i j : Fin n) (a b : Name) (x : @Syntax α β γ n)
     : i ≠ j -> a ≠ b -> {i |-> a}{j <-| b}x = {j <-| b}{i |-> a}x := by
@@ -428,8 +428,8 @@ namespace Syntax
       | isFalse h3 => { simp [*] }
     }
     | const c => { simp }
-    | bind k t1 t2 t1_ih t2_ih => { simp [*] } 
-    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }  
+    | bind k t1 t2 t1_ih t2_ih => { simp [*] }
+    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
 
   theorem oc8 {α β γ n} (i j : Fin n) (a b : Name) (x : @Syntax α β γ n)
     : {i |-> b}{i <-| a}{j |-> b}x = {j |-> b}{j <-| a}{i |-> a}x := by
@@ -487,8 +487,8 @@ namespace Syntax
       | isFalse h => { simp [*] }
     }
     | const c => { simp }
-    | bind k t1 t2 t1_ih t2_ih => { simp [*] } 
-    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }  
+    | bind k t1 t2 t1_ih t2_ih => { simp [*] }
+    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
 
   theorem oc9 {α β γ n} (i j : Fin n) (a b : Name) (x : @Syntax α β γ n)
     : {j <-| a}{i |-> a}{j <-| b}x = {j <-| b}{i |-> b}{i <-| a}x := by
@@ -559,8 +559,8 @@ namespace Syntax
       }
     }
     | const c => { simp }
-    | bind k t1 t2 t1_ih t2_ih => { simp [*] } 
-    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }  
+    | bind k t1 t2 t1_ih t2_ih => { simp [*] }
+    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
 
   def fv {α β γ n} (x : @Syntax α β γ n) : FvSet! :=
     match x with
@@ -568,7 +568,7 @@ namespace Syntax
     | free x => [x]
     | const _ => List.nil
     | bind _ t1 t2 => (fv t1) ++ (fv t2)
-    | ctor _ t1 t2 t3 => (fv t1) ++ (fv t2) ++ (fv t3) 
+    | ctor _ t1 t2 t3 => (fv t1) ++ (fv t2) ++ (fv t3)
 
   def subst {α β γ n} (v : Name) (w t : @Syntax α β γ n) : @Syntax α β γ n :=
     match t with
@@ -581,6 +581,42 @@ namespace Syntax
 
   instance {α β γ n} : HasSubst (@Syntax α β γ n) (@Syntax α β γ n) where
     subst := subst
+
+  @[simp] lemma subst_const {α β γ : Sort _} {n} (c : γ) (x : Name) (v : @Syntax α β γ n)
+    : [x := v](@const α β γ n c) = const c
+  := by congr
+
+  @[simp] lemma subst_free {α β γ : Sort _} {n} (x : Name) (v : @Syntax α β γ n)
+    : [x := v](@free α β γ n x) = v
+  := by {
+    unfold HasSubst.subst; unfold instHasSubstSyntax; simp
+    unfold subst; simp
+  }
+
+  @[simp] lemma subst_bound {α β γ : Sort _} {n} (x : Name) (j : Fin n) (v : @Syntax α β γ n)
+    : [x := v](@bound α β γ n j) = bound j
+  := by congr
+
+  @[simp] lemma subst_bind {α β γ n} (k : α) (x : Name)
+    (v : @Syntax α β γ n) (t1 : @Syntax α β γ n) (t2 : @Syntax α β γ (n + 1))
+    : [x := v] @bind α β γ n k t1 t2 = @bind α β γ n k ([x := v]t1) ([x := (weaken v 1)]t2)
+  := by {
+    generalize rhsdef : bind k ([x := v]t1) ([x := weaken v 1]t2) = u
+    unfold HasSubst.subst; unfold instHasSubstSyntax; simp
+    unfold HasSubst.subst at *; unfold instHasSubstSyntax at *; simp at *
+    unfold subst; rw [rhsdef]
+  }
+
+  @[simp] lemma subst_ctor {α β γ n} (k : β) (x : Name) (v : @Syntax α β γ n)
+    (t1 t2 t3 : @Syntax α β γ n)
+    : [x := v] @ctor α β γ n k t1 t2 t3
+      = @ctor α β γ n k ([x := v]t1) ([x := v]t2) ([x := v]t3)
+  := by {
+    generalize rhsdef : ctor k ([x := v]t1) ([x := v]t2) ([x := v]t3) = u
+    unfold HasSubst.subst; unfold instHasSubstSyntax; simp
+    unfold HasSubst.subst at *; unfold instHasSubstSyntax at *; simp at *
+    unfold subst; rw [rhsdef]
+  }
 
   def hsubst {α β γ n} (w : @Syntax α β γ n) (t : @Syntax α β γ (n + 1)) : @Syntax α β γ n :=
     match t with
@@ -614,7 +650,7 @@ namespace Syntax
   @[simp] lemma hsubst_free {α β γ : Sort _} {n} (x : Name) (v : @Syntax α β γ n)
     : [_:= v](@free α β γ (n + 1) x) = free x
   := by congr
-  
+
   -- @[simp] lemma hsubst_bound {α β γ : Sort _} {n} (j : Fin n) (v : @Syntax α β γ n)
   --   : [_:= v](@bound α β γ (n + 1) n) = v
   -- := by {

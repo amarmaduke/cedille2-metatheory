@@ -9,9 +9,6 @@ import Cedille.Lemma.Red
 
 namespace Cedille
 
-  lemma infer_implies_wf : Γ ⊢ t : A -> ⊢ Γ := sorry
-  lemma cinfer_implies_wf : Γ ⊢ t >: A -> ⊢ Γ := sorry
-
   lemma project_ctx_proof : ⊢ Γ -> (x, A) ∈ Γ -> ∃ K, Γ ⊢ A >: const K := sorry
 
   lemma classification_of_check : Γ ⊢ t =: A -> ∃ K, Γ ⊢ A >: const K := by {
@@ -20,10 +17,10 @@ namespace Cedille
     exists K
   }
 
-  lemma classification_of_infer : Γ ⊢ t >: A ->
+  lemma classification_of_infer : Γ ⊢ t : A ->
     A = kindu ∨ ∃ K, Γ ⊢ A >: const K
-  := λ j => @ConInfer.rec
-    (λ Γ t A j => A = kindu ∨ ∃ K, ∀ B, A -β>* B -> Γ ⊢ B >: const K)
+  := λ j => @Infer.rec
+    (λ Γ t A j => A = kindu ∨ ∃ K, Γ ⊢ A >: const K)
     (λ Γ t A j => A = kindu ∨ ∃ K, Γ ⊢ A >: const K)
     (λ Γ t A j => A = kindu ∨ ∃ K, Γ ⊢ A >: const K)
     (λ Γ wf => True)
@@ -36,7 +33,6 @@ namespace Cedille
     apply Or.inr _
     have lem := project_ctx_proof wf xn
     cases lem; case _ K j =>
-    exists K; intro B step
     sorry
   })
   (by {

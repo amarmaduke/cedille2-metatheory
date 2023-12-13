@@ -168,6 +168,39 @@ namespace Cedille
 
   notation:150 t1:150 " === " t2:150 => Conv t1 t2
 
+  inductive Sane : Term 0 -> Prop
+  -- Basic
+  | ax : Sane (const K)
+  | var : Sane (free x)
+  -- Functions
+  | pi {S : FvSet!} :
+    Sane A ->
+    ((x : Name) -> x ∉ S -> Sane ({_|-> x}B)) ->
+    Sane (pi m A B)
+  | lam {S : FvSet!} :
+    Sane A ->
+    ((x : Name) -> x ∉ S -> Sane ({_|-> x}t)) ->
+    (m = m0 -> (x : Name) -> x ∉ S -> x ∉ (fv ∘ erase x) ({_|-> x}t)) ->
+    Sane (lam m A t)
+  | app : Sane f -> Sane a -> Sane (app m f a)
+  -- Intersections
+  | inter {S : FvSet!} :
+    Sane A ->
+    ((x : Name) -> x ∉ S -> Sane ({_|-> x}B)) ->
+    Sane (inter A B)
+  | pair : Sane T -> Sane t -> Sane s ->
+    (∀ x, erase x t =β= erase x s) ->
+    Sane (pair t s T)
+  | fst : Sane t -> Sane (fst t)
+  | snd : Sane t -> Sane (snd t)
+  -- Equality
+  | eq : Sane A -> Sane a -> Sane b -> Sane (eq A a b)
+  | refl : Sane t -> Sane (refl t)
+  | eqind : Sane A -> Sane P -> Sane x -> Sane y -> Sane r -> Sane w -> Sane (J A P x y r w)
+  | promote : Sane e -> Sane (promote e)
+  | phi : Sane a -> Sane f -> Sane e -> Sane (phi a f e)
+  | delta : Sane e -> Sane (delta e)
+
   namespace Mode
     def pi_domain (m : Mode) (K : Constant) : Term n :=
       match m with

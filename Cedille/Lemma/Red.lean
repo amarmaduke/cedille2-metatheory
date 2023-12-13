@@ -5,6 +5,7 @@ import Cedille.Lemma.Refold
 import Cedille.Lemma.Erasure
 import Cedille.Lemma.Inversion
 import Cedille.Lemma.Syntax
+import Cedille.Lemma.Substitution
 
 namespace Cedille
 
@@ -50,7 +51,7 @@ namespace Cedille
   --     rewrite [<-h] at s1
   --     have u2step := red_open_close_step xnin s1
   --     have lem := @ih ({_<-| x}u2) var_not_in_close (by simp)
-  --     apply RedStar.step u2step lem 
+  --     apply RedStar.step u2step lem
   --   }
   -- }
 
@@ -205,7 +206,7 @@ namespace Cedille
   lemma red_bind1 : A -β>* A' -> Syntax.bind k A B -β>* Syntax.bind k A' B := by {
     intro h
     induction h
-    case refl A => apply RedStar.refl 
+    case refl A => apply RedStar.refl
     case step A A' C s1 _s2 ih => {
       apply RedStar.step _ ih
       apply Red.bind1 s1
@@ -402,7 +403,7 @@ namespace Cedille
     cases m <;> simp at * <;> cases step <;> try simp [*]
     case _ _ step _ => cases step
     case _ _ step _ => cases step
-    case _ _ step _ => cases step 
+    case _ _ step _ => cases step
   }
 
   lemma red_force_typeu : typeu -β>* A -> A = typeu := by {
@@ -440,6 +441,108 @@ namespace Cedille
       subst lhsdef; cases s1 <;> simp at *
       case bind1 A' step => apply @ih A' B m rfl rhsdef
       case bind2 B' S step => apply @ih A B' m rfl rhsdef
+    }
+  }
+
+  -- ALl cases but lam are by IH
+  lemma preservation_of_sanity_step : Sane a -> a -β> a' -> Sane a' := by {
+    intro h step
+    induction h generalizing a'
+    case ax => cases step
+    case var => cases step
+    case pi => sorry
+    case lam A t m S Ah th e aih tih => {
+      cases step
+      case bind1 A' step => {
+        simp; replace aih := aih step
+        constructor; exact aih; exact th; exact e
+      }
+      case bind2 t' S' step => {
+        simp
+        sorry -- Need a lemma saying reduction doesn't move erased to non-eraed
+        -- otherwise straightforward
+      }
+    }
+    case app f b m h1 h2 ih1 ih2 => {
+      cases step
+      case beta u v => {
+        cases h1; case _ S ih2 ih3 ih4 =>
+        apply sanity_subst h2 ih3
+      }
+      case ctor1 => sorry
+      case ctor2 => sorry
+      case ctor3 => sorry
+    }
+    case inter => sorry
+    case pair => sorry
+    case fst t h ih => {
+      cases step
+      case fst u v => cases h; simp [*]
+      case phi u v => cases h; simp [*]
+      case ctor1 t' step => {
+        simp; replace ih := ih step
+        constructor; exact ih
+      }
+      case ctor2 _ step => cases step
+      case ctor3 _ step => cases step
+    }
+    case snd t h ih => {
+      cases step
+      case snd u v => cases h; simp [*]
+      case ctor1 u step => {
+        simp; replace ih := ih step
+        constructor; exact ih
+      }
+      case ctor2 _ step => cases step
+      case ctor3 _ step => cases step
+    }
+    case eq => sorry
+    case refl => sorry
+    case eqind A P x y r w Ah Ph xh yh rh wh Aih Pih xih yih rih wih => {
+      cases step
+      case eqind t => {
+        constructor; exact wh
+        cases rh; case _ h => exact h
+      }
+      case ctor1 => sorry
+      case ctor2 => sorry
+      case ctor3 => sorry
+    }
+    case promote e h ih => {
+      cases step
+      case promote t => {
+        cases h; case _ h =>
+        cases h; case _ h =>
+        constructor; exact h
+      }
+      case ctor1 e' step => {
+        simp; replace ih := ih step
+        constructor; exact ih
+      }
+      case ctor2 _ step => cases step
+      case ctor3 _ step => cases step
+    }
+    case phi a f e ah fh eh aih fih eih => {
+      cases step
+      case ctor1 => sorry
+      case ctor2 => sorry
+      case ctor3 => sorry
+    }
+    case delta e h ih => {
+      cases step
+      case ctor1 => sorry
+      case ctor2 _ step => cases step
+      case ctor3 _ step => cases step
+    }
+  }
+
+  lemma preservation_of_sanity : Sane a -> a -β>* a' -> Sane a' := by {
+    intro h step
+    induction step
+    case refl => simp [*]
+    case step t1 t2 _ r1 _ ih => {
+      have lem := preservation_of_sanity_step h r1
+      apply ih lem
     }
   }
 

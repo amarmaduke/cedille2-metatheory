@@ -7,7 +7,7 @@ namespace Cedille
 
   @[simp] lemma opn_head_const {n} : {_|-> x}(@const (n + 1) c) = @const n c := by congr
   @[simp] lemma opn_head_free {n} : {_|-> y}(@free (n + 1) x) = free x := by congr
-  
+
   @[simp] lemma opn_head_bound {n} {j : Fin n}
     : {_|-> x}(@bound (n + 1) j) = if j == n then free x else bound j
   := by {
@@ -48,7 +48,7 @@ namespace Cedille
     := by unfold pair; rw [Syntax.opn_head_ctor]
   @[simp] lemma opn_head_fst : {_|-> x}fst t = fst ({_|-> x}t)
     := by unfold fst; rw [Syntax.opn_head_ctor]; simp
-  @[simp] lemma opn_head_snd :{_|-> x}snd t = snd ({_|-> x}t) 
+  @[simp] lemma opn_head_snd :{_|-> x}snd t = snd ({_|-> x}t)
     := by unfold snd; rw [Syntax.opn_head_ctor]; simp
   @[simp] lemma opn_head_eq : {_|-> x}eq t1 t2 t3 = eq ({_|-> x}t1) ({_|-> x}t2) ({_|-> x}t3)
     := by unfold eq; rw [Syntax.opn_head_ctor]
@@ -62,7 +62,7 @@ namespace Cedille
     := by unfold Jω; rw [Syntax.opn_head_ctor]; simp
   @[simp] lemma opn_head_J : {_|-> x}J t1 t2 t3 t4 t5 t6 = J ({_|-> x}t1) ({_|-> x}t2) ({_|-> x}t3) ({_|-> x}t4) ({_|-> x}t5) ({_|-> x}t6)
     := by unfold J; rw [opn_head_Jh, opn_head_J0, opn_head_J0, opn_head_Jω]
-  @[simp] lemma opn_head_promote : {_|-> x}promote t = promote ({_|-> x}t) 
+  @[simp] lemma opn_head_promote : {_|-> x}promote t = promote ({_|-> x}t)
     := by unfold promote; rw [Syntax.opn_head_ctor]; simp
   @[simp] lemma opn_head_delta : {_|-> x}delta t = delta ({_|-> x}t)
     := by unfold delta; rw [Syntax.opn_head_ctor]; simp
@@ -95,7 +95,7 @@ namespace Cedille
     := by unfold pair; rw [Syntax.cls_head_ctor]
   @[simp] lemma cls_head_fst : {_<-| x}fst t = fst ({_<-| x}t)
     := by unfold fst; rw [Syntax.cls_head_ctor]; simp
-  @[simp] lemma cls_head_snd :{_<-| x}snd t = snd ({_<-| x}t) 
+  @[simp] lemma cls_head_snd :{_<-| x}snd t = snd ({_<-| x}t)
     := by unfold snd; rw [Syntax.cls_head_ctor]; simp
   @[simp] lemma cls_head_eq : {_<-| x}eq t1 t2 t3 = eq ({_<-| x}t1) ({_<-| x}t2) ({_<-| x}t3)
     := by unfold eq; rw [Syntax.cls_head_ctor]
@@ -109,7 +109,7 @@ namespace Cedille
     := by unfold Jω; rw [Syntax.cls_head_ctor]; simp
   @[simp] lemma cls_head_J : {_<-| x}J t1 t2 t3 t4 t5 t6 = J ({_<-| x}t1) ({_<-| x}t2) ({_<-| x}t3) ({_<-| x}t4) ({_<-| x}t5) ({_<-| x}t6)
     := by unfold J; rw [cls_head_Jh, cls_head_J0, cls_head_J0, cls_head_Jω]
-  @[simp] lemma cls_head_promote : {_<-| x}promote t = promote ({_<-| x}t) 
+  @[simp] lemma cls_head_promote : {_<-| x}promote t = promote ({_<-| x}t)
     := by unfold promote; rw [Syntax.cls_head_ctor]; simp
   @[simp] lemma cls_head_delta : {_<-| x}delta t = delta ({_<-| x}t)
     := by unfold delta; rw [Syntax.cls_head_ctor]; simp
@@ -140,7 +140,7 @@ namespace Cedille
     := by unfold pair; rw [Syntax.hsubst_ctor]
   @[simp] lemma hsubst_fst {v : Term n} : [_:= v]fst t = fst ([_:= v]t)
     := by unfold fst; rw [Syntax.hsubst_ctor]; simp
-  @[simp] lemma hsubst_snd {v : Term n} : [_:= v]snd t = snd ([_:= v]t) 
+  @[simp] lemma hsubst_snd {v : Term n} : [_:= v]snd t = snd ([_:= v]t)
     := by unfold snd; rw [Syntax.hsubst_ctor]; simp
   @[simp] lemma hsubst_eq {v : Term n} : [_:= v]eq t1 t2 t3 = eq ([_:= v]t1) ([_:= v]t2) ([_:= v]t3)
     := by unfold eq; rw [Syntax.hsubst_ctor]
@@ -154,12 +154,104 @@ namespace Cedille
     := by unfold Jω; rw [Syntax.hsubst_ctor]; simp
   @[simp] lemma hsubst_head_J {v : Term n} : [_:= v]J t1 t2 t3 t4 t5 t6 = J ([_:= v]t1) ([_:= v]t2) ([_:= v]t3) ([_:= v]t4) ([_:= v]t5) ([_:= v]t6)
     := by unfold J; rw [hsubst_head_Jh, hsubst_head_J0, hsubst_head_J0, hsubst_head_Jω]
-  @[simp] lemma hsubst_promote {v : Term n} : [_:= v]promote t = promote ([_:= v]t) 
+  @[simp] lemma hsubst_promote {v : Term n} : [_:= v]promote t = promote ([_:= v]t)
     := by unfold promote; rw [Syntax.hsubst_ctor]; simp
   @[simp] lemma hsubst_delta {v : Term n} : [_:= v]delta t = delta ([_:= v]t)
     := by unfold delta; rw [Syntax.hsubst_ctor]; simp
   @[simp] lemma hsubst_phi {v : Term n} : [_:= v]phi t1 t2 t3 = phi ([_:= v]t1) ([_:= v]t2) ([_:= v]t3)
     := by unfold phi; rw [Syntax.hsubst_ctor]
+
+  @[simp] lemma subst_const {v : Term n} : [x := v](@const n c) = const c := by congr
+  @[simp] lemma subst_bound {v : Term n} : [x := v](@bound n j) = bound j := by congr
+  @[simp] lemma subst_free {v : Term n} : [x := v](@free n x) = v
+    := by unfold free; rw [Syntax.subst_free]
+
+  @[simp] lemma subst_typeu {v : Term n} : [x := v]@typeu n = typeu
+    := by unfold typeu; rw [Syntax.subst_const]
+  @[simp] lemma subst_kindu {v : Term n} : [x := v]@kindu n = kindu
+    := by unfold kindu; rw [Syntax.subst_const]
+  @[simp] lemma subst_lam {v : Term n} {t2 : Term (n + 1)}
+    : [x := v]lam m t1 t2 = lam m ([x := v]t1) ([x := (Syntax.weaken v 1)]t2)
+    := by unfold lam; rw [Syntax.subst_bind]
+  @[simp] lemma subst_pi {v : Term n} {t2 : Term (n + 1)}
+    : [x := v]pi m t1 t2 = pi m ([x := v]t1) ([x := (Syntax.weaken v 1)]t2)
+    := by unfold pi; rw [Syntax.subst_bind]
+  @[simp] lemma subst_inter {v : Term n} {t2 : Term (n + 1)}
+    : [x := v]inter t1 t2 = inter ([x := v]t1) ([x := (Syntax.weaken v 1)]t2)
+    := by unfold inter; rw [Syntax.subst_bind]
+  @[simp] lemma subst_app {v t2 : Term n} : [x := v]app m t1 t2 = app m ([x := v]t1) ([x := v]t2)
+    := by unfold app; rw [Syntax.subst_ctor]; simp
+  @[simp] lemma subst_pair {v t3 : Term n}
+    : [x := v]pair t1 t2 t3 = pair ([x := v]t1) ([x := v]t2) ([x := v]t3)
+    := by unfold pair; rw [Syntax.subst_ctor]
+  @[simp] lemma subst_fst {v t : Term n} : [x := v]fst t = fst ([x := v]t)
+    := by unfold fst; rw [Syntax.subst_ctor]; simp
+  @[simp] lemma subst_snd {v t : Term n} : [x := v]snd t = snd ([x := v]t)
+    := by unfold snd; rw [Syntax.subst_ctor]; simp
+  @[simp] lemma subst_eq {v t1 : Term n}
+    : [x := v]eq t1 t2 t3 = eq ([x := v]t1) ([x := v]t2) ([x := v]t3)
+    := by unfold eq; rw [Syntax.subst_ctor]
+  @[simp] lemma subst_refl {v t : Term n} : [x := v]refl t = refl ([x := v]t)
+    := by unfold refl; rw [Syntax.subst_ctor]; simp
+  @[simp] lemma subst_head_Jh {v t3 : Term n}
+    : [x := v]Jh t1 t2 t3 = Jh ([x := v]t1) ([x := v]t2) ([x := v]t3)
+    := by unfold Jh; rw [Syntax.subst_ctor]
+  @[simp] lemma subst_head_J0 {v t2 : Term n} : [x := v]J0 t1 t2 = J0 ([x := v]t1) ([x := v]t2)
+    := by unfold J0; rw [Syntax.subst_ctor]; simp
+  @[simp] lemma subst_head_Jω {v t2 : Term n} : [x := v]Jω t1 t2 = Jω ([x := v]t1) ([x := v]t2)
+    := by unfold Jω; rw [Syntax.subst_ctor]; simp
+  @[simp] lemma subst_head_J {v t6 : Term n}
+    : [x := v]J t1 t2 t3 t4 t5 t6
+      = J ([x := v]t1) ([x := v]t2) ([x := v]t3) ([x := v]t4) ([x := v]t5) ([x := v]t6)
+    := by unfold J; rw [subst_head_Jh, subst_head_J0, subst_head_J0, subst_head_Jω]
+  @[simp] lemma subst_promote {v t : Term n} : [x := v]promote t = promote ([x := v]t)
+    := by unfold promote; rw [Syntax.subst_ctor]; simp
+  @[simp] lemma subst_delta {v t : Term n} : [x := v]delta t = delta ([x := v]t)
+    := by unfold delta; rw [Syntax.subst_ctor]; simp
+  @[simp] lemma subst_phi {v t3 : Term n}
+    : [x := v]phi t1 t2 t3 = phi ([x := v]t1) ([x := v]t2) ([x := v]t3)
+    := by unfold phi; rw [Syntax.subst_ctor]
+
+  lemma subst_free_neq {v : Term n} : x ≠ y -> [x := v](@free n y) = free y := by {
+    intro h
+    unfold HasSubst.subst; unfold Syntax.instHasSubstSyntax; simp
+    unfold Syntax.subst; unfold free; simp
+    intro h2; exfalso; apply h; rw [h2]
+  }
+
+  @[simp] lemma hsubst_close_to_subst {v t : Term n} : [_:= v]{_<-| x}t = [x := v]t := by {
+    induction t
+    case bound m j => {
+      simp; unfold HasHSubst.hsubst; unfold Syntax.instHasHSubstSyntax; simp
+      unfold Syntax.hsubst; unfold bound; simp
+      intro h; cases j; case _ v lt =>
+      simp at h; subst h; exfalso; linarith
+    }
+    case const => simp
+    case free m y => {
+      simp
+      cases (Name.decEq y x)
+      case _ h => {
+        have h2 := Name.beq_of_not_eq h
+        have h3 : x ≠ y := ne_sym h
+        rw [h2]; simp
+        rw [subst_free_neq h3]
+      }
+      case _ h => {
+        subst h; simp
+        unfold HasHSubst.hsubst; unfold Syntax.instHasHSubstSyntax; simp
+        unfold Syntax.hsubst; unfold bound; simp
+      }
+    }
+    case bind m k t1 t2 ih1 ih2 => {
+      simp; apply And.intro _ _
+      apply ih1; apply ih2
+    }
+    case ctor m k t1 t2 t3 ih1 ih2 ih3 => {
+      simp; apply And.intro ih1 (And.intro ih2 ih3)
+    }
+  }
+
 
   lemma close_open_cancel {n} {t : Term (n + 1)} : x ∉ fv t -> {_<-| x}{_|-> x}t = t
     := λ h => @Nat.rec
@@ -362,7 +454,7 @@ namespace Cedille
       }
       case ctor k u1 u2 u3 => {
         simp at *
-        have s1 : size u1 ≤ s := by linarith 
+        have s1 : size u1 ≤ s := by linarith
         have s2 : size u2 ≤ s := by linarith
         have s3 : size u3 ≤ s := by linarith
         apply And.intro _ _

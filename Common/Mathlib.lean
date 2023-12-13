@@ -1,6 +1,5 @@
 
 import Mathlib.Tactic.Basic
-import Mathlib.Tactic.Cache
 import Mathlib.Tactic.Cases
 import Mathlib.Tactic.CasesM
 import Mathlib.Tactic.Clear!
