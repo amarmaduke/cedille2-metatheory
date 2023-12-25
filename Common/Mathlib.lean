@@ -20,7 +20,7 @@ import Mathlib.Tactic.Rename
 import Mathlib.Tactic.RenameBVar
 import Mathlib.Tactic.Replace
 
-import Mathlib.Data.Fin.Basic
+-- import Mathlib.Data.Fin.Basic
 
-import Std.Data.Fin.Lemmas
-import Std.Data.List.Lemmas
+-- import Std.Data.Fin.Lemmas
+-- import Std.Data.List.Lemmas

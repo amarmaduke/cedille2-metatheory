@@ -9,18 +9,6 @@ import Cedille.Lemma.Substitution
 
 namespace Cedille
 
-  -- lemma red_open : t -β> t' -> {_|-> x}t -β> {_|-> x}t' := by {
-  --   intro step
-  --   induction step <;> simp
-  --   case beta m u1 u2 u3 => {
-  --     have s1 := @Red.beta _ m u1 u2 u3
-  --     have s2 := @Red.beta _ m ({_|-> x}u1) ({_|-> x}u2) ({_|-> x}u3)
-
-  --   }
-  --   repeat sorry
-  -- }
-
-
   -- lemma red_open_forced_step : {_|-> x}t1 -β> t2 -> ∃ z, t2 = {_|-> x}z ∧ x ∉ fv z := sorry
   -- lemma red_open_forced : {_|-> x}t1 -β>* t2 -> ∃ z, t2 = {_|-> x}z ∧ x ∉ fv z := sorry
 
@@ -146,7 +134,7 @@ namespace Cedille
     induction step
     case refl => apply RedStar.refl
     case step u u' v s1 _s2 ih => {
-      have lem := @red_rename_step _ _ y x s1
+      have lem := @red_rename_step _ _ _ y x s1
       apply RedStar.step lem ih
     }
   }
@@ -174,7 +162,7 @@ namespace Cedille
     ∀ y, {_|-> y}t1 -β> {_|-> y}t2
   := by {
     intro xn1 xn2 step y
-    have step2 := @red_rename_step _ _ y x step
+    have step2 := @red_rename_step _ _ _ y x step
     rw [close_open_cancel xn1, close_open_cancel xn2] at step2
     apply step2
   }
@@ -186,7 +174,7 @@ namespace Cedille
     ∀ y, {_|-> y}t1 -β>* {_|-> y}t2
   := by {
     intro xn1 xn2 step y
-    have step2 := @red_rename _ _ y x step
+    have step2 := @red_rename _ _ _ y x step
     rw [close_open_cancel xn1, close_open_cancel xn2] at step2
     apply step2
   }
@@ -238,7 +226,7 @@ namespace Cedille
       apply RedStar.step _ _; exact Syntax.bind k A ({_<-| x}v)
       apply Red.bind2 _; exact []; intro y yn
       rw [<-C1def] at s1
-      have lem := @red_rename_step _ _ y x s1
+      have lem := @red_rename_step _ _ _ y x s1
       rw [close_open_cancel xn1] at lem
       exact lem
       have xn3 : x ∉ fv ({_<-| x}v) ++ fv B' := by {
@@ -381,6 +369,28 @@ namespace Cedille
   lemma red_phi : a -β>* a' -> b -β>* b' -> e -β>* e' -> phi a b e -β>* phi a' b' e'
   := by apply red_ctor
 
+  lemma red_open : t -β> t' -> {_|-> x}t -β> {_|-> x}t' := by {
+    intro step
+    induction step <;> simp at *
+    case beta md t1 t2 t3 => {
+      have r1 := @Red.beta _ md ({_|-> x}t1) ({_|-> x}t2) ({_|-> x}t3)
+      sorry
+    }
+    case fst => sorry
+    case snd => sorry
+    case eqind => sorry
+    case promote => sorry
+    case phi => sorry
+    case bind1 => sorry
+    case bind2 t2 t2' k t1 S step ih => {
+      apply Red.bind2; swap; exact S; intro y yn
+      sorry
+    }
+    case ctor1 => sorry
+    case ctor2 => sorry
+    case ctor3 => sorry
+  }
+
   lemma red_norm : A -β>* A' -> (∀ z, ¬ A -β> z) -> A = A' := by {
     intro step norm
     induction step
@@ -445,106 +455,56 @@ namespace Cedille
   }
 
   -- ALl cases but lam are by IH
-  lemma preservation_of_sanity_step : Sane a -> a -β> a' -> Sane a' := by {
-    intro h step
-    induction h generalizing a'
-    case ax => cases step
-    case var => cases step
-    case pi => sorry
-    case lam A t m S Ah th e aih tih => {
-      cases step
-      case bind1 A' step => {
-        simp; replace aih := aih step
-        constructor; exact aih; exact th; exact e
-      }
-      case bind2 t' S' step => {
-        simp
-        sorry -- Need a lemma saying reduction doesn't move erased to non-eraed
-        -- otherwise straightforward
-      }
-    }
-    case app f b m h1 h2 ih1 ih2 => {
-      cases step
-      case beta u v => {
-        cases h1; case _ S ih2 ih3 ih4 =>
-        apply sanity_subst h2 ih3
-      }
-      case ctor1 => sorry
-      case ctor2 => sorry
-      case ctor3 => sorry
-    }
-    case inter => sorry
-    case pair => sorry
-    case fst t h ih => {
-      cases step
-      case fst u v => cases h; simp [*]
-      case phi u v => cases h; simp [*]
-      case ctor1 t' step => {
-        simp; replace ih := ih step
-        constructor; exact ih
-      }
-      case ctor2 _ step => cases step
-      case ctor3 _ step => cases step
-    }
-    case snd t h ih => {
-      cases step
-      case snd u v => cases h; simp [*]
-      case ctor1 u step => {
-        simp; replace ih := ih step
-        constructor; exact ih
-      }
-      case ctor2 _ step => cases step
-      case ctor3 _ step => cases step
-    }
-    case eq => sorry
-    case refl => sorry
-    case eqind A P x y r w Ah Ph xh yh rh wh Aih Pih xih yih rih wih => {
-      cases step
-      case eqind t => {
-        constructor; exact wh
-        cases rh; case _ h => exact h
-      }
-      case ctor1 => sorry
-      case ctor2 => sorry
-      case ctor3 => sorry
-    }
-    case promote e h ih => {
-      cases step
-      case promote t => {
-        cases h; case _ h =>
-        cases h; case _ h =>
-        constructor; exact h
-      }
-      case ctor1 e' step => {
-        simp; replace ih := ih step
-        constructor; exact ih
-      }
-      case ctor2 _ step => cases step
-      case ctor3 _ step => cases step
-    }
-    case phi a f e ah fh eh aih fih eih => {
-      cases step
-      case ctor1 => sorry
-      case ctor2 => sorry
-      case ctor3 => sorry
-    }
-    case delta e h ih => {
-      cases step
-      case ctor1 => sorry
-      case ctor2 _ step => cases step
-      case ctor3 _ step => cases step
-    }
-  }
+  -- lemma preservation_of_pseobj_step : PseObj a -> a -β> a' -> PseObj a' := by {
+  --   intro h step
+  --   induction h generalizing a'
+  --   case ax => cases step
+  --   case var => cases step
+  --   case bind => sorry
+  --   case lam => sorry
+  --   case pair t1 t2 t3 h1 h2 h3 e ih1 ih2 ih3 => {
+  --     cases step <;> simp
+  --     case ctor1 t1' ih => {
+  --       apply PseObj.pair (ih1 ih) h2 h3
+  --       sorry
+  --     }
+  --     case ctor2 => sorry
+  --     case ctor3 => sorry
+  --   }
+  --   case ctor k t1 t2 t3 n h1 h2 h3 ih1 ih2 ih3 => {
+  --     cases step
+  --     case beta m u v => {
+  --       cases h1; case _ S h4 h5 h6 => apply subst_pseobj h2 h6
+  --       case _ S h4 h5 h6 => apply subst_pseobj h2 h5
+  --     }
+  --     case fst => cases h1 <;> simp [*]
+  --     case snd => cases h1 <;> simp [*]
+  --     case eqind => {
+  --       cases h3; case _ n2 h4 h5 h6 =>
+  --       cases h4; case _ n3 h4 h7 h8 =>
+  --       constructor <;> simp [*]
+  --     }
+  --     case promote => {
+  --       cases h1; case _ h _ _ =>
+  --       cases h; case _ =>
+  --       constructor <;> simp [*]
+  --     }
+  --     case phi => cases h1; simp [*]
+  --     case ctor1 t1' ih => apply PseObj.ctor n (ih1 ih) h2 h3
+  --     case ctor2 t2' ih => apply PseObj.ctor n h1 (ih2 ih) h3
+  --     case ctor3 t3' ih => apply PseObj.ctor n h1 h2 (ih3 ih)
+  --   }
+  -- }
 
-  lemma preservation_of_sanity : Sane a -> a -β>* a' -> Sane a' := by {
-    intro h step
-    induction step
-    case refl => simp [*]
-    case step t1 t2 _ r1 _ ih => {
-      have lem := preservation_of_sanity_step h r1
-      apply ih lem
-    }
-  }
+  -- lemma preservation_of_pseobj : PseObj a -> a -β>* a' -> PseObj a' := by {
+  --   intro h step
+  --   induction step
+  --   case refl => simp [*]
+  --   case step t1 t2 _ r1 _ ih => {
+  --     have lem := preservation_of_pseobj_step h r1
+  --     apply ih lem
+  --   }
+  -- }
 
   -- lemma ctt_normal : ¬ (ctt -β> t) := sorry
   -- lemma cff_normal : ¬ (cff -β> t) := sorry

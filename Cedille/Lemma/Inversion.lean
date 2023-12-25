@@ -38,6 +38,8 @@ namespace Cedille
       }
   })
 
+  @[simp] lemma inv_binder_m0 : ¬ (Binder.lam m0 ≠ Binder.lam m0) := by intro h; apply h (by simp)
+
   @[simp] lemma const_not_free : @const n k ≠ free x := by inv
   @[simp] lemma const_not_bound : @const n k ≠ bound i := by inv
   @[simp] lemma const_not_lam : @const n k ≠ lam m t1 t2 := by inv

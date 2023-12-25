@@ -2,6 +2,7 @@
 import Cedille.Lemma.Basic
 import Cedille.Lemma.Classification
 import Cedille.Lemma.Confluence
+import Cedille.Lemma.BetaConv
 import Cedille.Lemma.Conv
 import Cedille.Lemma.Erasure
 import Cedille.Lemma.Inversion

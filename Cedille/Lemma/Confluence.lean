@@ -107,9 +107,9 @@ namespace Cedille
   | free : ParRed (free x) (free x)
   | bound : ParRed (bound i) (bound i)
 
-  notation:150 t1:150 " -p> " t2:150 => @ParRed 0 t1 t2
+  notation:150 t1:150 " -p> " t2:150 => ParRed t1 t2
 
-  inductive ParRedStar : Term 0 -> Term 0 -> Prop where
+  inductive ParRedStar {n} : Term n -> Term n -> Prop where
   | refl : ParRedStar t t
   | step : t1 -p> t2 -> ParRedStar t2 t3 -> ParRedStar t1 t3
 
@@ -214,14 +214,14 @@ namespace Cedille
         simp [*]
         apply h3 x xn1; apply ih3; apply RedStar.refl
       }
-      have r2 := RedStar.step (@Red.beta m t1 t2' t3') RedStar.refl
+      have r2 := RedStar.step (@Red.beta _ m t1 t2' t3') RedStar.refl
       apply RedStar.trans r1 r2
     }
     case fst t1 t1' t2 t2' t3 t3' h1 h2 h3 ih1 ih2 ih3 => {
       have r1 : fst (pair t1 t2 t3) -β>* fst (pair t1' t2 t3) := by {
         sorry
       }
-      have r2 := RedStar.step (@Red.fst t1' t2 t3) RedStar.refl
+      have r2 := RedStar.step (@Red.fst _ t1' t2 t3) RedStar.refl
       apply RedStar.trans r1 r2
     }
     case snd => sorry
@@ -243,7 +243,7 @@ namespace Cedille
     }
     case const => apply RedStar.refl
     case free => apply RedStar.refl
-    case bound i => cases i; linarith
+    case bound i => apply RedStar.refl
   }
 
   lemma par_implies_red : t -p>* s -> t -β>* s := by {
@@ -381,7 +381,7 @@ namespace Cedille
     }
     case const => unfold parp; unfold const; simp; apply ParRed.refl
     case free => unfold parp; unfold free; simp; apply ParRed.refl
-    case bound i => cases i; linarith
+    case bound i => unfold parp; unfold free; simp; apply ParRed.refl
   }
 
   lemma par_diamond : t -p> t1 -> t -p> t2 -> ∃ k, t1 -p> k ∧ t2 -p> k := by {

@@ -86,3 +86,11 @@ def fin_cast2 {n : Nat} {i : Fin (n + 1)} : i = ↑i.val := by {
     rw [lem2]
   }
 }
+
+def fin_cast3 : @Fin.val (n + 2) ((Nat.cast n) + 1) = n + 1 := by {
+  sorry
+}
+
+def fin_cast4 : Fin.val j = s + 1 -> j = (Nat.cast s) + (Fin.ofNat 1) := by sorry
+
+def fin_cast5 {j : Fin (n + 1)} : Fin.val j = s -> j = @Nat.cast (Fin (n + 1)) _ s := by sorry

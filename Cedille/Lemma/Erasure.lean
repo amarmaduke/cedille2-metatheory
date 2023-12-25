@@ -4,6 +4,7 @@ import Cedille.Def
 import Cedille.Lemma.Refold
 import Cedille.Lemma.Inversion
 import Cedille.Lemma.Syntax
+import Cedille.Lemma.PseObj
 
 namespace Cedille
 
@@ -149,6 +150,8 @@ namespace Cedille
     t
     (by simp)
 
+--  lemma erase_weaken {m} {t : Term m} : (erase x t)ʷ = erase x tʷ := by sorry
+
   lemma erase_rename_commute (x y z) {n} {t : Term n} (h : x ≠ z)
     : {_|-> y}{_<-| x}(erase z t) = erase z ({_|-> y}{_<-| x}t)
   := @Nat.rec
@@ -204,12 +207,6 @@ namespace Cedille
           case erased => rw [ih _ u1 s1]
           case type => rw [ih _ u1 s1, ih _ u2 s2]
         }
-        case refl => {
-          unfold HasHOpen.hopn; unfold Syntax.instHasHOpenSyntax; simp
-          unfold Syntax.opn_head; unfold bound; simp
-          split <;> try simp [*]
-          exfalso; linarith
-        }
         case eqind => rw [ih _ u3 s3]
       }
     })
@@ -218,45 +215,309 @@ namespace Cedille
     t
     (by simp)
 
-  lemma erase_sane_open : Sane (erase y ({_|-> x}t)) -> Sane ({_|-> x}(erase y t)) := sorry
+  -- lemma erase_open_fv_notin_shrink {t : Term (n + 1)} {x y z : Name}
+  --   : x ∉ fv (erase z ({_|-> y}t)) -> x ∉ fv (erase z t)
+  -- := by sorry
 
-  lemma erase_sane (x : Name) (S : FvSet!) : x ∉ S -> Sane t -> Sane (erase x t) := by {
-    intro xin h
-    induction h
-    case ax => constructor
-    case var => constructor
-    case pi A B m S Ah Bh Aih Bih => {
-      simp; constructor; exact Aih
-      swap; exact S
-      intro x xin; replace Bih := Bih x xin
-      apply erase_sane_open Bih
-    }
-    case lam A t m S' ah th h Aih tih => {
-      cases m
-      case free => {
-        simp; constructor; constructor
-        swap; intro h; contradiction
-        swap; exact S'
-        intro x xin; replace tih := tih x xin
-        apply erase_sane_open tih
+  -- lemma erase_open_fv_notin_grow {t : Term (n + 1)} {x y z : Name}
+  --   : x ≠ y -> x ∉ fv (erase z t) -> x ∉ fv (erase z ({_|-> y}t))
+  -- := by sorry
+
+  lemma erase_size {n} (t : Term n) (x : Name) : size (erase x t) ≤ size t := @Nat.rec
+    (λ s => ∀ {n} {t: Term n}, size t ≤ s -> size (erase x t) ≤ size t)
+    (by {
+      intros n t sh
+      cases t <;> simp at *
+    })
+    (by {
+      intro s ih n t sh
+      cases t
+      case free => apply ih (by simp)
+      case bound => apply ih (by simp)
+      case const => apply ih (by simp)
+      case bind k u1 u2 => {
+        simp at sh
+        have sh1 : size u1 ≤ s := by linarith
+        have sh2 : size u2 ≤ s := by linarith
+        have sh2' : size ({_|-> x}u2) ≤ s := by simp; exact sh2
+        have sh3 : size (erase x u1) ≤ size u1 := by apply ih sh1
+        have sh4 : size (erase x u2) ≤ size u2 := by apply ih sh2
+        cases k <;> simp
+        case lam md => {
+          cases md <;> simp
+          case type => linarith
+          case free => linarith
+          case erased => {
+            have sh := ih sh2'
+            simp at sh; linarith
+          }
+        }
+        case pi md => linarith
+        case inter => linarith
       }
-      case erased => {
-        simp
-        sorry
+      case ctor k u1 u2 u3 => {
+        simp at sh
+        have sh1 : size u1 ≤ s := by linarith
+        have sh2 : size u2 ≤ s := by linarith
+        have sh3 : size u3 ≤ s := by linarith
+        have sh4 : size (erase x u1) ≤ size u1 := by apply ih sh1
+        have sh5 : size (erase x u2) ≤ size u2 := by apply ih sh2
+        have sh6 : size (erase x u3) ≤ size u3 := by apply ih sh3
+        cases k <;> (try simp; linarith)
+        case app md => cases md <;> (simp; linarith)
+        case refl => simp
+        case j0 => simp
       }
-      case type => sorry
-    }
-    case app => sorry
-    case inter => sorry
-    case pair => sorry
-    case fst => sorry
-    case snd => sorry
-    case eq => sorry
-    case refl => sorry
-    case eqind => sorry
-    case promote => sorry
-    case phi => sorry
-    case delta => sorry
-  }
+    })
+    (size t)
+    n
+    t
+    (by simp)
+
+  lemma erase_open_commute_same {n} {t : Term (n + 1)}
+    : ∀ x, erase x ({_|-> x}t) = {_|-> x}erase x t
+  := @Nat.rec
+    (λ s => ∀ {n:Nat} {t:Term (n + 1)}, size t ≤ s ->
+      ∀ x, erase x ({_|-> x}t) = {_|-> x}erase x t)
+    (by {
+      intro n t sh x
+      cases t <;> simp at *
+      case bound j => {
+        unfold HasHOpen.hopn; unfold Syntax.instHasHOpenSyntax; simp
+        unfold Syntax.opn_head; unfold bound; simp
+        split <;> simp
+      }
+    })
+    (by {
+      intro s ih n t sh x
+      cases t
+      case bound j => apply ih (by simp)
+      case free x => apply ih (by simp)
+      case const k => apply ih (by simp)
+      case bind k u1 u2 => {
+        simp at sh
+        have sh1 : size u1 ≤ s := by linarith
+        have sh2 : size u2 ≤ s := by linarith
+        cases k
+        case lam md => {
+          cases md <;> simp at *
+          case free => rw [ih sh2]
+          case type => rw [ih sh1 x, ih sh2 x]
+          case erased => {
+            have sh3 : size ({_|-> x}u2) ≤ s := by simp [*]
+            rw [ih sh3]
+          }
+        }
+        case pi md => simp at *; rw [ih sh1 x, ih sh2 x]
+        case inter => simp at *; rw [ih sh1 x, ih sh2 x]
+      }
+      case ctor k u1 u2 u3 => {
+        simp at sh
+        have sh1 : size u1 ≤ s := by linarith
+        have sh2 : size u2 ≤ s := by linarith
+        have sh3 : size u3 ≤ s := by linarith
+        cases k <;> simp at *
+        case app md => {
+          cases md <;> simp at *
+          case type => rw [ih sh1, ih sh2]
+          case free => rw [ih sh1, ih sh2]
+          case erased => rw [ih sh1]
+        }
+        case pair => rw [ih sh1]
+        case fst => rw [ih sh1]
+        case snd => rw [ih sh1]
+        case eq => rw [ih sh1, ih sh2, ih sh3]
+        case eqind => rw [ih sh3]
+        case jω => rw [ih sh1, ih sh2]
+        case promote => rw [ih sh1]
+        case delta => rw [ih sh1]
+        case phi => rw [ih sh1]
+      }
+    })
+    (size t)
+    n
+    t
+    (by simp)
+
+  lemma erase_fv (y : Name) : x ∈ fv (erase y t) -> x ∈ fv t := by sorry
+
+  lemma erase_open_commute {t : Term 1} (x y : Name)
+    : PseObj ({_|-> y}t) -> erase x ({_|-> y}t) = {_|-> y}erase x t
+  := by sorry
+
+  -- lemma erase_pseobj_open : PseObj (erase y ({_|-> x}t)) -> PseObj ({_|-> x}(erase y t))
+  -- := λ h => @Nat.rec
+  --   (λ s => ∀ t, size t ≤ s ->
+  --     PseObj (erase y ({_|-> x}t)) ->
+  --     PseObj ({_|-> x}(erase y t)))
+  --   sorry
+  --   (by {
+  --     intro s ih t sh h
+  --     cases t
+  --     case bound => sorry
+  --     case free => sorry
+  --     case const => sorry
+  --     case bind k u1 u2 => {
+  --       simp at sh
+  --       have sh1 : size u1 ≤ s := by linarith
+  --       have sh2 : size u2 ≤ s := by linarith
+  --       cases k
+  --       case lam md => sorry
+  --       case pi md => sorry
+  --       case inter => {
+  --         simp at *
+  --         cases h; case _ S _ p1 p2 =>
+  --         sorry
+  --       }
+  --     }
+  --     case ctor k u1 u2 u3 => sorry
+  --   })
+  --   (size t)
+  --   t
+  --   (by simp)
+  --   h
+
+  -- lemma erase_pseobj (x : Name) (t : Term 0) : PseObj (erase x t) := @Nat.rec
+  --   (λ s => ∀ {t}, size t ≤ s -> PseObj (erase x t))
+  --   (by {
+  --     intro t sh
+  --     cases t <;> simp at *
+  --     case bound j => cases j; linarith
+  --     case free => constructor
+  --     case const => constructor
+  --   })
+  --   (by {
+  --     intro s ih t sh
+  --     cases t
+  --     case bound => apply ih (by simp)
+  --     case free => apply ih (by simp)
+  --     case const => apply ih (by simp)
+  --     case bind k u1 u2 => {
+  --       simp at sh
+  --       have sh1 : size u1 ≤ s := by linarith
+  --       have sh2 : size u2 ≤ s := by linarith
+  --       cases k <;> simp
+  --       case lam md => {
+  --         cases md <;> simp
+  --         case free => {
+  --           constructor; simp; constructor
+  --           swap; exact []; intro y _
+  --           have sh2' : size ({_|-> y}u2) ≤ s := by simp; exact sh2
+  --           have p := ih sh2'
+  --           apply erase_pseobj_open p
+  --         }
+  --         case type => {
+  --           constructor; simp; apply ih sh1
+  --           swap; exact []; intro y _
+  --           have sh2' : size ({_|-> y}u2) ≤ s := by simp; exact sh2
+  --           have p := ih sh2'
+  --           apply erase_pseobj_open p
+  --         }
+  --         case erased => {
+  --           have sh2' : size ({_|-> x}u2) ≤ s := by simp; exact sh2
+  --           apply ih sh2'
+  --         }
+  --       }
+  --       case pi md => {
+  --         constructor; simp; apply ih sh1
+  --         swap; exact []; intro y _
+  --         have sh2' : size ({_|-> y}u2) ≤ s := by simp; exact sh2
+  --         have p := ih sh2'
+  --         apply erase_pseobj_open p
+  --       }
+  --       case inter => {
+  --         constructor; simp; apply ih sh1
+  --         swap; exact []; intro y _
+  --         have sh2' : size ({_|-> y}u2) ≤ s := by simp; exact sh2
+  --         have p := ih sh2'
+  --         apply erase_pseobj_open p
+  --       }
+  --     }
+  --     case ctor k u1 u2 u3 => {
+  --       simp at sh
+  --       have sh1 : size u1 ≤ s := by linarith
+  --       have sh2 : size u2 ≤ s := by linarith
+  --       have sh3 : size u3 ≤ s := by linarith
+  --       cases k <;> simp at *
+  --       case app md => {
+  --         cases md <;> simp
+  --         case free => {
+  --           constructor; simp
+  --           apply ih sh1; apply ih sh2; constructor
+  --         }
+  --         case type => {
+  --           constructor; simp
+  --           apply ih sh1; apply ih sh2; constructor
+  --         }
+  --         case erased => apply ih sh1
+  --       }
+  --       case pair => apply ih sh1
+  --       case fst => apply ih sh1
+  --       case snd => apply ih sh1
+  --       case eq => {
+  --         constructor; simp
+  --         apply ih sh1; apply ih sh2; apply ih sh3
+  --       }
+  --       case refl => {
+  --         constructor; simp
+  --         constructor; swap; exact []
+  --         intro x _; constructor
+  --       }
+  --       case eqind => apply ih sh3
+  --       case j0 => constructor
+  --       case jω => {
+  --         constructor; simp
+  --         apply ih sh1; apply ih sh2; constructor
+  --       }
+  --       case promote => apply ih sh1
+  --       case delta => apply ih sh1
+  --       case phi => apply ih sh1
+  --     }
+  --   })
+  --   (size t)
+  --   t
+  --   (by simp)
+
+  -- lemma erase_pseobj_erase_swap (x y : Name) : PseObj t -> erase x t = erase y t := by {
+  --   intro h
+  --   induction h
+  --   case ax => simp
+  --   case var => simp
+  --   case bind k _ _ _ _ _ _ _ _ => {
+  --     cases k
+  --     any_goals simp [*]
+  --     case lam md => sorry
+  --     case pi md => sorry
+  --     case inter => sorry
+  --   }
+  --   case lam => sorry
+  --   case pair ih1 ih2 ih3 => simp [*]
+  --   case ctor k _ _ _ _ _ _ _ _ _ _ => {
+  --     cases k
+  --     any_goals simp [*]
+  --     case app md _ => cases md <;> simp [*]
+  --   }
+  -- }
+
+  -- lemma erase_pseobj_open_erase_swap (x y z : Name)
+  --   : PseObj ({_|-> z}t) -> erase x t = erase y t
+  -- := by sorry
+
+  -- lemma erase_pseobj_lam_m0
+  --   : PseObj (lam m0 t1 t2) -> ∀ y, erase x (lam m0 t1 t2) = {_|-> y}erase x t2
+  -- := by {
+  --   intro obj y
+  --   cases obj
+  --   case _ n _ _ => exfalso; apply n (by simp)
+  --   case _ S p1 p2 h => {
+  --     have p := PseObj.lam p1 p2 h
+  --     have zfresh := @Name.fresh_is_fresh S
+  --     generalize _zdef : @Name.fresh S = z at *
+  --     rw [erase_pseobj_erase_swap x y p]; simp
+  --     have lem := p2 z zfresh
+  --     rw [erase_pseobj_open_erase_swap x y z lem]
+  --     rw [erase_open_commute y]
+  --   }
+  -- }
 
 end Cedille

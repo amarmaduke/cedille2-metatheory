@@ -49,6 +49,11 @@ namespace Syntax
   def opn_head {α β γ n} (v : Name) (t : @Syntax α β γ (n + 1)) : @Syntax α β γ n :=
     match t with
     | bound j =>
+      -- if h : j == 0 then free v
+      -- else by {
+      --   have lem : j ≠ 0 := by intros h2; rewrite [h2] at h; simp at h
+      --   exact (bound (Fin.pred j lem))
+      -- }
       let k := j.val
       if h : k == n then free v else by {
       have lem0 : k < n + 1 := j.isLt
@@ -60,7 +65,7 @@ namespace Syntax
       have lem2 : j.val ≤ n := by linarith
       have lem3 : j.val < n := Lemma.opn_head lem1 lem2
       exact (bound (Fin.mk j.val lem3))
-    }
+      }
     | free x => free x
     | const c => const c
     | bind k t1 t2 => bind k (opn_head v t1) (opn_head v t2)
@@ -827,5 +832,130 @@ namespace Syntax
       unfold weaken; unfold fv; rw [ih1, ih2, ih3]
     }
   }
+
+  def hopn_swap {α β γ n}  (t : @Syntax α β γ (n + 2)) : @Syntax α β γ (n + 2) :=
+    match t with
+    | Syntax.bound i =>
+      if i == n + 1 then Syntax.bound n
+      else if i == n then Syntax.bound (n + 1)
+      else Syntax.bound i
+    | Syntax.free x => Syntax.free x
+    | Syntax.const k => Syntax.const k
+    | Syntax.bind k u1 u2 =>
+      Syntax.bind k (hopn_swap u1) (hopn_swap u2)
+    | Syntax.ctor k u1 u2 u3 =>
+      Syntax.ctor k (hopn_swap u1) (hopn_swap u2) (hopn_swap u3)
+
+  lemma hopn_swap_fact {α β γ n} (t : @Syntax α β γ (n + 2))
+    : {_|-> x}{_|-> y}t = {_|-> y}{_|-> x}(hopn_swap t)
+  := @Nat.rec
+    (λ s => ∀ {n:Nat} {t:@Syntax α β γ (n + 2)},
+      size t ≤ s ->
+      {_|-> x}{_|-> y}t = {_|-> y}{_|-> x}(hopn_swap t))
+    (by {
+      intro s t sh
+      cases t <;> simp at *
+      case bound j => {
+        unfold hopn_swap; simp
+        unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp
+        split
+        case _ h => {
+          rw [h]
+          generalize step1def : opn_head y (bound (↑s + 1)) = step1
+          unfold opn_head at step1def; simp at step1def
+          have lem1 : @Fin.val (s + 2) ((Nat.cast s) + 1) = s + 1 := fin_cast3
+          split at step1def
+          case _ => {
+            rw [<-step1def]
+            generalize step2def : opn_head x (bound ↑s) = step2
+            unfold opn_head at step2def; simp at step2def
+            have lem2 := (@Nat.mod_eq_iff_lt s (s + 1 + 1) (by linarith)).2 (by linarith)
+            split at step2def
+            case _ hx => rw [lem2] at hx; exfalso; linarith
+            case _ => {
+              rw [<-step2def]; unfold opn_head; simp
+              split
+              case _ => simp
+              case _ => linarith
+            }
+          }
+          case _ hx => exfalso; apply hx lem1
+        }
+        case _ h => {
+          split
+          case _ h2 => {
+            subst h2
+            generalize step1def : opn_head y (bound ↑s) = step1
+            unfold opn_head at step1def; simp at step1def
+            have lem1 := (@Nat.mod_eq_iff_lt s (s + 1 + 1) (by linarith)).2 (by linarith)
+            split at step1def
+            case _ hx => exfalso; rw [lem1] at hx; linarith
+            case _ => {
+              generalize step2def : opn_head x (bound (↑s + 1)) = step2
+              unfold opn_head at step2def; simp at step2def
+              split at step2def
+              case _ => {
+                rw [<-step2def, <-step1def]; unfold opn_head; simp
+                linarith
+              }
+              case _ hx => exfalso; rw [fin_cast3] at hx; apply hx; simp
+            }
+          }
+          case _ h2 => {
+            generalize step1def : opn_head y (bound j) = step1
+            unfold opn_head at step1def; simp at step1def
+            split at step1def
+            case _ hx => exfalso; apply h; apply fin_cast4 hx
+            case _ => {
+              generalize step2def : opn_head x (bound j) = step2
+              unfold opn_head at step2def; simp at step2def
+              split at step2def
+              case _ hx => exfalso; apply h; apply fin_cast4 hx
+              case _ => {
+                generalize step3def : opn_head x step1 = step3
+                rw [<-step1def] at step3def; unfold opn_head at step3def; simp at step3def
+                split at step3def
+                case _ hx => exfalso; apply h2; apply fin_cast5 hx
+                case _ => {
+                  rw [<-step2def]; unfold opn_head; simp
+                  split
+                  case _ hx => exfalso; apply h2; apply fin_cast5 hx
+                  case _ => rw [<-step3def]
+                }
+              }
+            }
+          }
+        }
+      }
+      case free => unfold hopn_swap; simp
+      case const => unfold hopn_swap; simp
+    })
+    (by {
+      intro s ih n t sh
+      cases t
+      case bound => apply ih (by simp)
+      case free => apply ih (by simp)
+      case const => apply ih (by simp)
+      case bind k u1 u2 => {
+        simp at sh
+        have sh1 : size u1 ≤ s := by linarith
+        have sh2 : size u2 ≤ s := by linarith
+        unfold hopn_swap; simp
+        rw [ih sh1, ih sh2]; simp
+      }
+      case ctor k u1 u2 u3 => {
+        simp at sh
+        have sh1 : size u1 ≤ s := by linarith
+        have sh2 : size u2 ≤ s := by linarith
+        have sh3 : size u3 ≤ s := by linarith
+        unfold hopn_swap; simp
+        rw [ih sh1, ih sh2, ih sh3]; simp
+      }
+    })
+    (size t)
+    n
+    t
+    (by simp)
+
 
 end Syntax

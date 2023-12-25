@@ -19,6 +19,18 @@ namespace Cedille
     unfold Syntax.opn_head; simp; unfold bound; simp
   }
 
+  @[simp] def open_bound_np2_0 {n} : {_|-> x}(@bound (n + 2) 0) = bound 0 := by {
+    unfold HasHOpen.hopn; unfold Syntax.instHasHOpenSyntax; simp
+    unfold Syntax.opn_head; simp; unfold bound; simp
+    intro h; exfalso; linarith
+  }
+
+  @[simp] def subst_bound_np1_0 {v : Term n} : [_:= v](@bound (n + 1) 0) = v := by {
+    unfold HasHSubst.hsubst; unfold Syntax.instHasHSubstSyntax; simp
+    unfold Syntax.hsubst; simp; unfold bound; simp
+    sorry
+  }
+
   @[simp] lemma fv_id_empty : @fv n (lam mf kindu (bound 0)) = [] := by {
     unfold lam; unfold fv; unfold Syntax.fv;
     unfold Syntax.fv; unfold kindu; simp
@@ -33,7 +45,9 @@ namespace Cedille
   @[simp] lemma mode_pi_codomain_m0 : Mode.pi_codomain m0 = @typeu n := by congr
   @[simp] lemma mode_pi_codomain_mt : Mode.pi_codomain mt = @kindu n := by congr
 
-  @[simp] lemma refl_erased_is_normal : ¬ (lam mf kindu (bound 0) -β> t) := by {
+  @[simp] lemma refl_erased_is_normal {n} {t : Term n}
+    : ¬ (lam mf kindu (bound 0) -β> t)
+  := by {
     intro h
     cases h
     case bind1 _ step => cases step
@@ -41,7 +55,7 @@ namespace Cedille
       have xfresh := @Name.fresh_is_fresh S
       generalize _xdef : Name.fresh S = x at *
       replace step := step x xfresh
-      simp at *; cases step
+      simp at *; cases n <;> (simp at *; cases step)
     }
   }
 

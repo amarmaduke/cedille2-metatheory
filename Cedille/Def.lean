@@ -130,7 +130,7 @@ namespace Cedille
     all_goals (try linarith)
   }
 
-  inductive Red : Term 0 -> Term 0 -> Prop where
+  inductive Red {n} : Term n -> Term n -> Prop where
   | beta : Red (app m (lam m t1 t2) t3) ([_:= t3]t2)
   | fst : Red (fst (pair t1 t2 t3)) t1
   | snd : Red (snd (pair t1 t2 t3)) t2
@@ -147,19 +147,19 @@ namespace Cedille
 
   notation:150 t1:150 " -β> " t2:150 => Red t1 t2
 
-  inductive RedStar : Term 0 -> Term 0 -> Prop where
+  inductive RedStar {n} : Term n -> Term n -> Prop where
   | refl : RedStar t t
   | step : t1 -β> t2 -> RedStar t2 t3 -> RedStar t1 t3
 
   notation:150 t1:150 " -β>* " t2:150 => RedStar t1 t2
-  notation:150 t1:150 " -β>+ " t2:150 => ∃ k : Term 0, t1 -β> k ∧ k -β>* t2
+  notation:150 t1:150 " -β>+ " t2:150 => ∃ k : Term n, t1 -β> k ∧ k -β>* t2
 
-  inductive BetaConv : Term 0 -> Term 0 -> Prop where
+  inductive BetaConv {n} : Term n -> Term n -> Prop where
   | conv : t1 -β>* t -> t2 -β>* t -> BetaConv t1 t2
 
   notation:150 t1:150 " =β= " t2:150 => BetaConv t1 t2
 
-  inductive Conv : Term 0 -> Term 0 -> Prop where
+  inductive Conv {n} : Term n -> Term n -> Prop where
   | conv :
     t1 -β>* t1' ->
     t2 -β>* t2' ->
@@ -168,38 +168,30 @@ namespace Cedille
 
   notation:150 t1:150 " === " t2:150 => Conv t1 t2
 
-  inductive Sane : Term 0 -> Prop
+  inductive PseObj {n} : Term n -> Prop
   -- Basic
-  | ax : Sane (const K)
-  | var : Sane (free x)
+  | ax : PseObj (const K)
+  | var : PseObj (free x)
   -- Functions
-  | pi {S : FvSet!} :
-    Sane A ->
-    ((x : Name) -> x ∉ S -> Sane ({_|-> x}B)) ->
-    Sane (pi m A B)
+  | bind {S : FvSet!} :
+    k ≠ (Binder.lam m0) ->
+    PseObj A ->
+    ((x : Name) -> x ∉ S -> PseObj ({_|-> x}B)) ->
+    PseObj (Syntax.bind k A B)
   | lam {S : FvSet!} :
-    Sane A ->
-    ((x : Name) -> x ∉ S -> Sane ({_|-> x}t)) ->
-    (m = m0 -> (x : Name) -> x ∉ S -> x ∉ (fv ∘ erase x) ({_|-> x}t)) ->
-    Sane (lam m A t)
-  | app : Sane f -> Sane a -> Sane (app m f a)
-  -- Intersections
-  | inter {S : FvSet!} :
-    Sane A ->
-    ((x : Name) -> x ∉ S -> Sane ({_|-> x}B)) ->
-    Sane (inter A B)
-  | pair : Sane T -> Sane t -> Sane s ->
+    PseObj A ->
+    ((x : Name) -> x ∉ S -> PseObj ({_|-> x}t)) ->
+    ((x : Name) -> x ∉ S -> x ∉ (fv ∘ erase x) ({_|-> x}t)) ->
+    PseObj (lam m0 A t)
+  | pair : PseObj t -> PseObj s -> PseObj T ->
     (∀ x, erase x t =β= erase x s) ->
-    Sane (pair t s T)
-  | fst : Sane t -> Sane (fst t)
-  | snd : Sane t -> Sane (snd t)
-  -- Equality
-  | eq : Sane A -> Sane a -> Sane b -> Sane (eq A a b)
-  | refl : Sane t -> Sane (refl t)
-  | eqind : Sane A -> Sane P -> Sane x -> Sane y -> Sane r -> Sane w -> Sane (J A P x y r w)
-  | promote : Sane e -> Sane (promote e)
-  | phi : Sane a -> Sane f -> Sane e -> Sane (phi a f e)
-  | delta : Sane e -> Sane (delta e)
+    PseObj (pair t s T)
+  | ctor :
+    k ≠ Constructor.pair ->
+    PseObj t1 ->
+    PseObj t2 ->
+    PseObj t3 ->
+    PseObj (Syntax.ctor k t1 t2 t3)
 
   namespace Mode
     def pi_domain (m : Mode) (K : Constant) : Term n :=

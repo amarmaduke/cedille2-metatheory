@@ -1,4 +1,4 @@
--- 
+--
 import Common.Mathlib
 import Common.Util
 
@@ -31,7 +31,7 @@ namespace Name
     contradiction
   }
 
-  def beq_of_not_beq {a b : Name} : (a == b) ≠ true -> (a == b) = false := by simp [*] 
+  def beq_of_not_beq {a b : Name} : (a == b) ≠ true -> (a == b) = false := by simp [*]
 
   def decEq (a : Name) (b : Name) : Decidable (a = b) :=
     match String.decEq a.1 b.1 with
@@ -70,6 +70,20 @@ namespace FvSet
   def Disjoint (l1 l2 : FvSet!) : Prop := List.Disjoint l1 l2
 
   def not_mem_nil : x ∉ [] := by simp
+
+  lemma em {A : FvSet!} : x ∈ A ∨ x ∉ A := by {
+    induction A
+    apply Or.inr; simp
+    case cons hd tl ih => {
+      cases ih
+      case _ ih => apply Or.inl; simp [*]
+      case _ ih => {
+        cases (Name.decEq x hd)
+        case _ h => apply Or.inr; simp [*]
+        case _ h => apply Or.inl; simp [*]
+      }
+    }
+  }
 
   lemma not_mem_append {A B : FvSet!} : x ∉ A ++ B -> x ∉ A ∧ x ∉ B := by {
     intro h
@@ -173,7 +187,7 @@ namespace FvSet
         }
       }
     }
-  } 
+  }
 
   lemma not_mem_subset_not_mem {A B : FvSet!} : x ∉ A -> B ⊆ A -> x ∉ B := by {
     intro h1 h2
@@ -197,11 +211,11 @@ namespace Name
     | List.cons n tail => if n == x
       then fresh_with_seed tail (inc x)
       else fresh_with_seed tail x
-  
+
   def fresh (set : FvSet!) : Name :=
     match set with
     | List.nil => ("x", 0)
-    | List.cons n tail => fresh_with_seed tail n 
+    | List.cons n tail => fresh_with_seed tail n
 
   lemma fresh_is_fresh : (fresh Γ) ∉ Γ := sorry
 
