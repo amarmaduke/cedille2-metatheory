@@ -8,30 +8,35 @@ import Cedille.Lemma.Inversion
 import Cedille.Lemma.Red
 import Cedille.Lemma.Substitution
 import Cedille.Lemma.BetaConv
+import Cedille.Lemma.Rule
 
 namespace Cedille
 
-  lemma erase_betaconv_open_if
-    : erase x ({_|-> y}t) =β= erase x ({_|-> y}t') ->
-      erase x t =β= erase x t'
+  -- lemma erase_betaconv_open_if
+  --   : erase x ({_|-> y}t) =β= erase x ({_|-> y}t') ->
+  --     erase x t =β= erase x t'
+  -- := by sorry
+
+  -- lemma erase_betaconv_open_only_if
+  --   : erase x t =β= erase x t' ->
+  --     erase x ({_|-> y}t) =β= erase x ({_|-> y}t')
+  -- := by sorry
+
+  -- lemma erase_subst_noop {v : Term n} (S : FvSet!)
+  --   : (∀ x ∉ S, x ∉ fv (erase x ({_|-> x}t))) ->
+  --     erase x ([_:= v]t) = erase x ({_|-> x}t)
+  -- := by sorry
+
+  lemma erase_open_conv
+    : erase ({i |-> x}t) =β= erase ({i |-> x}t') -> erase t =β= erase t'
   := by sorry
 
-  lemma erase_betaconv_open_only_if
-    : erase x t =β= erase x t' ->
-      erase x ({_|-> y}t) =β= erase x ({_|-> y}t')
-  := by sorry
-
-  lemma erase_subst_noop {v : Term n} (S : FvSet!)
-    : (∀ x ∉ S, x ∉ fv (erase x ({_|-> x}t))) ->
-      erase x ([_:= v]t) = erase x ({_|-> x}t)
-  := by sorry
-
-  lemma erase_pseobj_red : PseObj t -> t -β> t' -> ∀ x, erase x t =β= erase x t' := by {
+  lemma erase_pseobj_red : PseObj t -> t -β> t' -> erase t =β= erase t' := by {
     intro obj step
     induction obj generalizing t'
     case ax => cases step
     case var => cases step
-    case bind k A B S hn p1 p2 ih1 ih2 => {
+    case bind k A B hn p1 p2 ih1 ih2 => {
       cases k
       case' lam md => cases md
       case lam.erased => exfalso; apply hn (by simp)
@@ -40,284 +45,452 @@ namespace Cedille
         simp at *
         case bind1 A' step => {
           replace ih1 := ih1 step
-          intro x; try apply BetaConv.refl
-          try apply BetaConv.bind1 (ih1 x)
+          try apply BetaConv.refl
+          try apply BetaConv.bind ih1 BetaConv.refl
         }
-        case bind2 B' S' step => {
-          intro x; simp
-          have yfresh := @Name.fresh_is_fresh (S ++ S' ++ fv B ++ fv B')
-          generalize ydef : @Name.fresh (S ++ S' ++ fv B ++ fv B') = y at *
-          simp at yfresh; have yn := demorgan4 yfresh
-          casesm* _ ∧ _; case _ yn1 yn2 yn3 yn4 =>
-          have yn' : y ∉ fv (erase x B) ++ fv (erase x B') := by {
-            simp; intro h; cases h
-            case _ h => apply yn3 (erase_fv x h)
-            case _ h => apply yn4 (erase_fv x h)
-          }
-          replace ih2 := ih2 y yn1 (step y yn2) x
-          replace ih2 := erase_betaconv_open_if ih2
-          replace ih2 := BetaConv.open_if y ih2
-          apply BetaConv.bind; apply BetaConv.refl; exact yn'; exact ih2
+        case bind2 B' step => {
+          have yfresh := @Name.fresh_is_fresh (fv B)
+          generalize ydef : @Name.fresh (fv B) = y at *
+          replace step : {0 |-> y}B -β> {0 |-> y}B' := by sorry
+          replace ih2 := ih2 y yfresh step
+          simp; try apply BetaConv.refl
+          try apply BetaConv.bind BetaConv.refl (erase_open_conv ih2)
         }
       }
     }
-    case lam A t S p1 p2 h ih1 ih2 => {
+    case lam A t S p1 p2 ih1 ih2 => {
       cases step
-      case bind1 A' step => simp; intro x; apply BetaConv.refl
-      case bind2 t' S' step => {
-        simp; intro x
-        have yfresh := @Name.fresh_is_fresh (S ++ S' ++ fv t ++ fv t')
-        generalize ydef : @Name.fresh (S ++ S' ++ fv t ++ fv t') = y at *
-        simp at yfresh; have yn := demorgan4 yfresh
-        casesm* _ ∧ _; case _ yn1 yn2 yn3 yn4 =>
-          have yn' : y ∉ fv (erase x t) ++ fv (erase x t') := by {
-            simp; intro h; cases h
-            case _ h => apply yn3 (erase_fv x h)
-            case _ h => apply yn4 (erase_fv x h)
-          }
-          replace ih2 := ih2 y yn1 (step y yn2) x
-          replace ih2 := erase_betaconv_open_if ih2
-          replace ih2 := BetaConv.open_if x ih2
-          rw [erase_open_commute_same, erase_open_commute_same]
-          exact ih2
+      case bind1 A' step => simp; apply BetaConv.refl
+      case bind2 t' step => {
+        have yfresh := @Name.fresh_is_fresh (fv t)
+        generalize ydef : @Name.fresh (fv t) = y at *
+        replace step : {0 |-> y}t -β> {0 |-> y}t' := by sorry
+        replace ih2 := ih2 y yfresh step
+        simp; exact (erase_open_conv ih2)
       }
     }
     case pair t s T th sh Th e tih sih Tih => {
       cases step <;> simp at *
       case ctor1 t' step => apply tih step
-      case ctor2 => intro x; apply BetaConv.refl
-      case ctor3 => intro x; apply BetaConv.refl
+      case ctor2 => apply BetaConv.refl
+      case ctor3 => apply BetaConv.refl
     }
     case ctor k t1 t2 t3 ne h1 h2 h3 ih1 ih2 ih3 => {
       cases k <;> simp at *
       case app md => {
         cases step
-        case beta t1' t2' => {
+        case beta t1' t2' x xn => {
           cases md
           case free => {
-            intro x; rw [erase_app_mf_unfolded, erase_lam_mf]
-            constructor
-            apply RedStar.step Red.beta RedStar.refl
-            rw [subst_erase]
-            apply RedStar.refl
+            sorry
+            -- rw [erase_app_mf_unfolded, erase_lam_mf]
+            -- constructor
+            -- apply RedStar.step Red.beta RedStar.refl
+            -- rw [subst_erase]
+            -- apply RedStar.refl
           }
           case type => sorry
           case erased => {
-            intro x
             cases h1 <;> simp at *
-            case lam S' p1 p2 he =>
-            rw [erase_subst_noop S' he]
-            apply BetaConv.refl
+            case lam p1 p2 he =>
+            sorry
           }
         }
         case ctor1 => sorry
         case ctor2 => sorry
         case ctor3 => sorry
       }
-      case fst => {
-        cases step <;> simp at *
-        any_goals intro x; apply BetaConv.refl
-        case ctor1 t1' step => apply ih1 step
-      }
-      case snd => {
-        cases step <;> simp at *
-        case snd t1 t3 => {
-          intro x; cases h1
-          case pair _ _ e _ => exact e x
-          case ctor n _ _ _ => exfalso; apply n (by simp)
+      case proj i => {
+        cases i
+        case first => {
+          cases step <;> simp at *
+          any_goals apply BetaConv.refl
+          case ctor1 t1' step => apply ih1 step
         }
-        case ctor1 t1' step => intro x; apply ih1 step x
-        case ctor2 => intro x; apply BetaConv.refl
-        case ctor3 => intro x; apply BetaConv.refl
+        case second => {
+          cases step <;> simp at *
+          case snd t1 t3 => {
+            cases h1
+            case pair _ _ e _ => exact e
+            case ctor n _ _ _ => exfalso; apply n (by simp)
+          }
+          case ctor1 t1' step => apply ih1 step
+          case ctor2 => apply BetaConv.refl
+          case ctor3 => apply BetaConv.refl
+        }
       }
       case eq => {
         cases step <;> simp at *
         case ctor1 t1' step => {
-          intro x; replace ih1 := ih1 step x
+          replace ih1 := ih1 step
           apply BetaConv.ctor ih1 BetaConv.refl BetaConv.refl
         }
         case ctor2 t2' step => {
-          intro x; replace ih2 := ih2 step x
+          replace ih2 := ih2 step
           apply BetaConv.ctor BetaConv.refl ih2 BetaConv.refl
         }
         case ctor3 t3' step => {
-          intro x; replace ih3 := ih3 step x
+          replace ih3 := ih3 step
           apply BetaConv.ctor BetaConv.refl BetaConv.refl ih3
         }
       }
-      case refl => cases step <;> (simp at *; intro x; apply BetaConv.refl)
+      case refl => cases step <;> (simp at *; apply BetaConv.refl)
       case eqind => {
         cases step
         case eqind t1 t2 t3 t4 t5 t6 => {
-          simp at *; intro x
-          have r1 : lam mf kindu (bound 0) @ω erase x t6 -β> erase x t6 := by sorry
+          simp at *
+          have r1 : lam mf kindu (bound 0) @ω erase t6 -β> erase t6 := by {
+            have lem := @Red.beta mf kindu (bound 0) (erase t6) (@Name.fresh []) (by simp)
+            simp at lem; apply lem
+          }
           have r2 := RedStar.step r1 RedStar.refl
-          sorry
-          -- intro x; apply RedStar.step _ RedStar.refl
-          -- rw [erase_Jω, erase_refl, erase_app_m0]
-          -- apply Red.beta
+          have c1 := BetaConv.red_f BetaConv.refl r2
+          apply BetaConv.symm c1
         }
-        case ctor1 => intro x; apply BetaConv.refl
-        case ctor2 => intro x; apply BetaConv.refl
-        case ctor3 t3' step => intro x; apply ih3 step x
+        case ctor1 => apply BetaConv.refl
+        case ctor2 => apply BetaConv.refl
+        case ctor3 t3' step => apply ih3 step
       }
-      case j0 => cases step <;> (simp at *; intro x; apply BetaConv.refl)
+      case j0 => cases step <;> (simp at *; apply BetaConv.refl)
       case jω => {
         cases step <;> simp at *
         case ctor1 t1' step => {
-          intro x; replace ih1 := ih1 step x
+          replace ih1 := ih1 step
           apply BetaConv.ctor ih1 BetaConv.refl BetaConv.refl
         }
         case ctor2 t2' step => {
-          intro x; replace ih2 := ih2 step x
+          replace ih2 := ih2 step
           apply BetaConv.ctor BetaConv.refl ih2 BetaConv.refl
         }
-        case ctor3 => intro x; apply BetaConv.refl
+        case ctor3 => apply BetaConv.refl
       }
       case promote => {
         cases step <;> simp at *
-        case promote => intro x; apply BetaConv.refl
-        case ctor1 t1' step => intro x; apply ih1 step x
-        case ctor2 => intro x; apply BetaConv.refl
-        case ctor3 => intro x; apply BetaConv.refl
+        case promote => apply BetaConv.refl
+        case ctor1 t1' step => apply ih1 step
+        case ctor2 => apply BetaConv.refl
+        case ctor3 => apply BetaConv.refl
       }
       case delta => {
         cases step <;> simp at *
-        case ctor1 t1' step => intro x; apply ih1 step x
-        case ctor2 => intro x; apply BetaConv.refl
-        case ctor3 => intro x; apply BetaConv.refl
+        case ctor1 t1' step => apply ih1 step
+        case ctor2 => apply BetaConv.refl
+        case ctor3 => apply BetaConv.refl
       }
       case phi => {
         cases step <;> simp at *
-        case ctor1 t1' step => intro x; apply ih1 step x
-        case ctor2 => intro x; apply BetaConv.refl
-        case ctor3 => intro x; apply BetaConv.refl
+        case ctor1 t1' step => apply ih1 step
+        case ctor2 => apply BetaConv.refl
+        case ctor3 => apply BetaConv.refl
       }
     }
   }
 
   lemma erase_red_f_step :
     PseObj a ->
-    (∀ x, erase x a =β= erase x b) ->
+    erase a =β= erase b ->
     a -β> a' ->
-    (∀ x, erase x a' =β= erase x b)
+    erase a' =β= erase b
   := by {
-    intro j e step
-    induction j generalizing a' b
+    intro p c1 step
+    have lem := erase_pseobj_red p step
+    apply BetaConv.trans (BetaConv.symm lem) c1
+    -- intro j e step
+    -- induction j generalizing a' b
+    -- case ax => cases step
+    -- case var => cases step
+    -- case bind k A B S hn p1 p2 ih1 ih2 => {
+    --   cases k <;> simp at *
+    --   case lam md => sorry
+    --   case pi md => sorry
+    --   case inter => {
+    --     cases step <;> simp at *
+    --     case bind1 A' step => {
+    --       sorry
+    --     }
+    --     case bind2 B' step => {
+    --       sorry
+    --     }
+    --   }
+    -- }
+    -- case lam => sorry
+    -- case pair t s T th sh Th e2 tih sih Tih => {
+    --   simp at *
+    --   cases step <;> simp
+    --   case ctor1 t' step => apply tih e step
+    --   case ctor2 => simp [*]
+    --   case ctor3 => simp [*]
+    -- }
+    -- case ctor k t1 t2 t3 ne h1 h2 h3 ih1 ih2 ih3 => {
+    --   cases k <;> simp at *
+    --   case app md => sorry
+    --   case proj i => {
+    --     sorry
+    --     -- cases step <;> simp at *
+    --     -- any_goals apply e
+    --     -- case ctor1 t1' step => apply ih1 e step
+    --   }
+    --   -- case snd => {
+    --   --   cases step <;> simp at *
+    --   --   any_goals apply e
+    --   --   case snd t1 t3 => {
+    --   --     cases h1;
+    --   --     case _ p1 p2 h p3 => {
+    --   --       intro x
+    --   --       apply BetaConv.trans (BetaConv.symm (h x)) (e x)
+    --   --     }
+    --   --     case _ ne _ _ _ => exfalso; apply ne (by simp)
+    --   --   }
+    --   --   case ctor1 t1' step => apply ih1 e step
+    --   -- }
+    --   case eq => {
+    --     cases step <;> simp at *
+    --     case ctor1 t1' step => {
+    --       sorry
+    --       -- intro x
+    --       -- have lem := erase_pseobj_red h1 step
+    --       -- have lem2 := @BetaConv.ctor _ _ _ (erase x t2) _ (erase x t3) _ Constructor.eq
+    --       --   (lem x) BetaConv.refl BetaConv.refl
+    --       -- apply BetaConv.trans (BetaConv.symm lem2) (e x)
+    --     }
+    --     case ctor2 => sorry -- Like ctor1
+    --     case ctor3 => sorry -- Like ctor2
+    --   }
+    --   case refl => cases step <;> simp at * <;> simp [*]
+    --   case eqind => {
+    --     cases step <;> simp at *
+    --     case eqind t1 t2 t3 t4 t5 t6 => sorry
+    --     case ctor1 => sorry
+    --     case ctor2 => sorry
+    --     case ctor3 => sorry
+    --   }
+    --   case j0 => cases step <;> simp at * <;> apply e
+    --   case jω => {
+    --     cases step <;> simp at *
+    --     case ctor1 t1' step => sorry
+    --     case ctor2 t2' step => sorry
+    --     case ctor3 t3' step => apply e
+    --   }
+    --   case promote => cases step <;> simp at * <;> simp [*]
+    --   case delta => cases step <;> simp at * <;> simp [*]
+    --   case phi => cases step <;> simp at * <;> simp [*]
+    -- }
+  }
+
+  theorem preservation_of_pseobj_step : PseObj t -> t -β> t' -> PseObj t' := by {
+    intro p step
+    induction p generalizing t'
     case ax => cases step
     case var => cases step
     case bind => sorry
-    case lam => sorry
-    case pair t s T th sh Th e2 tih sih Tih => {
-      simp at *
+    case lam A t p1 p2 e ih1 ih2 => {
       cases step <;> simp
-      case ctor1 t' step => apply tih e step
-      case ctor2 => simp [*]
-      case ctor3 => simp [*]
+      case bind1 A' step => sorry
+      case bind2 B' step => sorry
     }
-    case ctor k t1 t2 t3 ne h1 h2 h3 ih1 ih2 ih3 => {
-      cases k <;> simp at *
-      case app md => sorry
-      case fst => {
-        cases step <;> simp at *
-        any_goals apply e
-        case ctor1 t1' step => apply ih1 e step
+    case pair t s T p1 p2 p3 e ih1 ih2 ih3 => {
+      cases step <;> simp
+      case ctor1 t' step => {
+        replace ih1 := ih1 step; constructor
+        simp [*]; simp [*]; simp [*]
+        apply erase_red_f_step p1 e step
       }
-      case snd => {
-        cases step <;> simp at *
-        any_goals apply e
-        case snd t1 t3 => {
-          cases h1;
-          case _ p1 p2 h p3 => {
-            intro x
-            apply BetaConv.trans (BetaConv.symm (h x)) (e x)
-          }
-          case _ ne _ _ _ => exfalso; apply ne (by simp)
+      case ctor2 s' step => {
+        replace ih2 := ih2 step; constructor
+        simp [*]; simp [*]; simp [*]
+        have lem := erase_red_f_step p2 (BetaConv.symm e) step
+        apply BetaConv.symm lem
+      }
+      case ctor3 T' step => {
+        replace ih3 := ih3 step; constructor
+        all_goals simp [*]
+      }
+    }
+    case ctor k t1 t2 t3 hn p1 p2 p3 ih1 ih2 ih3 => {
+      cases k
+      case app => sorry
+      case pair => exfalso; apply hn (by simp)
+      case proj i => {
+        cases i
+        case first => {
+          cases step <;> simp at *
+          case fst t2 t3 => cases p1 <;> simp [*]
+          case phi t2 t3 => cases p1; simp [*]
+          case ctor1 => sorry
+          case ctor2 => sorry
+          case ctor3 => sorry
         }
-        case ctor1 t1' step => apply ih1 e step
+        case second => sorry
       }
-      case eq => {
-        cases step <;> simp at *
-        case ctor1 t1' step => {
-          intro x
-          have lem := erase_pseobj_red h1 step
-          have lem2 := @BetaConv.ctor _ _ _ (erase x t2) _ (erase x t3) _ Constructor.eq
-            (lem x) BetaConv.refl BetaConv.refl
-          apply BetaConv.trans (BetaConv.symm lem2) (e x)
-        }
-        case ctor2 => sorry -- Like ctor1
-        case ctor3 => sorry -- Like ctor2
-      }
-      case refl => cases step <;> simp at * <;> simp [*]
-      case eqind => {
-        cases step <;> simp at *
-        case eqind t1 t2 t3 t4 t5 t6 => sorry
-        case ctor1 => sorry
-        case ctor2 => sorry
-        case ctor3 => sorry
-      }
-      case j0 => cases step <;> simp at * <;> apply e
-      case jω => {
-        cases step <;> simp at *
-        case ctor1 t1' step => sorry
-        case ctor2 t2' step => sorry
-        case ctor3 t3' step => apply e
-      }
-      case promote => cases step <;> simp at * <;> simp [*]
-      case delta => cases step <;> simp at * <;> simp [*]
-      case phi => cases step <;> simp at * <;> simp [*]
+      case eq => sorry
+      case refl => sorry
+      case eqind => sorry
+      case j0 => sorry
+      case jω => sorry
+      case promote => sorry
+      case delta => sorry
+      case phi => sorry
     }
   }
 
   lemma erase_red_f :
     PseObj a ->
-    (∀ x, erase x a =β= erase x b) ->
+    erase a =β= erase b ->
     a -β>* a' ->
-    (∀ x, erase x a' =β= erase x b)
+    erase a' =β= erase b
   := by {
-    sorry
-    -- intro j e step
-    -- induction step
-    -- case refl => simp [*]
-    -- case step t1 t2 _t3 r1 _r2 ih => {
-    --   have lem1 := preservation_of_pseobj_step j r1
-    --   have lem2 := erase_red_f_step j e r1
-    --   apply ih lem1 lem2
-    -- }
+    intro j e step
+    induction step
+    case refl => simp [*]
+    case step t1 t2 _t3 r1 _r2 ih => {
+      replace e := erase_red_f_step j e r1
+      have p := preservation_of_pseobj_step j r1
+      apply ih p e
+    }
+  }
+
+  theorem preservation_of_pseobj : PseObj t -> t -β>* t' -> PseObj t' := by {
+    intro p step
+    induction step
+    case refl => simp [*]
+    case step t1 t2 _t3 r1 _r2 ih => {
+      apply ih (preservation_of_pseobj_step p r1)
+    }
   }
 
   lemma erase_red_b_step :
     PseObj a ->
-    (∀ x, erase x a' =β= erase x b) ->
+    erase a' =β= erase b ->
     a -β> a' ->
-    (∀ x, erase x a =β= erase x b)
+    erase a =β= erase b
   := by {
     intro h e step
-    induction h generalizing b
-    case ax => sorry
-    case var => sorry
-    case bind => sorry
-    case lam => sorry
-    case pair => sorry
-    case ctor => sorry
+    have lem := erase_pseobj_red h step
+    apply BetaConv.trans lem e
   }
 
   lemma erase_red_b :
     PseObj a ->
-    (∀ x, erase x a' =β= erase x b) ->
+    erase a' =β= erase b ->
     a -β>* a' ->
-    (∀ x, erase x a =β= erase x b)
+    erase a =β= erase b
   := by {
-    sorry
-    -- intro h e step
-    -- induction step
-    -- case refl t => simp [*]
-    -- case step u v w r1 _r2 ih => {
-    --   have h2 := preservation_of_pseobj_step h r1
-    --   have lem := ih h2 e
-    --   apply erase_red_b_step h lem r1
-    -- }
+    intro h e step
+    induction step
+    case refl t => simp [*]
+    case step u v w r1 _r2 ih => {
+      have h2 := preservation_of_pseobj_step h r1
+      have lem := ih h2 e
+      apply erase_red_b_step h lem r1
+    }
   }
+
+  lemma infer_implies_pseobj_type : Γ ⊢ t : A -> PseObj A := λ j => @Infer.rec
+    (λ Γ t A _ => PseObj A)
+    (λ Γ t A _ => PseObj A)
+    (λ Γ t A _ => PseObj A)
+    (λ _ _ => True)
+    (by { intro Γ _ _; constructor })
+    (by {
+      intro Γ x A wf xn _
+      have lem := get_ctx_wf wf xn
+      casesm* ∃ _, _; case _ Δ K lem =>
+      cases lem; case _ D lem r =>
+      apply infer_implies_pseobj lem
+    })
+    (by {
+      intros _ _ m
+      cases m <;> (simp; intros; constructor)
+    })
+    (by {
+      intros Γ A m K t B j1 j2 e ih1 ih2; simp at *
+      cases j1; case _ _ j1 _ =>
+      have lem := infer_implies_pseobj j1
+      sorry
+      --apply PseObj.bind _ lem ih2; simp
+    })
+    (by {
+      intros x B Γ f m A a xn j1 j2 ih1 ih2
+      cases ih1; case _ S hn _ ih2 =>
+      sorry
+    })
+    (by { intros; constructor })
+    (by {
+      intros Γ T A B t s j1 j2 j3 e ih1 ih2 ih3; simp at *
+      cases ih1; case _ S' _ p1 p2 =>
+      apply PseObj.bind _ p1 p2; simp
+    })
+    (by {
+      intros Γ t A B j ih
+      cases ih; case _ _ _ ih _ => exact ih
+    })
+    (by {
+      intros x B Γ t A xn j ih
+      cases ih; case _ _ _ ih =>
+      replace ih := ih x xn
+      sorry
+    })
+    (by { intros; constructor })
+    (by {
+      intros Γ t A j ih
+      have lem := infer_implies_pseobj j
+      apply PseObj.ctor _ ih lem lem; simp
+    })
+    (by {
+      intros Γ A P x y r w j1 j2 j3 j4 j5 j6 ih1 ih2 ih3 ih4 ih5 ih6
+      constructor; simp; constructor; simp; constructor; simp
+      cases j2; case _ _ _ j2 _ _ => apply infer_implies_pseobj j2
+      cases j3; case _ _ _ j3 _ _ => apply infer_implies_pseobj j3
+      constructor; cases j4; case _ _ _ j4 _ _ => apply infer_implies_pseobj j4
+      constructor; cases j5; case _ _ _ j5 _ _ => apply infer_implies_pseobj j5
+      constructor
+    })
+    (by {
+      intros Γ e T i a j b A B j1 j2 j3 ih1 ih2 ih3
+      cases j2; case _ _ j2 _ =>
+      cases j3; case _ _ _ j3 _ _ =>
+      have lem1 := infer_implies_pseobj j2
+      have lem2 := infer_implies_pseobj j3
+      apply PseObj.ctor _ ih2 lem1 lem2; simp
+    })
+    (by {
+      intros A B Γ f a e h j1 j2 j3 fve ih1 ih2 ih3
+      cases ih1; case _ S _ _ ih1 =>
+      have lem : ∀ x ∉ fv B, PseObj ({0 |-> x}B) := by {
+        have yfresh := @Name.fresh_is_fresh (fv (inter A B))
+        generalize ydef : @Name.fresh (fv (inter A B)) = y at *
+        simp at *; replace ih1 := ih1 y yfresh
+        intro x xn; unfold inter at ih1
+        rw [Syntax.open_vanish] at ih1
+        cases ih1; case _ S' _ _ ih1 => {
+          rw [Syntax.open_vanish h.2] at ih1
+          apply ih1 x xn
+        }
+        apply h.1
+      }
+      apply PseObj.bind _ ih2 lem; simp
+    })
+    (by {
+      intros; constructor; simp; constructor
+      simp; intro x; constructor
+    })
+    (by {
+      intros Γ t A B j step ih
+      apply preservation_of_pseobj ih step
+    })
+    (by {
+      intros Γ t A B K j1 j2 cv ih1 ih2
+      cases j2; case _ _ j2 _ =>
+      apply infer_implies_pseobj j2
+    })
+    (by simp)
+    (by simp)
+    Γ
+    t
+    A
+    j
+
+
   -- lemma erase_free_red :
   --   ((x : Name) -> x ∉ fv t -> x ∉ (fv ∘ erase x) ({_|-> x}t)) ->
   --   (∃ x, {_|-> x}t -β>* {_|-> x}t') ->

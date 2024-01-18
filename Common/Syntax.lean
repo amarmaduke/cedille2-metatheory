@@ -4,570 +4,243 @@ import Common.Util
 import Common.Name
 import Common.Notation
 
-inductive Syntax {α β γ : Sort _} : Nat -> Sort _ where
-| bound {n} : Fin n -> Syntax n
-| free {n} : Name -> Syntax n
-| const {n} : γ -> Syntax n
-| bind {n} : α -> Syntax n -> Syntax (n + 1) -> Syntax n
-| ctor {n} : β -> Syntax n -> Syntax n -> Syntax n -> Syntax n
+inductive Syntax {α β γ : Sort _} : Sort _ where
+| bound : Nat -> Syntax
+| free : Name -> Syntax
+| const : γ -> Syntax
+| bind : α -> Syntax -> Syntax -> Syntax
+| ctor : β -> Syntax -> Syntax -> Syntax -> Syntax
 
 namespace Syntax
-  namespace Lemma
-    def opn_head {n m : Nat} : ¬ n = m -> n ≤ m -> n < m := by
-      intros h1 h2
-      induction h2 with
-      | refl => contradiction
-      | @step k h _ih => {
-        rewrite [<- Nat.lt_eq]
-        unfold Nat.lt
-        exact (Nat.succ_le_succ h)
-      }
-  end Lemma
 
-  def weaken {α β γ n} (t : @Syntax α β γ n) (m : Nat) : @Syntax α β γ (n + m) :=
-    match t with
-    | bound i =>
-      have := i.isLt
-      bound (Fin.mk i.val (by linarith))
-    | free x => free x
-    | const c => const c
-    | bind k a t =>
-      have : n + m + 1 = n + 1 + m := by linarith
-      bind k (weaken a m) (by rw [this]; exact (weaken t m))
-    | ctor k t1 t2 t3 =>
-      ctor k (weaken t1 m) (weaken t2 m) (weaken t3 m)
-
-  def opn {α β γ n} (i : Fin n) (v : Name) (t : @Syntax α β γ n) : @Syntax α β γ n :=
+  def opn {α β γ} (i : Nat) (v : Name) (t : @Syntax α β γ) : @Syntax α β γ :=
     match t with
     | bound j => if j == i then free v else bound j
     | free x => free x
     | const c => const c
-    | bind k t1 t2 => bind k (opn i v t1) (opn (Fin.succ i) v t2)
+    | bind k t1 t2 => bind k (opn i v t1) (opn (Nat.succ i) v t2)
     | ctor k t1 t2 t3 =>
       ctor k (opn i v t1) (opn i v t2) (opn i v t3)
 
-  def opn_head {α β γ n} (v : Name) (t : @Syntax α β γ (n + 1)) : @Syntax α β γ n :=
-    match t with
-    | bound j =>
-      -- if h : j == 0 then free v
-      -- else by {
-      --   have lem : j ≠ 0 := by intros h2; rewrite [h2] at h; simp at h
-      --   exact (bound (Fin.pred j lem))
-      -- }
-      let k := j.val
-      if h : k == n then free v else by {
-      have lem0 : k < n + 1 := j.isLt
-      have lem1 : k ≠ n := by {
-        intros h2
-        rewrite [h2] at h
-        simp at h
-      }
-      have lem2 : j.val ≤ n := by linarith
-      have lem3 : j.val < n := Lemma.opn_head lem1 lem2
-      exact (bound (Fin.mk j.val lem3))
-      }
-    | free x => free x
-    | const c => const c
-    | bind k t1 t2 => bind k (opn_head v t1) (opn_head v t2)
-    | ctor k t1 t2 t3 =>
-      ctor k (opn_head v t1) (opn_head v t2) (opn_head v t3)
-
-  def cls {α β γ n} (i : Fin n) (v : Name) (t : @Syntax α β γ n) : @Syntax α β γ n :=
+  def cls {α β γ} (i : Nat) (v : Name) (t : @Syntax α β γ) : @Syntax α β γ :=
     match t with
     | bound j => bound j
     | free x => if x == v then bound i else free x
     | const c => const c
-    | bind k t1 t2 => bind k (cls i v t1) (cls (Fin.succ i) v t2)
+    | bind k t1 t2 => bind k (cls i v t1) (cls (Nat.succ i) v t2)
     | ctor k t1 t2 t3 =>
       ctor k (cls i v t1) (cls i v t2) (cls i v t3)
-
-  def cls_head {α β γ n} (v : Name) (t : @Syntax α β γ n) : @Syntax α β γ (n + 1) :=
-    match t with
-    | bound j => bound j
-    | free x => if x == v then bound n else free x
-    | const c => const c
-    | bind k t1 t2 => bind k (cls_head v t1) (cls_head v t2)
-    | ctor k t1 t2 t3 =>
-      ctor k (cls_head v t1) (cls_head v t2) (cls_head v t3)
 
   instance : HasOpen (@Syntax α β γ) where
     opn := opn
 
-  instance : HasHOpen (@Syntax α β γ) where
-    hopn := opn_head
-
   instance : HasClose (@Syntax α β γ) where
     cls := cls
 
-  instance : HasHClose (@Syntax α β γ) where
-    hcls := cls_head
+  @[simp] lemma opn_const {α β γ : Sort _}  (i : Nat) (x : Name) (c : γ)
+    : @HasOpen.opn (@Syntax α β γ) _ i v (const c) = const c
+  := by congr
 
-  @[simp] lemma opn_const {α β γ : Sort _} {n} (i : Fin n) (x : Name) (c : γ)
-    : @HasOpen.opn (@Syntax α β γ) _ n i v (const c) = const c
-    := by congr
+  @[simp] lemma opn_free {α β γ : Sort _} (i : Nat) (x : Name)
+    : @HasOpen.opn (@Syntax α β γ) _ i v (free x) = free x
+  := by congr
 
-  @[simp] lemma opn_free {α β γ : Sort _} {n} (i : Fin n) (x : Name)
-    : @HasOpen.opn (@Syntax α β γ) _ n i v (free x) = free x
-    := by congr
+  @[simp] lemma opn_bound {α β γ : Sort _} (i : Nat) (x : Name)
+    : @HasOpen.opn (@Syntax α β γ) _ i v (bound j)
+      = if j == i then free v else bound j
+  := by congr
 
-  @[simp] lemma opn_bound {α β γ : Sort _} {n} (i j : Fin n) (v : Name)
-    : @HasOpen.opn (@Syntax α β γ) _ n i v (bound j) = if j == i then free v else bound j
-    := by congr
+  @[simp] lemma opn_bind {α β γ} (k : α) (i : Nat) (v : Name)
+    (t1 : @Syntax α β γ) (t2 : @Syntax α β γ)
+    : {i |-> v} bind k t1 t2 = bind k ({i |-> v} t1) ({(Nat.succ i) |-> v} t2)
+  := by {
+    generalize h : {_|-> v} @bind α β γ k t1 t2 = t
+    unfold HasOpen.opn at h; unfold instHasOpenSyntax at h; simp at h
+    unfold opn at h
+    unfold HasOpen.opn; unfold instHasOpenSyntax; simp
+    rw [<-h]
+  }
 
-  @[simp] lemma opn_bind {α β γ n} (k : α) (i : Fin n) (v : Name)
-    (t1 : @Syntax α β γ n) (t2 : @Syntax α β γ (n + 1))
-    : {i |-> v} bind k t1 t2 = bind k ({i |-> v} t1) ({(Fin.succ i) |-> v} t2)
-    := by congr
-
-  @[simp] lemma opn_ctor {α β γ n} (k : β) (i : Fin n) (v : Name)
-    (t1 t2 t3 : @Syntax α β γ n)
+  @[simp] lemma opn_ctor {α β γ} (k : β) (i : Nat) (v : Name)
+    (t1 t2 t3 : @Syntax α β γ)
     : {i |-> v} ctor k t1 t2 t3
       = ctor k ({i |-> v} t1) ({i |-> v} t2) ({i |-> v} t3)
-    := by congr
+  := by {
+    generalize h : {_|-> v}ctor k t1 t2 t3 = t
+    unfold HasOpen.opn at h; unfold instHasOpenSyntax at h; simp at h
+    unfold opn at h
+    unfold HasOpen.opn; unfold instHasOpenSyntax; simp
+    rw [<-h]
+  }
 
-  @[simp] lemma opn_head_const {α β γ : Sort _} {n} (c : γ)
-    : @HasHOpen.hopn (@Syntax α β γ) _ n v (const c) = const c
-    := by congr
+  @[simp] lemma cls_const {α β γ : Sort _} (i : Nat) (x : Name) (c : γ)
+    : @HasClose.cls (@Syntax α β γ) _ i v (const c) = const c
+  := by congr
 
-  @[simp] lemma opn_head_free {α β γ : Sort _} {n} (x : Name)
-    : @HasHOpen.hopn (@Syntax α β γ) _ n v (free x) = free x
-    := by congr
+  @[simp] lemma cls_free {α β γ : Sort _} (i : Nat) (v x : Name)
+    : @HasClose.cls (@Syntax α β γ) _ i v (free x)
+      = if x == v then bound i else free x
+  := by congr
 
-  @[simp] lemma opn_head_bound {α β γ : Sort _} {n} (j : Fin n) (v : Name)
-    : {_|-> v}(@bound α β γ (n + 1) j) = if j == n then free v else bound j
-    := by {
-      unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp
-      unfold opn_head
-      simp [*]
-    }
+  @[simp] lemma cls_bound {α β γ : Sort _} (i : Nat) (v : Name)
+    : @HasClose.cls (@Syntax α β γ) _ i v (bound j) = bound j
+  := by {
+    unfold HasClose.cls; unfold instHasCloseSyntax; simp
+    unfold cls; simp
+  }
 
-  @[simp] lemma opn_head_bind {α β γ n} (k : α) (v : Name)
-    (t1 : @Syntax α β γ (n + 1)) (t2 : @Syntax α β γ (n + 2))
-    : {_|-> v} @bind α β γ (n + 1) k t1 t2 = @bind α β γ n k ({_|-> v} t1) ({_|-> v} t2)
-    := by {
-      generalize h : {_|-> v} @bind α β γ (n + 1) k t1 t2 = t
-      unfold HasHOpen.hopn at h; unfold instHasHOpenSyntax at h; simp at h
-      unfold opn_head at h
-      unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp
-      rw [<-h]
-    }
+  @[simp] lemma cls_bind {α β γ} (k : α) (i : Nat) (v : Name)
+    (t1 : @Syntax α β γ) (t2 : @Syntax α β γ)
+    : {i <-| v} bind k t1 t2 = bind k ({i <-| v} t1) ({(Nat.succ i) <-| v} t2)
+  := by congr
 
-  @[simp] lemma opn_head_ctor {α β γ n} (k : β) (v : Name)
-    (t1 t2 t3 : @Syntax α β γ (n + 1))
-    : {_|-> v} @ctor α β γ (n + 1) k t1 t2 t3
-      = @ctor α β γ n k ({_|-> v} t1) ({_|-> v} t2) ({_|-> v} t3)
-    := by {
-      generalize h : {_|-> v}ctor k t1 t2 t3 = t
-      unfold HasHOpen.hopn at h; unfold instHasHOpenSyntax at h; simp at h
-      unfold opn_head at h
-      unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp
-      rw [<-h]
-    }
-
-  @[simp] lemma cls_const {α β γ : Sort _} {n} (i : Fin n) (x : Name) (c : γ)
-    : @HasClose.cls (@Syntax α β γ) _ n i v (const c) = const c
-    := by congr
-
-  @[simp] lemma cls_free {α β γ : Sort _} {n} (i : Fin n) (v x : Name)
-    : @HasClose.cls (@Syntax α β γ) _ n i v (free x) = if x == v then bound i else free x
-    := by congr
-
-  @[simp] lemma cls_bound {α β γ : Sort _} {n} (i j : Fin n) (v : Name)
-    : @HasClose.cls (@Syntax α β γ) _ n i v (bound j) = bound j
-    := by congr
-
-  @[simp] lemma cls_bind {α β γ n} (k : α) (i : Fin n) (v : Name)
-    (t1 : @Syntax α β γ n) (t2 : @Syntax α β γ (n + 1))
-    : {i <-| v} bind k t1 t2 = bind k ({i <-| v} t1) ({(Fin.succ i) <-| v} t2)
-    := by congr
-
-  @[simp] lemma cls_ctor {α β γ n} (k : β) (i : Fin n) (v : Name)
-    (t1 t2 t3 : @Syntax α β γ n)
+  @[simp] lemma cls_ctor {α β γ} (k : β) (i : Nat) (v : Name)
+    (t1 t2 t3 : @Syntax α β γ)
     : {i <-| v} ctor k t1 t2 t3
       = ctor k ({i <-| v} t1) ({i <-| v} t2) ({i <-| v} t3)
-    := by congr
+  := by congr
 
-  @[simp] lemma cls_head_const {α β γ : Sort _} {n} (c : γ)
-    : {_<-| v}(@const α β γ n c) = const c
-    := by congr
+  @[simp] theorem oc1 {α β γ} (i : Nat) (a b : Name) (x : @Syntax α β γ)
+    : {i |-> a}{i |-> b}x = {i |-> b}x
+  := by {
+    induction x generalizing i <;> simp
+    case bound j => split <;> simp [*]
+    case bind k t1 t2 ih1 ih2 => rw [ih1 i, ih2 (i + 1)]; simp
+    case ctor k t1 t2 t3 ih1 ih2 ih3 => rw [ih1 i, ih2 i, ih3 i]; simp
+  }
 
-  @[simp] lemma cls_head_free {α β γ : Sort _} {n} (x : Name)
-    : {_<-| v}(@free α β γ n x) = if x == v then bound n else free x
-    := by {
-      unfold HasHClose.hcls; unfold instHasHCloseSyntax; simp
-      unfold cls_head
-      simp [*]
+  @[simp] theorem oc2 {α β γ} (i j : Nat) (a : Name) (x : @Syntax α β γ)
+    : {i <-| a}{j <-| a}x = {j <-| a}x
+  := by {
+    induction x generalizing i j <;> simp
+    case free b => split <;> simp [*]
+    case bind k t1 t2 ih1 ih2 => rw [ih1 i j, ih2 (i + 1) (j + 1)]; simp
+    case ctor k t1 t2 t3 ih1 ih2 ih3 => rw [ih1 _ _, ih2 _ _, ih3 _ _]; simp
+  }
+
+  @[simp] theorem oc3 {α β γ} (i : Nat) (a : Name) (x : @Syntax α β γ)
+    : {i <-| a}{i |-> a}x = {i <-| a}x
+  := by {
+    induction x generalizing i <;> simp
+    case bound j => split <;> simp [*]
+    case bind k t1 t2 ih1 ih2 => rw [ih1 i, ih2 (i + 1)]; simp
+    case ctor k t1 t2 t3 ih1 ih2 ih3 => rw [ih1 i, ih2 i, ih3 i]; simp
+  }
+  @[simp] theorem oc4 {α β γ} (i : Nat) (a : Name) (x : @Syntax α β γ)
+    : {i |-> a}{i <-| a}x = {i |-> a}x
+  := by {
+    induction x generalizing i <;> simp
+    case free b => {
+      split <;> simp [*]
+      case _ h => rw [eq_of_beq h]
     }
+    case bind k t1 t2 ih1 ih2 => rw [ih1 i, ih2 (i + 1)]; simp
+    case ctor k t1 t2 t3 ih1 ih2 ih3 => rw [ih1 i, ih2 i, ih3 i]; simp
+  }
 
-  @[simp] lemma cls_head_bound {α β γ : Sort _} {n} (j : Fin n) (v : Name)
-    : {_<-| v}(@bound α β γ n j) = @bound α β γ (n + 1) j
-    := by congr
-
-  @[simp] lemma cls_head_bind {α β γ n} (k : α) (v : Name)
-    (t1 : @Syntax α β γ n) (t2 : @Syntax α β γ (n + 1))
-    : {_<-| v} @bind α β γ n k t1 t2 = @bind α β γ (n + 1) k ({_<-| v} t1) ({_<-| v} t2)
-    := by {
-      generalize h : {_<-| v} @bind α β γ n k t1 t2 = t
-      unfold HasHClose.hcls at h; unfold instHasHCloseSyntax at h; simp at h
-      unfold cls_head at h
-      unfold HasHClose.hcls; unfold instHasHCloseSyntax; simp
-      rw [<-h]
-    }
-
-  @[simp] lemma cls_head_ctor {α β γ n} (k : β) (v : Name)
-    (t1 t2 t3 : @Syntax α β γ n)
-    : {_<-| v} @ctor α β γ n k t1 t2 t3
-      = @ctor α β γ (n + 1) k ({_<-| v} t1) ({_<-| v} t2) ({_<-| v} t3)
-    := by {
-      generalize h : {_<-| v}ctor k t1 t2 t3 = t
-      unfold HasHClose.hcls at h; unfold instHasHCloseSyntax at h; simp at h
-      unfold cls_head at h
-      unfold HasHClose.hcls; unfold instHasHCloseSyntax; simp
-      rw [<-h]
-    }
-
-  @[simp] theorem oc1 {α β γ n} (i : Fin n) (a b : Name) (x : @Syntax α β γ n)
-    : {i |-> a}{i |-> b}x = {i |-> b}x := by
-    induction x with
-    | bound j => {
-      cases (Nat.decEq j i) with
-      | isTrue h => {
-        have lem1 : j = i := by apply (Fin.mk_eq_mk.mpr h)
-        rewrite [lem1]; simp
+  theorem oc5 {α β γ} (i j : Nat) (a b : Name) (x : @Syntax α β γ) (h : i ≠ j)
+    : {i |-> a}{j |-> b}x = {j |-> b}{i |-> a}x
+  := by {
+    induction x generalizing i j <;> simp
+    case bound k => {
+      split <;> simp
+      case _ h2 => {
+        split <;> simp [*]
+        case _ h3 => subst h2; subst h3; exfalso; apply h rfl
       }
-      | isFalse h => {
-        have lem1 : j ≠ i := by apply ((Fin.ne_iff_vne j i).mpr h)
-        simp [lem1]
+      case _ h2 => split <;> simp [*]
+    }
+    case bind k t1 t2 ih1 ih2 => {
+      have h2 : (i + 1) ≠ (j + 1) := by {
+        intro h2; injection h2 with h2; simp at h2
+        apply h h2
       }
+      rw [ih1 i j h, ih2 (i + 1) (j + 1) h2]; simp
     }
-    | free f => { constructor }
-    | const c => { constructor }
-    | bind k t1 t2 t1_ih t2_ih => {
-      simp [t1_ih]
-      exact (t2_ih (Fin.succ i))
-    }
-    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
+    case ctor k t1 t2 t3 ih1 ih2 ih3 =>
+      rw [ih1 _ _ h, ih2 _ _ h, ih3 _ _ h]; simp
+  }
 
-  @[simp] theorem oc2 {α β γ n} (i j : Fin n) (a : Name) (x : @Syntax α β γ n)
-    : {i <-| a}{j <-| a}x = {j <-| a}x := by
-    induction x with
-    | bound j => { constructor }
-    | free f => {
-      cases (Name.decEq f a) with
-      | isTrue h => {
-        rewrite [h]
-        simp [*]
-      }
-      | isFalse h => simp [*]
-    }
-    | const c => { constructor }
-    | bind k t1 t2 t1_ih t2_ih => {
-      simp [t1_ih]
-      exact (t2_ih (Fin.succ i) (Fin.succ j))
-    }
-    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
-
-  @[simp] theorem oc3 {α β γ n} (i : Fin n) (a : Name) (x : @Syntax α β γ n)
-    : {i <-| a}{i |-> a}x = {i <-| a}x := by
-    induction x with
-    | bound j => {
-      simp [*]
-      cases (Nat.decEq j i) with
-      | isTrue h => {
-        have lem1 : j = i := by apply (Fin.mk_eq_mk.mpr h)
-        rewrite [lem1]; simp
-      }
-      | isFalse h => {
-        have lem1 : j ≠ i := by apply ((Fin.ne_iff_vne j i).mpr h)
-        simp [*]
-      }
-    }
-    | free f => { simp }
-    | const c => { constructor }
-    | bind k t1 t2 t1_ih t2_ih => { simp [*] }
-    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
-
-  @[simp] theorem oc4h {α β γ n} (a : Name) (x : @Syntax α β γ n)
-    : {_|-> a}{_<-| a}x = x
-  := @Syntax.rec α β γ
-    (λ m s => {_|-> a}{_<-| a}s = s)
-    (by {
-      intros m i; simp
-      unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp
-      unfold opn_head; simp; intro h2
-      have lem := i.isLt
-      linarith
-    })
-    (by {
-      intros m b; simp
-      cases (Name.decEq b a)
-      case isFalse h2 => {
-        have lem : (b == a) = false := Name.beq_of_not_eq h2
-        rewrite [lem]; simp
-      }
-      case isTrue h2 => {
-        rewrite [h2]; simp
-        unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp
-        unfold opn_head; simp
-      }
-    })
-    (by simp)
-    (by {
-      intros m k t1 t2 ih1 ih2; simp
-      rewrite [ih1, ih2]; simp
-    })
-    (by {
-      intros m k t2 t3 t4 ih1 ih2 ih3; simp
-      rewrite [ih1, ih2, ih3]; simp
-    })
-    n
-    x
-
-  @[simp] theorem oc4 {α β γ n} (i : Fin n) (a : Name) (x : @Syntax α β γ n)
-    : {i |-> a}{i <-| a}x = {i |-> a}x := by
-    induction x with
-    | bound j => { simp [*] }
-    | free f => {
-      simp
-      cases (Name.decEq f a) with
-      | isTrue h => { simp [*] }
-      | isFalse h => { simp [*] }
-    }
-    | const c => { constructor }
-    | bind k t1 t2 t1_ih t2_ih => { simp [*] }
-    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
-
-  theorem oc5 {α β γ n} (i j : Fin n) (a b : Name) (x : @Syntax α β γ n)
-    : i ≠ j -> {i |-> a}{j |-> b}x = {j |-> b}{i |-> a}x := by
-    intros h
-    induction x with
-    | bound k => {
-      simp
-      cases (Nat.decEq k j) with
-      | isTrue h2 => {
-        have lem1 : k = j := by apply (Fin.mk_eq_mk.mpr h2)
-        have lem2 := h.symm
-        simp [*]
-      }
-      | isFalse h2 => {
-        have lem1 : k ≠ j := by apply ((Fin.ne_iff_vne k j).mpr h2)
-        simp [*]
-        cases (Nat.decEq k i) with
-        | isTrue h3 => {
-          have lem1 : k = i := by apply (Fin.mk_eq_mk.mpr h3)
-          simp [*]
-        }
-        | isFalse h3 => {
-          have lem1 : k ≠ i := by apply ((Fin.ne_iff_vne k i).mpr h3)
-          simp [*]
+  theorem oc6 {α β γ} (i j : Nat) (a b : Name) (x : @Syntax α β γ) (h : a ≠ b)
+    : {i <-| a}{j <-| b}x = {j <-| b}{i <-| a}x
+  := by {
+    induction x generalizing i j <;> simp
+    case free c => {
+      split <;> simp [*]
+      case _ h2 => {
+        split <;> simp [*]
+        case _ h3 => {
+          have lem1 := eq_of_beq h2
+          have lem2 := eq_of_beq h3
+          subst lem1; subst lem2
+          exfalso; apply h rfl
         }
       }
+      case _ h2 => split <;> simp [*]
     }
-    | free f => { simp }
-    | const c => { simp }
-    | bind k t1 t2 t1_ih t2_ih => { simp [*] }
-    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
+    case bind k t1 t2 ih1 ih2 => rw [ih1 i j, ih2 (i + 1) (j + 1)]; simp
+    case ctor k t1 t2 t3 ih1 ih2 ih3 => rw [ih1 _ _, ih2 _ _, ih3 _ _]; simp
+  }
 
-  theorem oc6 {α β γ n} (i j : Fin n) (a b : Name) (x : @Syntax α β γ n)
-    : a ≠ b -> {i <-| a}{j <-| b}x = {j <-| b}{i <-| a}x := by
-    intros h
-    induction x with
-    | bound k => { simp }
-    | free f => {
-      simp
-      cases (Name.decEq f b) with
-      | isTrue h2 => {
-        simp [*]
-        have lem1 : f ≠ a := by {
-          intros h3
-          have lem2 : a = b := by rw [<-h2, <-h3]
-          contradiction
-        }
-        have lem2 : (f == a) = false := by {
-          cases (Name.decEq f a); simp [*]
-          intro h3
-          rewrite [h3] at h
-          contradiction
-          simp
-          intro h3
-          contradiction
-        }
-        rewrite [lem2]
-        simp
-      }
-      | isFalse h2 => {
-        simp [*]
-        cases (f == a); simp [*]
-        simp
-      }
+  theorem oc7 {α β γ} (i j : Nat) (a b : Name) (x : @Syntax α β γ)
+    : i ≠ j -> a ≠ b -> {i |-> a}{j <-| b}x = {j <-| b}{i |-> a}x
+  := by {
+    intro h1 h2
+    induction x generalizing i j <;> simp
+    case bound k => split <;> simp [*]
+    case free c => {
+      split <;> simp [*]
+      intro h3; subst h3; exfalso
+      apply h1 rfl
     }
-    | const c => { simp }
-    | bind k t1 t2 t1_ih t2_ih => { simp [*] }
-    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
+    case bind k t1 t2 ih1 ih2 => {
+      have h2 : (i + 1) ≠ (j + 1) := by {
+        intro h2; injection h2 with h2; simp at h2
+        apply h1 h2
+      }
+      rw [ih1 i j h1, ih2 (i + 1) (j + 1) h2]; simp
+    }
+    case ctor k t1 t2 t3 ih1 ih2 ih3 =>
+      rw [ih1 _ _ h1, ih2 _ _ h1, ih3 _ _ h1]; simp
+  }
 
-  theorem oc7 {α β γ n} (i j : Fin n) (a b : Name) (x : @Syntax α β γ n)
-    : i ≠ j -> a ≠ b -> {i |-> a}{j <-| b}x = {j <-| b}{i |-> a}x := by
-    intros h1 h2
-    induction x with
-    | bound k => {
-      simp
-      cases (Nat.decEq k i) with
-      | isTrue h3 => {
-        have lem1 : k = i := by apply (Fin.mk_eq_mk.mpr h3)
-        simp [*]
+  theorem oc8 {α β γ} (i j : Nat) (a b : Name) (x : @Syntax α β γ)
+    : {i |-> b}{i <-| a}{j |-> b}x = {j |-> b}{j <-| a}{i |-> a}x
+  := by {
+    induction x generalizing i j <;> simp
+    case bound k => {
+      split <;> simp [*]
+      case _ h1 => {
+        split <;> simp [*]
+        case _ h2 => split <;> simp [*]
+        case _ h2 => split <;> simp [*]
       }
-      | isFalse h3 => {
-        have lem1 : k ≠ i := by apply ((Fin.ne_iff_vne k i).mpr h3)
-        simp [*]
-      }
+      case _ h2 => split <;> simp [*]
     }
-    | free f => {
-      simp
-      cases (Name.decEq f b) with
-      | isTrue h3 => {
-        simp [*]
-        intro h4
-        rewrite [h4] at h1
-        contradiction
-      }
-      | isFalse h3 => { simp [*] }
-    }
-    | const c => { simp }
-    | bind k t1 t2 t1_ih t2_ih => { simp [*] }
-    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
+    case free c => split <;> simp [*]
+    case bind k t1 t2 ih1 ih2 => rw [ih1 i j, ih2 (i + 1) (j + 1)]; simp
+    case ctor k t1 t2 t3 ih1 ih2 ih3 => rw [ih1 _ _, ih2 _ _, ih3 _ _]; simp
+  }
 
-  theorem oc8 {α β γ n} (i j : Fin n) (a b : Name) (x : @Syntax α β γ n)
-    : {i |-> b}{i <-| a}{j |-> b}x = {j |-> b}{j <-| a}{i |-> a}x := by
-    induction x with
-    | bound k => {
-      simp
-      cases (Nat.decEq k j) with
-      | isTrue h => {
-        have lem1 : k = j := by apply (Fin.mk_eq_mk.mpr h)
-        simp [*]
-        cases (Name.decEq b a) with
-        | isTrue h2 => {
-          simp [*]
-          cases (Nat.decEq j i) with
-          | isTrue h3 => {
-            have lem2 : j = i := by apply (Fin.mk_eq_mk.mpr h3)
-            simp [*]
-          }
-          | isFalse h3 => {
-            have lem2 : j ≠ i := by apply ((Fin.ne_iff_vne j i).mpr h3)
-            simp [*]
-          }
-        }
-        | isFalse h2 => {
-          simp [*]
-          cases (Nat.decEq j i) with
-          | isTrue h3 => {
-            have lem2 : j = i := by apply (Fin.mk_eq_mk.mpr h3)
-            simp [*]
-          }
-          | isFalse h3 => {
-            have lem2 : j ≠ i := by apply ((Fin.ne_iff_vne j i).mpr h3)
-            simp [*]
-          }
-        }
+  theorem oc9 {α β γ} (i j : Nat) (a b : Name) (x : @Syntax α β γ)
+    : {j <-| a}{i |-> a}{j <-| b}x = {j <-| b}{i |-> b}{i <-| a}x
+  := by {
+    induction x generalizing i j <;> simp
+    case bound k => split <;> simp [*]
+    case free c => {
+      split <;> simp [*]
+      case _ h1 => {
+        split <;> simp [*]
+        case _ h2 => split <;> simp [*]
+        case _ h2 => split <;> simp [*]
       }
-      | isFalse h => {
-        have lem1 : k ≠ j := by apply ((Fin.ne_iff_vne k j).mpr h)
-        simp [*]
-        cases (Nat.decEq k i) with
-        | isTrue h2 => {
-            have lem2 : k = i := by apply (Fin.mk_eq_mk.mpr h2)
-            simp [*]
-        }
-        | isFalse h2 => {
-            have lem2 : k ≠ i := by apply ((Fin.ne_iff_vne k i).mpr h2)
-            simp [*]
-        }
-      }
+      case _ h1 => split <;> simp [*]
     }
-    | free f => {
-      simp
-      cases (Name.decEq f a) with
-      | isTrue h => { simp [*] }
-      | isFalse h => { simp [*] }
-    }
-    | const c => { simp }
-    | bind k t1 t2 t1_ih t2_ih => { simp [*] }
-    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
+    case bind k t1 t2 ih1 ih2 => rw [ih1 i j, ih2 (i + 1) (j + 1)]; simp
+    case ctor k t1 t2 t3 ih1 ih2 ih3 => rw [ih1 _ _, ih2 _ _, ih3 _ _]; simp
+  }
 
-  theorem oc9 {α β γ n} (i j : Fin n) (a b : Name) (x : @Syntax α β γ n)
-    : {j <-| a}{i |-> a}{j <-| b}x = {j <-| b}{i |-> b}{i <-| a}x := by
-    induction x with
-    | bound k => {
-      simp [*]
-      cases (Nat.decEq k i) with
-      | isTrue h => {
-        have lem1 : k = i := by apply (Fin.mk_eq_mk.mpr h)
-        simp [*]
-      }
-      | isFalse h => {
-        have lem1 : k ≠ i := by apply ((Fin.ne_iff_vne k i).mpr h)
-        simp [*]
-      }
-    }
-    | free f => {
-      simp
-      cases (Name.decEq f b) with
-      | isTrue h1 => {
-        simp [*]
-        cases (Nat.decEq j i) with
-        | isTrue h2 => {
-          have lem1 : j = i := by apply (Fin.mk_eq_mk.mpr h2)
-          simp [*]
-          cases (Name.decEq f a) with
-          | isTrue h3 => {
-            rewrite [h3]
-            simp [*]
-          }
-          | isFalse h3 => {
-            cases (f == a); simp [*]
-            simp
-          }
-        }
-        | isFalse h2 => {
-          have lem1 : j ≠ i := by apply ((Fin.ne_iff_vne j i).mpr h2)
-          simp [*]
-          cases (Name.decEq f a) with
-          | isTrue h3 => {
-            rewrite [h3]
-            simp [*]
-          }
-          | isFalse h3 => {
-            cases (f == a); simp [*]
-            simp
-          }
-        }
-      }
-      | isFalse h1 => {
-        have lem1 : (f == b) = false := by {
-          have lem2 := contra LawfulBEq.eq_of_beq h1
-          simp [*]
-        }
-        rewrite [lem1]; simp
-        cases (Name.decEq f a) with
-        | isTrue h2 => {
-          rewrite [h2]
-          simp
-        }
-        | isFalse h2 => {
-          have lem2 : (f == a) = false := by { simp [*] }
-          rewrite [lem2]
-          simp
-          rewrite [lem1]
-          simp
-        }
-      }
-    }
-    | const c => { simp }
-    | bind k t1 t2 t1_ih t2_ih => { simp [*] }
-    | ctor k t1 t2 t3 t4 t5 t6 => { simp [*] }
-
-  def fv {α β γ n} (x : @Syntax α β γ n) : FvSet! :=
+  def fv {α β γ} (x : @Syntax α β γ) : FvSet! :=
     match x with
     | bound _ => List.nil
     | free x => [x]
@@ -575,47 +248,160 @@ namespace Syntax
     | bind _ t1 t2 => (fv t1) ++ (fv t2)
     | ctor _ t1 t2 t3 => (fv t1) ++ (fv t2) ++ (fv t3)
 
-  def subst {α β γ n} (v : Name) (w t : @Syntax α β γ n) : @Syntax α β γ n :=
+  def fresh {α β γ} (a : Name) (x : @Syntax α β γ) : Prop := {0 <-| a}x = x
+
+  lemma unfree {α β γ} {x : @Syntax α β γ}
+    : {i <-| a}x = x -> {j <-| a}x = x
+  := by intro h; rw [<-h]; simp
+
+  theorem close_open_cancel {α β γ} (x : @Syntax α β γ)
+    : fresh a x -> {i <-| a}{i |-> a}x = x
+  := by intro h; simp; apply unfree h
+
+  @[simp] theorem close_vanish : fresh a x -> {i <-| a}x = x := by {
+    intro h; rw [unfree h]
+  }
+
+  def fresh_iff_nfv : fresh a x <-> a ∉ fv x := by {
+    induction x generalizing a
+    case bound => unfold fresh at *; unfold fv; simp
+    case free b => {
+      unfold fresh at *; unfold fv; simp
+      apply Iff.intro
+      intro h1 h2; subst h2; apply h1 (by simp)
+      intro h1 h2; subst h2; apply h1 (by simp)
+    }
+    case const => unfold fresh at *; unfold fv; simp
+    case bind k t1 t2 ih1 ih2 => {
+      unfold fresh at *; unfold fv; simp
+      apply Iff.intro
+      {
+        intro h; cases h; case _ h1 h2 =>
+        intro h; cases h
+        case _ h => apply ih1.1 h1 h
+        case _ h => apply ih2.1 (unfree h2) h
+      }
+      {
+        intro h; replace h := demorgan h
+        cases h; case _ h1 h2 =>
+        have ih2' : {1 <-| a}t2 = t2 := unfree (ih2.2 h2)
+        rw [ih1.2 h1, ih2']; simp
+      }
+    }
+    case ctor k t1 t2 t3 ih1 ih2 ih3 => {
+      unfold fresh at *; unfold fv; simp
+      apply Iff.intro
+      {
+        intro h; casesm* _ ∧ _; case _ h1 h2 h3 =>
+        intro h; cases h
+        case _ h => apply ih1.1 h1 h
+        case _ h => {
+          cases h
+          case _ h => apply ih2.1 h2 h
+          case _ h => apply ih3.1 h3 h
+        }
+      }
+      {
+        intro h; replace h := demorgan3 h
+        casesm* _ ∧ _; case _ h1 h2 h3 =>
+        rw [ih1.2 h1, ih2.2 h2, ih3.2 h3]; simp
+      }
+    }
+  }
+
+  @[simp] theorem close_vanish_fv : a ∉ fv x -> {i <-| a}x = x := by {
+    intro h; have lem := fresh_iff_nfv.2 h; simp [*]
+  }
+
+  def closed {α β γ} (i : Nat) (x : @Syntax α β γ) :=
+    match x with
+    | bound j => !j == i
+    | free _ => true
+    | const _ => true
+    | bind _ t1 t2 => closed i t1 && closed (Nat.succ i) t2
+    | ctor _ t1 t2 t3 => closed i t1 && closed i t2 && closed i t3
+
+  lemma unbounded {α β γ} {x : @Syntax α β γ}
+    : {i |-> a}x = x -> {i |-> b}x = x
+  := by intro h; rw [<-h]; simp
+
+  def lc {α β γ} (i : Nat) (x : @Syntax α β γ) : Prop
+  := ∀ j ≥ i, ∃ a, {j |-> a}x = x
+
+  @[simp] theorem open_vanish : lc i x -> {i |-> a}x = x := by {
+    intro h; unfold lc at h; have lem := h i (by simp)
+    cases lem; case _ b lem =>
+    rw [unbounded lem]
+  }
+
+  -- theorem lc_iff_closed : lc i x <-> closed i x := by {
+  --   induction x generalizing i
+  --   case bound j => sorry
+  --   case free y => sorry
+  --   case const k => sorry
+  --   case bind k t1 t2 ih1 ih2 => {
+  --     sorry
+  --   }
+  --   case ctor k t1 t2 t3 ih1 ih2 ih3 => sorry
+  -- }
+
+  theorem open_close_cancel {α β γ} (x : @Syntax α β γ)
+    : lc i x -> {i |-> a}{i <-| a}x = x
+  := by intro h; simp [*]
+
+  theorem lc0 : lc 0 x -> ∀ i, lc i x := by {
+    intro h i j _gt
+    have lem := h j (by simp)
+    exact lem
+  }
+
+  @[simp] theorem open_vanish_lc0 : lc 0 x -> {i |-> a}x = x := by {
+    intro h; have lem := h i (by simp)
+    cases lem; case _ b lem =>
+    rw [unbounded lem]
+  }
+
+  def subst {α β γ} (v : Name) (w t : @Syntax α β γ) : @Syntax α β γ :=
     match t with
     | bound i => bound i
     | free x => if x == v then w else free x
     | const c => const c
-    | bind k t1 t2 => bind k (subst v w t1) (subst v (weaken w 1) t2)
+    | bind k t1 t2 => bind k (subst v w t1) (subst v w t2)
     | ctor k t1 t2 t3 => ctor k
       (subst v w t1) (subst v w t2) (subst v w t3)
 
-  instance {α β γ n} : HasSubst (@Syntax α β γ n) (@Syntax α β γ n) where
+  instance {α β γ} : HasSubst (@Syntax α β γ) (@Syntax α β γ) where
     subst := subst
 
-  @[simp] lemma subst_const {α β γ : Sort _} {n} (c : γ) (x : Name) (v : @Syntax α β γ n)
-    : [x := v](@const α β γ n c) = const c
+  @[simp] lemma subst_const {α β γ : Sort _} (c : γ) (x : Name) (v : @Syntax α β γ)
+    : [x := v](@const α β γ c) = const c
   := by congr
 
-  @[simp] lemma subst_free {α β γ : Sort _} {n} (x : Name) (v : @Syntax α β γ n)
-    : [x := v](@free α β γ n x) = v
+  @[simp] lemma subst_free {α β γ : Sort _} (x : Name) (v : @Syntax α β γ)
+    : [x := v](@free α β γ x) = v
   := by {
     unfold HasSubst.subst; unfold instHasSubstSyntax; simp
     unfold subst; simp
   }
 
-  @[simp] lemma subst_bound {α β γ : Sort _} {n} (x : Name) (j : Fin n) (v : @Syntax α β γ n)
-    : [x := v](@bound α β γ n j) = bound j
+  @[simp] lemma subst_bound {α β γ : Sort _} (x : Name) (j : Nat) (v : @Syntax α β γ)
+    : [x := v](@bound α β γ j) = bound j
   := by congr
 
-  @[simp] lemma subst_bind {α β γ n} (k : α) (x : Name)
-    (v : @Syntax α β γ n) (t1 : @Syntax α β γ n) (t2 : @Syntax α β γ (n + 1))
-    : [x := v] @bind α β γ n k t1 t2 = @bind α β γ n k ([x := v]t1) ([x := (weaken v 1)]t2)
+  @[simp] lemma subst_bind {α β γ} (k : α) (x : Name)
+    (v : @Syntax α β γ) (t1 : @Syntax α β γ) (t2 : @Syntax α β γ)
+    : [x := v] @bind α β γ k t1 t2 = @bind α β γ k ([x := v]t1) ([x := v]t2)
   := by {
-    generalize rhsdef : bind k ([x := v]t1) ([x := weaken v 1]t2) = u
+    generalize rhsdef : bind k ([x := v]t1) ([x := v]t2) = u
     unfold HasSubst.subst; unfold instHasSubstSyntax; simp
     unfold HasSubst.subst at *; unfold instHasSubstSyntax at *; simp at *
     unfold subst; rw [rhsdef]
   }
 
-  @[simp] lemma subst_ctor {α β γ n} (k : β) (x : Name) (v : @Syntax α β γ n)
-    (t1 t2 t3 : @Syntax α β γ n)
-    : [x := v] @ctor α β γ n k t1 t2 t3
-      = @ctor α β γ n k ([x := v]t1) ([x := v]t2) ([x := v]t3)
+  @[simp] lemma subst_ctor {α β γ} (k : β) (x : Name) (v : @Syntax α β γ)
+    (t1 t2 t3 : @Syntax α β γ)
+    : [x := v] @ctor α β γ k t1 t2 t3
+      = @ctor α β γ k ([x := v]t1) ([x := v]t2) ([x := v]t3)
   := by {
     generalize rhsdef : ctor k ([x := v]t1) ([x := v]t2) ([x := v]t3) = u
     unfold HasSubst.subst; unfold instHasSubstSyntax; simp
@@ -623,75 +409,7 @@ namespace Syntax
     unfold subst; rw [rhsdef]
   }
 
-  def hsubst {α β γ n} (w : @Syntax α β γ n) (t : @Syntax α β γ (n + 1)) : @Syntax α β γ n :=
-    match t with
-    | bound i =>
-      let k := i.val
-      if h : k == n then w else by {
-      have lem0 : k < n + 1 := i.isLt
-      have lem1 : k ≠ n := by {
-        intros h2
-        rewrite [h2] at h
-        simp at h
-      }
-      have lem2 : i.val ≤ n := by linarith
-      have lem3 : i.val < n := Lemma.opn_head lem1 lem2
-      exact (bound (Fin.mk i.val lem3))
-    }
-    | free x => free x
-    | const c => const c
-    | bind k t1 t2 => bind k (hsubst w t1) (hsubst (weaken w 1) t2)
-    | ctor k t1 t2 t3 => ctor k
-      (hsubst w t1) (hsubst w t2) (hsubst w t3)
-
-
-  instance {α β γ} : HasHSubst (@Syntax α β γ) (@Syntax α β γ) where
-    hsubst := hsubst
-
-  @[simp] lemma hsubst_const {α β γ : Sort _} {n} (c : γ) (v : @Syntax α β γ n)
-    : [_:= v](@const α β γ (n + 1) c) = const c
-  := by congr
-
-  @[simp] lemma hsubst_free {α β γ : Sort _} {n} (x : Name) (v : @Syntax α β γ n)
-    : [_:= v](@free α β γ (n + 1) x) = free x
-  := by congr
-
-  -- @[simp] lemma hsubst_bound {α β γ : Sort _} {n} (j : Fin n) (v : @Syntax α β γ n)
-  --   : [_:= v](@bound α β γ (n + 1) n) = v
-  -- := by {
-  --   sorry
-  -- }
-
-  @[simp] lemma hsubst_bind {α β γ n} (k : α)
-    (v : @Syntax α β γ n) (t1 : @Syntax α β γ (n + 1)) (t2 : @Syntax α β γ (n + 2))
-    : [_:= v] @bind α β γ (n + 1) k t1 t2 = @bind α β γ n k ([_:= v]t1) ([_:= (weaken v 1)]t2)
-  := by {
-    generalize rhsdef : bind k ([_:= v]t1) ([_:= weaken v 1]t2) = u
-    unfold HasHSubst.hsubst; unfold instHasHSubstSyntax; simp
-    unfold HasHSubst.hsubst at *; unfold instHasHSubstSyntax at *; simp at *
-    unfold hsubst; rw [rhsdef]
-  }
-
-  @[simp] lemma hsubst_ctor {α β γ n} (k : β) (v : @Syntax α β γ n)
-    (t1 t2 t3 : @Syntax α β γ (n + 1))
-    : [_:= v] @ctor α β γ (n + 1) k t1 t2 t3
-      = @ctor α β γ n k ([_:= v]t1) ([_:= v]t2) ([_:= v]t3)
-  := by {
-    generalize rhsdef : ctor k ([_:= v]t1) ([_:= v]t2) ([_:= v]t3) = u
-    unfold HasHSubst.hsubst; unfold instHasHSubstSyntax; simp
-    unfold HasHSubst.hsubst at *; unfold instHasHSubstSyntax at *; simp at *
-    unfold hsubst; rw [rhsdef]
-  }
-
-  -- @[simp] theorem open_subst {α β γ n} {N : @Syntax α β γ n} {B : @Syntax α β γ (n + 1)}
-  --   : x ≠ y -> {_|-> y}[x := weaken N 1]B = [x := N]{_|-> y}B
-  --   := sorry
-
-  -- theorem subst_head_subst {α β γ n} {U V : @Syntax α β γ n} {B : @Syntax α β γ (n + 1)}
-  --   : [x := U][_:= V]B = [_:= [x := U]V][x := weaken U 1]B
-  --   := sorry
-
-  def size {α β γ n} (t : @Syntax α β γ n) : Nat :=
+  def size {α β γ} (t : @Syntax α β γ) : Nat :=
     match t with
     | bound _i => 0
     | free _x => 0
@@ -699,263 +417,172 @@ namespace Syntax
     | bind _k t1 t2 => (size t1) + (size t2) + 1
     | ctor _k t1 t2 t3 => (size t1) + (size t2) + (size t3) + 1
 
-  @[simp] def size_bound : @size α β γ n (bound i) = 0 := by congr
-  @[simp] def size_free : @size α β γ n (free x) = 0 := by congr
-  @[simp] def size_const : @size α β γ n (const c) = 0 := by congr
-  @[simp] def size_bind : @size α β γ n (bind k t1 t2) = (size t1) + (size t2) + 1 := by congr
-  @[simp] def size_ctor : @size α β γ n (ctor k t1 t2 t3)
+  @[simp] def size_bound : @size α β γ (bound i) = 0 := by congr
+  @[simp] def size_free : @size α β γ (free x) = 0 := by congr
+  @[simp] def size_const : @size α β γ (const c) = 0 := by congr
+  @[simp] def size_bind : @size α β γ (bind k t1 t2) = (size t1) + (size t2) + 1 := by congr
+  @[simp] def size_ctor : @size α β γ (ctor k t1 t2 t3)
     = (size t1) + (size t2) + (size t3) + 1
   := by congr
 
-  lemma size_opn_head' {t : @Syntax α β γ m} : (h : m = n + 1)
-    -> @size α β γ n ({_|-> x} (by rw [<-h]; exact t)) = @size α β γ m t
-  := by {
-    intros h
-    induction t generalizing n <;> simp [*]
-    case bound k i => {
-      subst h
-      rw [cast_eq]
-      cases (Nat.decEq i n) with
-      | isTrue h2 => {
-        unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp; unfold opn_head
-        simp [*]
-      }
-      | isFalse h2 => {
-        unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp; unfold opn_head
-        simp [*]
-      }
-    }
-    case free k v => {
-      subst h
-      rw [cast_eq]
-      simp
-    }
-    case const k c => {
-      subst h
-      rw [cast_eq]
-      simp
-    }
-    case bind q k t1 t2 t1_ih t2_ih => {
-      subst h
-      simp
-      have lem1 := @t1_ih n rfl
-      simp at lem1
-      have lem2 := @t2_ih (n + 1) rfl
-      simp at lem2
-      simp [*]
-    }
-    case ctor q k t1 t2 t3 t1_ih t2_ih t3_ih => {
-      subst h
-      rw [cast_eq]
-      have lem1 := t1_ih rfl
-      have lem2 := t2_ih rfl
-      have lem3 := t3_ih rfl
-      simp at lem1
-      simp at lem2
-      simp at lem3
-      simp [*]
-    }
+  @[simp] lemma size_opn_head : size ({i |-> x} t) = size t := by sorry
+
+  @[simp↓ high] lemma rename_bound {α β γ} {i j : Nat}
+    : {i |-> x}{i <-| y}(@bound α β γ j) = bound j
+  := by sorry --{
+  --   simp
+  --   unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp at *
+  --   unfold opn_head; simp at *
+  --   intro h
+  --   cases i; case _ iv il =>
+  --   simp at h
+  --   injection h with h
+  --   rw [@Nat.mod_eq_of_lt 0 (n + 1) (by linarith)] at h
+  --   linarith
+  -- }
+
+  lemma rename_free_neq {i : Nat}
+    : z ≠ y -> {i |-> x}{i <-| y}(@free α β γ z) = free z
+  := by sorry --{
+  --   intro h; simp; split
+  --   case _ h2 => {
+  --     have h3 : z = y := LawfulBEq.eq_of_beq h2
+  --     exfalso
+  --     apply h h3
+  --   }
+  --   case _ h2 => {
+  --     unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp at *
+  --     unfold opn_head; simp at *
+  --   }
+  -- }
+
+  lemma rename_free_eq {i : Nat} : {i |-> x}{i <-| y}(@free α β γ y) = free x := by {
+    sorry
   }
 
-  @[simp] lemma size_opn_head : @size α β γ n ({_|-> x} t) = size t := size_opn_head' rfl
+  -- def hopn_swap {α β γ n}  (t : @Syntax α β γ (n + 2)) : @Syntax α β γ (n + 2) :=
+  --   match t with
+  --   | Syntax.bound i =>
+  --     if i == n + 1 then Syntax.bound n
+  --     else if i == n then Syntax.bound (n + 1)
+  --     else Syntax.bound i
+  --   | Syntax.free x => Syntax.free x
+  --   | Syntax.const k => Syntax.const k
+  --   | Syntax.bind k u1 u2 =>
+  --     Syntax.bind k (hopn_swap u1) (hopn_swap u2)
+  --   | Syntax.ctor k u1 u2 u3 =>
+  --     Syntax.ctor k (hopn_swap u1) (hopn_swap u2) (hopn_swap u3)
 
-  @[simp↓ high] lemma rename_bound {α β γ n} {i : Fin n}
-    : {_|-> x}{_<-| y}(@bound α β γ n i) = bound i
-  := by {
-    simp
-    unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp at *
-    unfold opn_head; simp at *
-    intro h
-    cases i; case _ iv il =>
-    simp at h
-    linarith
-  }
-
-  lemma rename_free_neq : z ≠ y -> {_|-> x}{_<-| y}(@free α β γ n z) = free z := by {
-    intro h; simp; split
-    case _ h2 => {
-      have h3 : z = y := LawfulBEq.eq_of_beq h2
-      exfalso
-      apply h h3
-    }
-    case _ h2 => {
-      unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp at *
-      unfold opn_head; simp at *
-    }
-  }
-
-  lemma rename_free_eq : {_|-> x}{_<-| y}(@free α β γ n y) = free x := by {
-    simp
-    unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp at *
-    unfold opn_head; simp at *
-  }
-
-  @[simp] lemma weaken_rename
-    : {_|-> x}{_<-| y}(weaken t 1) = weaken ({_|-> x}{_<-| y}t) 1
-  := by {
-    induction t
-    case bound n i => unfold weaken; simp
-    case free n z => {
-      generalize hdef : weaken (free z) 1 = h
-      unfold weaken at hdef; rw [<-hdef]
-      cases Name.decEq z y
-      case isFalse h => {
-        rw [rename_free_neq h, rename_free_neq h]
-        unfold weaken; simp
-      }
-      case isTrue h => {
-        subst h
-        rw [rename_free_eq, rename_free_eq]
-        unfold weaken; simp
-      }
-    }
-    case const => unfold weaken; simp
-    case bind k u1 u2 ih1 ih2 => {
-      simp; unfold weaken; simp
-      rw [ih1, ih2]; simp
-    }
-    case ctor c u1 u2 u3 ih1 ih2 ih3 => {
-      simp; unfold weaken; simp
-      rw [ih1, ih2, ih3]; simp
-    }
-  }
-
-  @[simp] lemma weaken_fv : fv (Syntax.weaken t 1) = fv t := by {
-    induction t
-    case bound => unfold weaken; simp; unfold fv; simp
-    case free => unfold weaken; unfold fv; simp
-    case const => unfold weaken; unfold fv; simp
-    case bind k u1 u2 ih1 ih2 => {
-      unfold weaken; simp; unfold fv; rw [ih1, ih2]
-    }
-    case ctor k u1 u2 u3 ih1 ih2 ih3 => {
-      unfold weaken; unfold fv; rw [ih1, ih2, ih3]
-    }
-  }
-
-  def hopn_swap {α β γ n}  (t : @Syntax α β γ (n + 2)) : @Syntax α β γ (n + 2) :=
-    match t with
-    | Syntax.bound i =>
-      if i == n + 1 then Syntax.bound n
-      else if i == n then Syntax.bound (n + 1)
-      else Syntax.bound i
-    | Syntax.free x => Syntax.free x
-    | Syntax.const k => Syntax.const k
-    | Syntax.bind k u1 u2 =>
-      Syntax.bind k (hopn_swap u1) (hopn_swap u2)
-    | Syntax.ctor k u1 u2 u3 =>
-      Syntax.ctor k (hopn_swap u1) (hopn_swap u2) (hopn_swap u3)
-
-  lemma hopn_swap_fact {α β γ n} (t : @Syntax α β γ (n + 2))
-    : {_|-> x}{_|-> y}t = {_|-> y}{_|-> x}(hopn_swap t)
-  := @Nat.rec
-    (λ s => ∀ {n:Nat} {t:@Syntax α β γ (n + 2)},
-      size t ≤ s ->
-      {_|-> x}{_|-> y}t = {_|-> y}{_|-> x}(hopn_swap t))
-    (by {
-      intro s t sh
-      cases t <;> simp at *
-      case bound j => {
-        unfold hopn_swap; simp
-        unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp
-        split
-        case _ h => {
-          rw [h]
-          generalize step1def : opn_head y (bound (↑s + 1)) = step1
-          unfold opn_head at step1def; simp at step1def
-          have lem1 : @Fin.val (s + 2) ((Nat.cast s) + 1) = s + 1 := fin_cast3
-          split at step1def
-          case _ => {
-            rw [<-step1def]
-            generalize step2def : opn_head x (bound ↑s) = step2
-            unfold opn_head at step2def; simp at step2def
-            have lem2 := (@Nat.mod_eq_iff_lt s (s + 1 + 1) (by linarith)).2 (by linarith)
-            split at step2def
-            case _ hx => rw [lem2] at hx; exfalso; linarith
-            case _ => {
-              rw [<-step2def]; unfold opn_head; simp
-              split
-              case _ => simp
-              case _ => linarith
-            }
-          }
-          case _ hx => exfalso; apply hx lem1
-        }
-        case _ h => {
-          split
-          case _ h2 => {
-            subst h2
-            generalize step1def : opn_head y (bound ↑s) = step1
-            unfold opn_head at step1def; simp at step1def
-            have lem1 := (@Nat.mod_eq_iff_lt s (s + 1 + 1) (by linarith)).2 (by linarith)
-            split at step1def
-            case _ hx => exfalso; rw [lem1] at hx; linarith
-            case _ => {
-              generalize step2def : opn_head x (bound (↑s + 1)) = step2
-              unfold opn_head at step2def; simp at step2def
-              split at step2def
-              case _ => {
-                rw [<-step2def, <-step1def]; unfold opn_head; simp
-                linarith
-              }
-              case _ hx => exfalso; rw [fin_cast3] at hx; apply hx; simp
-            }
-          }
-          case _ h2 => {
-            generalize step1def : opn_head y (bound j) = step1
-            unfold opn_head at step1def; simp at step1def
-            split at step1def
-            case _ hx => exfalso; apply h; apply fin_cast4 hx
-            case _ => {
-              generalize step2def : opn_head x (bound j) = step2
-              unfold opn_head at step2def; simp at step2def
-              split at step2def
-              case _ hx => exfalso; apply h; apply fin_cast4 hx
-              case _ => {
-                generalize step3def : opn_head x step1 = step3
-                rw [<-step1def] at step3def; unfold opn_head at step3def; simp at step3def
-                split at step3def
-                case _ hx => exfalso; apply h2; apply fin_cast5 hx
-                case _ => {
-                  rw [<-step2def]; unfold opn_head; simp
-                  split
-                  case _ hx => exfalso; apply h2; apply fin_cast5 hx
-                  case _ => rw [<-step3def]
-                }
-              }
-            }
-          }
-        }
-      }
-      case free => unfold hopn_swap; simp
-      case const => unfold hopn_swap; simp
-    })
-    (by {
-      intro s ih n t sh
-      cases t
-      case bound => apply ih (by simp)
-      case free => apply ih (by simp)
-      case const => apply ih (by simp)
-      case bind k u1 u2 => {
-        simp at sh
-        have sh1 : size u1 ≤ s := by linarith
-        have sh2 : size u2 ≤ s := by linarith
-        unfold hopn_swap; simp
-        rw [ih sh1, ih sh2]; simp
-      }
-      case ctor k u1 u2 u3 => {
-        simp at sh
-        have sh1 : size u1 ≤ s := by linarith
-        have sh2 : size u2 ≤ s := by linarith
-        have sh3 : size u3 ≤ s := by linarith
-        unfold hopn_swap; simp
-        rw [ih sh1, ih sh2, ih sh3]; simp
-      }
-    })
-    (size t)
-    n
-    t
-    (by simp)
+  -- lemma hopn_swap_fact {α β γ n} (t : @Syntax α β γ (n + 2))
+  --   : {_|-> x}{_|-> y}t = {_|-> y}{_|-> x}(hopn_swap t)
+  -- := @Nat.rec
+  --   (λ s => ∀ {n:Nat} {t:@Syntax α β γ (n + 2)},
+  --     size t ≤ s ->
+  --     {_|-> x}{_|-> y}t = {_|-> y}{_|-> x}(hopn_swap t))
+  --   (by {
+  --     intro s t sh
+  --     cases t <;> simp at *
+  --     case bound j => {
+  --       unfold hopn_swap; simp
+  --       unfold HasHOpen.hopn; unfold instHasHOpenSyntax; simp
+  --       split
+  --       case _ h => {
+  --         rw [h]
+  --         generalize step1def : opn_head y (bound (↑s + 1)) = step1
+  --         unfold opn_head at step1def; simp at step1def
+  --         have lem1 : @Phin.val (s + 2) ((Nat.cast s) + 1) = s + 1 := Phin_cast3
+  --         split at step1def
+  --         case _ => {
+  --           rw [<-step1def]
+  --           generalize step2def : opn_head x (bound ↑s) = step2
+  --           unfold opn_head at step2def; simp at step2def
+  --           have lem2 := (@Nat.mod_eq_iff_lt s (s + 1 + 1) (by linarith)).2 (by linarith)
+  --           split at step2def
+  --           case _ hx => rw [lem2] at hx; exfalso; linarith
+  --           case _ => {
+  --             rw [<-step2def]; unfold opn_head; simp
+  --             split
+  --             case _ => simp
+  --             case _ => linarith
+  --           }
+  --         }
+  --         case _ hx => exfalso; apply hx lem1
+  --       }
+  --       case _ h => {
+  --         split
+  --         case _ h2 => {
+  --           subst h2
+  --           generalize step1def : opn_head y (bound ↑s) = step1
+  --           unfold opn_head at step1def; simp at step1def
+  --           have lem1 := (@Nat.mod_eq_iff_lt s (s + 1 + 1) (by linarith)).2 (by linarith)
+  --           split at step1def
+  --           case _ hx => exfalso; rw [lem1] at hx; linarith
+  --           case _ => {
+  --             generalize step2def : opn_head x (bound (↑s + 1)) = step2
+  --             unfold opn_head at step2def; simp at step2def
+  --             split at step2def
+  --             case _ => {
+  --               rw [<-step2def, <-step1def]; unfold opn_head; simp
+  --               linarith
+  --             }
+  --             case _ hx => exfalso; rw [Phin_cast3] at hx; apply hx; simp
+  --           }
+  --         }
+  --         case _ h2 => {
+  --           generalize step1def : opn_head y (bound j) = step1
+  --           unfold opn_head at step1def; simp at step1def
+  --           split at step1def
+  --           case _ hx => exfalso; apply h; apply Phin_cast4 hx
+  --           case _ => {
+  --             generalize step2def : opn_head x (bound j) = step2
+  --             unfold opn_head at step2def; simp at step2def
+  --             split at step2def
+  --             case _ hx => exfalso; apply h; apply Phin_cast4 hx
+  --             case _ => {
+  --               generalize step3def : opn_head x step1 = step3
+  --               rw [<-step1def] at step3def; unfold opn_head at step3def; simp at step3def
+  --               split at step3def
+  --               case _ hx => exfalso; apply h2; apply Phin_cast5 hx
+  --               case _ => {
+  --                 rw [<-step2def]; unfold opn_head; simp
+  --                 split
+  --                 case _ hx => exfalso; apply h2; apply Phin_cast5 hx
+  --                 case _ => rw [<-step3def]
+  --               }
+  --             }
+  --           }
+  --         }
+  --       }
+  --     }
+  --     case free => unfold hopn_swap; simp
+  --     case const => unfold hopn_swap; simp
+  --   })
+  --   (by {
+  --     intro s ih n t sh
+  --     cases t
+  --     case bound => apply ih (by simp)
+  --     case free => apply ih (by simp)
+  --     case const => apply ih (by simp)
+  --     case bind k u1 u2 => {
+  --       simp at sh
+  --       have sh1 : size u1 ≤ s := by linarith
+  --       have sh2 : size u2 ≤ s := by linarith
+  --       unfold hopn_swap; simp
+  --       rw [ih sh1, ih sh2]; simp
+  --     }
+  --     case ctor k u1 u2 u3 => {
+  --       simp at sh
+  --       have sh1 : size u1 ≤ s := by linarith
+  --       have sh2 : size u2 ≤ s := by linarith
+  --       have sh3 : size u3 ≤ s := by linarith
+  --       unfold hopn_swap; simp
+  --       rw [ih sh1, ih sh2, ih sh3]; simp
+  --     }
+  --   })
+  --   (size t)
+  --   n
+  --   t
+  --   (by simp)
 
 
 end Syntax

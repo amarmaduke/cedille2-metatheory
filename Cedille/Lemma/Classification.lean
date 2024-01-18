@@ -6,10 +6,10 @@ import Cedille.Lemma.Refold
 import Cedille.Lemma.Erasure
 import Cedille.Lemma.Inversion
 import Cedille.Lemma.Red
+import Cedille.Lemma.Conv
+import Cedille.Lemma.Rule
 
 namespace Cedille
-
-  lemma project_ctx_proof : ⊢ Γ -> (x, A) ∈ Γ -> ∃ K, Γ ⊢ A >: const K := sorry
 
   lemma classification_of_check : Γ ⊢ t =: A -> ∃ K, Γ ⊢ A >: const K := by {
     intro j
@@ -31,12 +31,12 @@ namespace Cedille
   (by {
     intro Γ x A wf xn _
     apply Or.inr _
-    have lem := project_ctx_proof wf xn
+    have lem := get_ctx_wf wf xn
     cases lem; case _ K j =>
     sorry
   })
   (by {
-    intro Γ A m K B S j1 j2 ih1 ih2; simp at *
+    intro Γ A m K B j1 j2 ih1 ih2; simp at *
     cases m <;> simp at *
     case free => {
       apply Or.inr _
@@ -50,16 +50,12 @@ namespace Cedille
     }
   })
   (by {
-    intro Γ A m K t B S j1 j2 j3 ih1 ih2; simp at *
+    intro Γ A m K t B j1 j2 j3 ih1 ih2; simp at *
     sorry
   })
   (by {
     intro Γ f m A B a S j1 j2 ih1 ih2
-    cases ih1 <;> simp at *
-    case inr h => {
-      casesm* ∃ _, _, _ ∧ _; case _ K A' j step =>
-      sorry
-    }
+    sorry
   })
   sorry
   sorry
@@ -148,8 +144,7 @@ namespace Cedille
           sorry
         }
         case pair => sorry
-        case fst => sorry
-        case snd => sorry
+        case proj => sorry
         case eq => {
           cases j; case _ T j step =>
           cases j; case _ j1 j2 j3 =>

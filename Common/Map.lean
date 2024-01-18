@@ -98,14 +98,14 @@ namespace Map
     }
   }
 
-  def rename [HasHOpen α] [HasHClose α] (x y : Name) (Γ : Map! (α n)) : Map! (α n) :=
-    match Γ with
-    | List.nil => List.nil
-    | List.cons (n, t) tail => if x == n
-      then List.cons (y, {_|-> y}{_<-| y}t) (rename x y tail)
-      else List.cons (n, {_|-> y}{_<-| y}t) (rename x y tail)
+  -- def rename [HasHOpen α] [HasHClose α] (x y : Name) (Γ : Map! (α n)) : Map! (α n) :=
+  --   match Γ with
+  --   | List.nil => List.nil
+  --   | List.cons (n, t) tail => if x == n
+  --     then List.cons (y, {_|-> y}{_<-| y}t) (rename x y tail)
+  --     else List.cons (n, {_|-> y}{_<-| y}t) (rename x y tail)
 
-  notation:200 "[" x:200 "|->" y:200 "]" t:200 => rename x y t
+  -- notation:200 "[" x:200 "|->" y:200 "]" t:200 => rename x y t
 
   -- @[simp] lemma rename_append [HasHOpen α] [HasHClose α] {Γ Δ : Map! (α n)}
   --   : [x |-> y](Γ ++ Δ) = [x |-> y]Γ ++ [x |-> y]Δ

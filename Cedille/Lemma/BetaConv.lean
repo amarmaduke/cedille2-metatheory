@@ -26,37 +26,18 @@ namespace Cedille.BetaConv
     apply BetaConv.conv r1' r2'
   }
 
-  lemma bind (x : Name) :
+  lemma bind :
     A =β= A' ->
-    x ∉ fv B ++ fv B' ->
-    {_|-> x}B =β= {_|-> x}B' ->
+    B =β= B' ->
     Syntax.bind k A B =β= Syntax.bind k A' B'
   := by {
-    intro s1 xn s2
-    simp at *
-    replace xn := demorgan xn
-    cases xn; case _ xn1 xn2 =>
-    cases s1; case _ Az a1 a2 =>
-    cases s2; case _ Bz b1 b2 =>
-    apply BetaConv.conv _ _; exact Syntax.bind k Az ({_<-| x}Bz)
-    apply red_bind x a1 _ _
-    simp; intro h
-    cases h
-    case _ z => apply xn1 z
-    case _ z => apply var_not_in_close z
-    simp [*]
-    apply red_bind x a2 _ _
-    simp; intro h
-    cases h
-    case _ z => apply xn2 z
-    case _ z => apply var_not_in_close z
-    simp [*]
+    intro c1 c2
+    cases c1; case _ Az r1 r2 =>
+    cases c2; case _ Bz r3 r4 =>
+    apply BetaConv.conv _ _; exact Syntax.bind k Az Bz
+    apply red_bind r1 r3
+    apply red_bind r2 r4
   }
-
-  lemma bind1 :
-    A =β= A' ->
-    Syntax.bind k A B =β= Syntax.bind k A' B
-  := by sorry
 
   lemma ctor :
     A =β= A' ->
@@ -79,11 +60,11 @@ namespace Cedille.BetaConv
     apply BetaConv.trans cv2 cv
   }
 
-  lemma open_if (x : Name) : t =β= t' -> {_|-> x}t =β= {_|-> x}t' := by {
-    intro h
-    cases h; case _ z r1 r2 =>
-    sorry
-  }
+  -- lemma open_if (x : Name) : t =β= t' -> {_|-> x}t =β= {_|-> x}t' := by {
+  --   intro h
+  --   cases h; case _ z r1 r2 =>
+  --   sorry
+  -- }
 
   -- lemma bind' {S : FvSet!} :
   --   A =β= A' ->

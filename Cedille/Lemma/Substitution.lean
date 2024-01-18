@@ -7,23 +7,22 @@ import Cedille.Lemma.Syntax
 
 namespace Cedille
 
-  lemma subst_erase {n} (t1 : Term n) (t2 : Term (n + 1))
-    : erase x ([_:= t1]t2) = [_:= erase x t1]erase x t2
-  := @Nat.rec
-    (λ s => ∀ {n} {t1:Term n} {t2: Term (n + 1)},
-      size t2 ≤ s ->
-      erase x ([_:= t1]t2) = [_:= erase x t1]erase x t2)
-    sorry
-    (by {
-      intro s ih n t1 t2 sh
-      sorry
-    })
-    (size t2)
-    n
-    t1
-    t2
-    (by simp)
-
+  -- lemma subst_erase {n} (t1 : Term n) (t2 : Term (n + 1))
+  --   : erase x ([_:= t1]t2) = [_:= erase x t1]erase x t2
+  -- := @Nat.rec
+  --   (λ s => ∀ {n} {t1:Term n} {t2: Term (n + 1)},
+  --     size t2 ≤ s ->
+  --     erase x ([_:= t1]t2) = [_:= erase x t1]erase x t2)
+  --   sorry
+  --   (by {
+  --     intro s ih n t1 t2 sh
+  --     sorry
+  --   })
+  --   (size t2)
+  --   n
+  --   t1
+  --   t2
+  --   (by simp)
 
   -- lemma subst_erase (S : FvSet!) {t1 : Term 0} {t2 : Term 1}
   --   : (∀ x ∉ S, PseObj ({_|-> x}t2)) ->
@@ -89,11 +88,6 @@ namespace Cedille
   --   t1
   --   t2
   --   (by simp)
-
-
-  lemma subst_hsubst_commute {t1 t2 : Term n} {t3 : Term (n + 1)} :
-    [x := t1][_:= t2]t3 = [_:= [x := t1]t2][x := t1ʷ]t3
-  := by sorry
 
   -- lemma subst_pseobj {S : FvSet!} :
   --   PseObj a ->
