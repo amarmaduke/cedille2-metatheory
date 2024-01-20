@@ -13,91 +13,120 @@ inductive Syntax {α β γ : Sort _} : Sort _ where
 
 namespace Syntax
 
-  def opn {α β γ} (i : Nat) (v : Name) (t : @Syntax α β γ) : @Syntax α β γ :=
+  def opn {α β γ} (i : Nat) (v : @Syntax α β γ) (t : @Syntax α β γ) : @Syntax α β γ :=
     match t with
-    | bound j => if j == i then free v else bound j
+    | bound j => if j == i then v else bound j
     | free x => free x
     | const c => const c
     | bind k t1 t2 => bind k (opn i v t1) (opn (Nat.succ i) v t2)
     | ctor k t1 t2 t3 =>
       ctor k (opn i v t1) (opn i v t2) (opn i v t3)
 
-  def cls {α β γ} (i : Nat) (v : Name) (t : @Syntax α β γ) : @Syntax α β γ :=
+  def shift {α β γ} (t : @Syntax α β γ) (a c : Nat) : @Syntax α β γ :=
+    match t with
+    | bound j => if j < c then bound j else bound (j + a)
+    | free x => free x
+    | const c => const c
+    | bind k t1 t2 => bind k (shift t1 a c) (shift t2 a (c + 1))
+    | ctor k t1 t2 t3 =>
+      ctor k (shift t1 a c) (shift t2 a c) (shift t3 a c)
+
+  def cls {α β γ} (i : @Syntax α β γ) (v : Name) (t : @Syntax α β γ) : @Syntax α β γ :=
     match t with
     | bound j => bound j
-    | free x => if x == v then bound i else free x
+    | free x => if x == v then i else free x
     | const c => const c
-    | bind k t1 t2 => bind k (cls i v t1) (cls (Nat.succ i) v t2)
+    | bind k t1 t2 => bind k (cls i v t1) (cls (shift i 1 0) v t2)
     | ctor k t1 t2 t3 =>
       ctor k (cls i v t1) (cls i v t2) (cls i v t3)
 
-  instance : HasOpen (@Syntax α β γ) where
-    opn := opn
+  notation:200 "[" i:200 " := " x:200 "]" t:200 => opn i x t
+  notation:200 "[" i:200 " =: " x:200 "]" t:200 => cls i x t
+  notation:200 "{" i:200 " |-> " x:200 "}" t:200 => opn i (free x) t
+  notation:200 "{" i:200 " <-| " x:200 "}" t:200 => cls (bound i) x t
 
-  instance : HasClose (@Syntax α β γ) where
-    cls := cls
-
-  @[simp] lemma opn_const {α β γ : Sort _}  (i : Nat) (x : Name) (c : γ)
-    : @HasOpen.opn (@Syntax α β γ) _ i v (const c) = const c
+  @[simp] lemma shift_const {α β γ : Sort _} (a c : Nat) (g : γ)
+    : @shift α β γ (const g) a c = const g
   := by congr
 
-  @[simp] lemma opn_free {α β γ : Sort _} (i : Nat) (x : Name)
-    : @HasOpen.opn (@Syntax α β γ) _ i v (free x) = free x
+  @[simp] lemma shift_free {α β γ : Sort _} (a c : Nat)
+    : @shift α β γ (free x) a c = free x
   := by congr
 
-  @[simp] lemma opn_bound {α β γ : Sort _} (i : Nat) (x : Name)
-    : @HasOpen.opn (@Syntax α β γ) _ i v (bound j)
-      = if j == i then free v else bound j
+  @[simp] lemma shift_bound {α β γ : Sort _} (a c : Nat)
+    : @shift α β γ (bound j) a c
+      = if j < c then bound j else bound (j + a)
   := by congr
 
-  @[simp] lemma opn_bind {α β γ} (k : α) (i : Nat) (v : Name)
+  @[simp] lemma shift_bind {α β γ} (k : α) (a c : Nat)
     (t1 : @Syntax α β γ) (t2 : @Syntax α β γ)
-    : {i |-> v} bind k t1 t2 = bind k ({i |-> v} t1) ({(Nat.succ i) |-> v} t2)
+    : shift (bind k t1 t2) a c = bind k (shift t1 a c) (shift t2 a (Nat.succ c))
   := by {
-    generalize h : {_|-> v} @bind α β γ k t1 t2 = t
-    unfold HasOpen.opn at h; unfold instHasOpenSyntax at h; simp at h
-    unfold opn at h
-    unfold HasOpen.opn; unfold instHasOpenSyntax; simp
-    rw [<-h]
+    generalize h : shift (@bind α β γ k t1 t2) a c = t
+    unfold shift at h; rw [<-h]
   }
 
-  @[simp] lemma opn_ctor {α β γ} (k : β) (i : Nat) (v : Name)
+  @[simp] lemma shift_ctor {α β γ} (k : β) (a c : Nat)
     (t1 t2 t3 : @Syntax α β γ)
-    : {i |-> v} ctor k t1 t2 t3
-      = ctor k ({i |-> v} t1) ({i |-> v} t2) ({i |-> v} t3)
+    : shift (ctor k t1 t2 t3) a c
+      = ctor k (shift t1 a c) (shift t2 a c) (shift t3 a c)
   := by {
-    generalize h : {_|-> v}ctor k t1 t2 t3 = t
-    unfold HasOpen.opn at h; unfold instHasOpenSyntax at h; simp at h
-    unfold opn at h
-    unfold HasOpen.opn; unfold instHasOpenSyntax; simp
-    rw [<-h]
+    generalize h : shift (ctor k t1 t2 t3) a c = t
+    unfold shift at h; rw [<-h]
   }
 
-  @[simp] lemma cls_const {α β γ : Sort _} (i : Nat) (x : Name) (c : γ)
-    : @HasClose.cls (@Syntax α β γ) _ i v (const c) = const c
+  @[simp] lemma opn_const {α β γ : Sort _} (i : Nat) (v : @Syntax α β γ) (c : γ)
+    : @opn α β γ i v (const c) = const c
   := by congr
 
-  @[simp] lemma cls_free {α β γ : Sort _} (i : Nat) (v x : Name)
-    : @HasClose.cls (@Syntax α β γ) _ i v (free x)
-      = if x == v then bound i else free x
+  @[simp] lemma opn_free {α β γ : Sort _} (i : Nat) (v : @Syntax α β γ)
+    : @opn α β γ i v (free x) = free x
   := by congr
 
-  @[simp] lemma cls_bound {α β γ : Sort _} (i : Nat) (v : Name)
-    : @HasClose.cls (@Syntax α β γ) _ i v (bound j) = bound j
-  := by {
-    unfold HasClose.cls; unfold instHasCloseSyntax; simp
-    unfold cls; simp
-  }
+  @[simp] lemma opn_bound {α β γ : Sort _} (i : Nat) (v : @Syntax α β γ)
+    : @opn α β γ i v (bound j)
+      = if j == i then v else bound j
+  := by congr
 
-  @[simp] lemma cls_bind {α β γ} (k : α) (i : Nat) (v : Name)
+  @[simp] lemma opn_bind {α β γ} (k : α) (i : Nat) (v : @Syntax α β γ)
     (t1 : @Syntax α β γ) (t2 : @Syntax α β γ)
-    : {i <-| v} bind k t1 t2 = bind k ({i <-| v} t1) ({(Nat.succ i) <-| v} t2)
+    : [i := v] bind k t1 t2 = bind k ([i := v] t1) ([(Nat.succ i) := v] t2)
+  := by {
+    generalize h : [ _ := v] @bind α β γ k t1 t2 = t
+    unfold opn at h; rw [<-h]
+  }
+
+  @[simp] lemma opn_ctor {α β γ} (k : β) (i : Nat) (v : @Syntax α β γ)
+    (t1 t2 t3 : @Syntax α β γ)
+    : [i := v] ctor k t1 t2 t3
+      = ctor k ([i := v] t1) ([i := v] t2) ([i := v] t3)
+  := by {
+    generalize h : [_ := v] ctor k t1 t2 t3 = t
+    unfold opn at h; rw [<-h]
+  }
+
+  @[simp] lemma cls_const {α β γ : Sort _} (i : @Syntax α β γ) (x : Name) (c : γ)
+    : @cls α β γ i v (const c) = const c
   := by congr
 
-  @[simp] lemma cls_ctor {α β γ} (k : β) (i : Nat) (v : Name)
+  @[simp] lemma cls_free {α β γ : Sort _} (i : @Syntax α β γ)  (v : Name)
+    : @cls α β γ i v (free x)
+      = if x == v then i else free x
+  := by congr
+
+  @[simp] lemma cls_bound {α β γ : Sort _} (i : @Syntax α β γ) (v : Name)
+    : @cls α β γ i v (bound j) = bound j
+  := by congr
+
+  @[simp] lemma cls_bind {α β γ} (k : α) (i : @Syntax α β γ)  (v : Name)
+    (t1 : @Syntax α β γ) (t2 : @Syntax α β γ)
+    : [i =: v] bind k t1 t2 = bind k ([i =: v] t1) ([(shift i 1 0) =: v] t2)
+  := by congr
+
+  @[simp] lemma cls_ctor {α β γ} (k : β) (i : @Syntax α β γ)  (v : Name)
     (t1 t2 t3 : @Syntax α β γ)
-    : {i <-| v} ctor k t1 t2 t3
-      = ctor k ({i <-| v} t1) ({i <-| v} t2) ({i <-| v} t3)
+    : [i =: v] ctor k t1 t2 t3
+      = ctor k ([i =: v] t1) ([i =: v] t2) ([i =: v] t3)
   := by congr
 
   @[simp] theorem oc1 {α β γ} (i : Nat) (a b : Name) (x : @Syntax α β γ)
@@ -309,8 +338,26 @@ namespace Syntax
     }
   }
 
-  @[simp] theorem close_vanish_fv : a ∉ fv x -> {i <-| a}x = x := by {
-    intro h; have lem := fresh_iff_nfv.2 h; simp [*]
+  @[simp] theorem close_vanish_fv : a ∉ fv x -> [i =: a]x = x := by {
+    intro h;
+    induction x generalizing i a <;> simp
+    case free α β γ y => {
+      intro h2; subst h2
+      have h3 : y ∈ @fv α β γ (free y) := by unfold fv; simp
+      exfalso; apply h h3
+    }
+    case bind t1 t2 ih1 ih2 => {
+      unfold fv at h; simp at h
+      have h := demorgan h
+      cases h; case _ h1 h2 =>
+      rw [ih1 h1, ih2 h2]; simp
+    }
+    case ctor t1 t2 t3 ih1 ih2 ih3 => {
+      unfold fv at h; simp at h
+      have h := demorgan3 h
+      casesm* _ ∧ _; case _ h1 h2 h3 =>
+      rw [ih1 h1, ih2 h2, ih3 h3]; simp
+    }
   }
 
   def closed {α β γ} (i : Nat) (x : @Syntax α β γ) :=
@@ -359,54 +406,6 @@ namespace Syntax
     intro h; have lem := h i (by simp)
     cases lem; case _ b lem =>
     rw [unbounded lem]
-  }
-
-  def subst {α β γ} (v : Name) (w t : @Syntax α β γ) : @Syntax α β γ :=
-    match t with
-    | bound i => bound i
-    | free x => if x == v then w else free x
-    | const c => const c
-    | bind k t1 t2 => bind k (subst v w t1) (subst v w t2)
-    | ctor k t1 t2 t3 => ctor k
-      (subst v w t1) (subst v w t2) (subst v w t3)
-
-  instance {α β γ} : HasSubst (@Syntax α β γ) (@Syntax α β γ) where
-    subst := subst
-
-  @[simp] lemma subst_const {α β γ : Sort _} (c : γ) (x : Name) (v : @Syntax α β γ)
-    : [x := v](@const α β γ c) = const c
-  := by congr
-
-  @[simp] lemma subst_free {α β γ : Sort _} (x : Name) (v : @Syntax α β γ)
-    : [x := v](@free α β γ x) = v
-  := by {
-    unfold HasSubst.subst; unfold instHasSubstSyntax; simp
-    unfold subst; simp
-  }
-
-  @[simp] lemma subst_bound {α β γ : Sort _} (x : Name) (j : Nat) (v : @Syntax α β γ)
-    : [x := v](@bound α β γ j) = bound j
-  := by congr
-
-  @[simp] lemma subst_bind {α β γ} (k : α) (x : Name)
-    (v : @Syntax α β γ) (t1 : @Syntax α β γ) (t2 : @Syntax α β γ)
-    : [x := v] @bind α β γ k t1 t2 = @bind α β γ k ([x := v]t1) ([x := v]t2)
-  := by {
-    generalize rhsdef : bind k ([x := v]t1) ([x := v]t2) = u
-    unfold HasSubst.subst; unfold instHasSubstSyntax; simp
-    unfold HasSubst.subst at *; unfold instHasSubstSyntax at *; simp at *
-    unfold subst; rw [rhsdef]
-  }
-
-  @[simp] lemma subst_ctor {α β γ} (k : β) (x : Name) (v : @Syntax α β γ)
-    (t1 t2 t3 : @Syntax α β γ)
-    : [x := v] @ctor α β γ k t1 t2 t3
-      = @ctor α β γ k ([x := v]t1) ([x := v]t2) ([x := v]t3)
-  := by {
-    generalize rhsdef : ctor k ([x := v]t1) ([x := v]t2) ([x := v]t3) = u
-    unfold HasSubst.subst; unfold instHasSubstSyntax; simp
-    unfold HasSubst.subst at *; unfold instHasSubstSyntax at *; simp at *
-    unfold subst; rw [rhsdef]
   }
 
   def size {α β γ} (t : @Syntax α β γ) : Nat :=

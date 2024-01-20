@@ -36,7 +36,7 @@ namespace Cedille
     induction obj generalizing t'
     case ax => cases step
     case var => cases step
-    case bind k A B hn p1 p2 ih1 ih2 => {
+    case bind k A B hn p1 S p2 ih1 ih2 => {
       cases k
       case' lam md => cases md
       case lam.erased => exfalso; apply hn (by simp)
@@ -49,8 +49,8 @@ namespace Cedille
           try apply BetaConv.bind ih1 BetaConv.refl
         }
         case bind2 B' step => {
-          have yfresh := @Name.fresh_is_fresh (fv B)
-          generalize ydef : @Name.fresh (fv B) = y at *
+          have yfresh := @Name.fresh_is_fresh S
+          generalize ydef : @Name.fresh S = y at *
           replace step : {0 |-> y}B -β> {0 |-> y}B' := by sorry
           replace ih2 := ih2 y yfresh step
           simp; try apply BetaConv.refl
@@ -58,12 +58,12 @@ namespace Cedille
         }
       }
     }
-    case lam A t S p1 p2 ih1 ih2 => {
+    case lam A t p1 S1 p2 S2 p3 ih1 ih2 => {
       cases step
       case bind1 A' step => simp; apply BetaConv.refl
       case bind2 t' step => {
-        have yfresh := @Name.fresh_is_fresh (fv t)
-        generalize ydef : @Name.fresh (fv t) = y at *
+        have yfresh := @Name.fresh_is_fresh S1
+        generalize ydef : @Name.fresh S1 = y at *
         replace step : {0 |-> y}t -β> {0 |-> y}t' := by sorry
         replace ih2 := ih2 y yfresh step
         simp; exact (erase_open_conv ih2)
@@ -79,7 +79,7 @@ namespace Cedille
       cases k <;> simp at *
       case app md => {
         cases step
-        case beta t1' t2' x xn => {
+        case beta t1' t2' => {
           cases md
           case free => {
             sorry
@@ -135,35 +135,7 @@ namespace Cedille
         }
       }
       case refl => cases step <;> (simp at *; apply BetaConv.refl)
-      case eqind => {
-        cases step
-        case eqind t1 t2 t3 t4 t5 t6 => {
-          simp at *
-          have r1 : lam mf kindu (bound 0) @ω erase t6 -β> erase t6 := by {
-            have lem := @Red.beta mf kindu (bound 0) (erase t6) (@Name.fresh []) (by simp)
-            simp at lem; apply lem
-          }
-          have r2 := RedStar.step r1 RedStar.refl
-          have c1 := BetaConv.red_f BetaConv.refl r2
-          apply BetaConv.symm c1
-        }
-        case ctor1 => apply BetaConv.refl
-        case ctor2 => apply BetaConv.refl
-        case ctor3 t3' step => apply ih3 step
-      }
-      case j0 => cases step <;> (simp at *; apply BetaConv.refl)
-      case jω => {
-        cases step <;> simp at *
-        case ctor1 t1' step => {
-          replace ih1 := ih1 step
-          apply BetaConv.ctor ih1 BetaConv.refl BetaConv.refl
-        }
-        case ctor2 t2' step => {
-          replace ih2 := ih2 step
-          apply BetaConv.ctor BetaConv.refl ih2 BetaConv.refl
-        }
-        case ctor3 => apply BetaConv.refl
-      }
+      case subst => sorry
       case promote => {
         cases step <;> simp at *
         case promote => apply BetaConv.refl
@@ -315,7 +287,6 @@ namespace Cedille
         case first => {
           cases step <;> simp at *
           case fst t2 t3 => cases p1 <;> simp [*]
-          case phi t2 t3 => cases p1; simp [*]
           case ctor1 => sorry
           case ctor2 => sorry
           case ctor3 => sorry
@@ -324,9 +295,7 @@ namespace Cedille
       }
       case eq => sorry
       case refl => sorry
-      case eqind => sorry
-      case j0 => sorry
-      case jω => sorry
+      case subst => sorry
       case promote => sorry
       case delta => sorry
       case phi => sorry
@@ -385,110 +354,110 @@ namespace Cedille
     }
   }
 
-  lemma infer_implies_pseobj_type : Γ ⊢ t : A -> PseObj A := λ j => @Infer.rec
-    (λ Γ t A _ => PseObj A)
-    (λ Γ t A _ => PseObj A)
-    (λ Γ t A _ => PseObj A)
-    (λ _ _ => True)
-    (by { intro Γ _ _; constructor })
-    (by {
-      intro Γ x A wf xn _
-      have lem := get_ctx_wf wf xn
-      casesm* ∃ _, _; case _ Δ K lem =>
-      cases lem; case _ D lem r =>
-      apply infer_implies_pseobj lem
-    })
-    (by {
-      intros _ _ m
-      cases m <;> (simp; intros; constructor)
-    })
-    (by {
-      intros Γ A m K t B j1 j2 e ih1 ih2; simp at *
-      cases j1; case _ _ j1 _ =>
-      have lem := infer_implies_pseobj j1
-      sorry
-      --apply PseObj.bind _ lem ih2; simp
-    })
-    (by {
-      intros x B Γ f m A a xn j1 j2 ih1 ih2
-      cases ih1; case _ S hn _ ih2 =>
-      sorry
-    })
-    (by { intros; constructor })
-    (by {
-      intros Γ T A B t s j1 j2 j3 e ih1 ih2 ih3; simp at *
-      cases ih1; case _ S' _ p1 p2 =>
-      apply PseObj.bind _ p1 p2; simp
-    })
-    (by {
-      intros Γ t A B j ih
-      cases ih; case _ _ _ ih _ => exact ih
-    })
-    (by {
-      intros x B Γ t A xn j ih
-      cases ih; case _ _ _ ih =>
-      replace ih := ih x xn
-      sorry
-    })
-    (by { intros; constructor })
-    (by {
-      intros Γ t A j ih
-      have lem := infer_implies_pseobj j
-      apply PseObj.ctor _ ih lem lem; simp
-    })
-    (by {
-      intros Γ A P x y r w j1 j2 j3 j4 j5 j6 ih1 ih2 ih3 ih4 ih5 ih6
-      constructor; simp; constructor; simp; constructor; simp
-      cases j2; case _ _ _ j2 _ _ => apply infer_implies_pseobj j2
-      cases j3; case _ _ _ j3 _ _ => apply infer_implies_pseobj j3
-      constructor; cases j4; case _ _ _ j4 _ _ => apply infer_implies_pseobj j4
-      constructor; cases j5; case _ _ _ j5 _ _ => apply infer_implies_pseobj j5
-      constructor
-    })
-    (by {
-      intros Γ e T i a j b A B j1 j2 j3 ih1 ih2 ih3
-      cases j2; case _ _ j2 _ =>
-      cases j3; case _ _ _ j3 _ _ =>
-      have lem1 := infer_implies_pseobj j2
-      have lem2 := infer_implies_pseobj j3
-      apply PseObj.ctor _ ih2 lem1 lem2; simp
-    })
-    (by {
-      intros A B Γ f a e h j1 j2 j3 fve ih1 ih2 ih3
-      cases ih1; case _ S _ _ ih1 =>
-      have lem : ∀ x ∉ fv B, PseObj ({0 |-> x}B) := by {
-        have yfresh := @Name.fresh_is_fresh (fv (inter A B))
-        generalize ydef : @Name.fresh (fv (inter A B)) = y at *
-        simp at *; replace ih1 := ih1 y yfresh
-        intro x xn; unfold inter at ih1
-        rw [Syntax.open_vanish] at ih1
-        cases ih1; case _ S' _ _ ih1 => {
-          rw [Syntax.open_vanish h.2] at ih1
-          apply ih1 x xn
-        }
-        apply h.1
-      }
-      apply PseObj.bind _ ih2 lem; simp
-    })
-    (by {
-      intros; constructor; simp; constructor
-      simp; intro x; constructor
-    })
-    (by {
-      intros Γ t A B j step ih
-      apply preservation_of_pseobj ih step
-    })
-    (by {
-      intros Γ t A B K j1 j2 cv ih1 ih2
-      cases j2; case _ _ j2 _ =>
-      apply infer_implies_pseobj j2
-    })
-    (by simp)
-    (by simp)
-    Γ
-    t
-    A
-    j
+  -- lemma infer_implies_pseobj_type : Γ ⊢ t : A -> PseObj A := λ j => @Infer.rec
+  --   (λ Γ t A _ => PseObj A)
+  --   (λ Γ t A _ => PseObj A)
+  --   (λ Γ t A _ => PseObj A)
+  --   (λ _ _ => True)
+  --   (by { intro Γ _ _; constructor })
+  --   (by {
+  --     intro Γ x A wf xn _
+  --     have lem := get_ctx_wf wf xn
+  --     casesm* ∃ _, _; case _ Δ K lem =>
+  --     cases lem; case _ D lem r =>
+  --     apply infer_implies_pseobj lem
+  --   })
+  --   (by {
+  --     intros _ _ m
+  --     cases m <;> (simp; intros; constructor)
+  --   })
+  --   (by {
+  --     intros Γ A m K t B j1 j2 e ih1 ih2; simp at *
+  --     cases j1; case _ _ j1 _ =>
+  --     have lem := infer_implies_pseobj j1
+  --     sorry
+  --     --apply PseObj.bind _ lem ih2; simp
+  --   })
+  --   (by {
+  --     intros x B Γ f m A a xn j1 j2 ih1 ih2
+  --     cases ih1; case _ S hn _ ih2 =>
+  --     sorry
+  --   })
+  --   (by { intros; constructor })
+  --   (by {
+  --     intros Γ T A B t s j1 j2 j3 e ih1 ih2 ih3; simp at *
+  --     cases ih1; case _ S' _ p1 p2 =>
+  --     apply PseObj.bind _ p1 p2; simp
+  --   })
+  --   (by {
+  --     intros Γ t A B j ih
+  --     cases ih; case _ _ _ ih _ => exact ih
+  --   })
+  --   (by {
+  --     intros x B Γ t A xn j ih
+  --     cases ih; case _ _ _ ih =>
+  --     replace ih := ih x xn
+  --     sorry
+  --   })
+  --   (by { intros; constructor })
+  --   (by {
+  --     intros Γ t A j ih
+  --     have lem := infer_implies_pseobj j
+  --     apply PseObj.ctor _ ih lem lem; simp
+  --   })
+  --   (by {
+  --     intros Γ A P x y r w j1 j2 j3 j4 j5 j6 ih1 ih2 ih3 ih4 ih5 ih6
+  --     constructor; simp; constructor; simp; constructor; simp
+  --     cases j2; case _ _ _ j2 _ _ => apply infer_implies_pseobj j2
+  --     cases j3; case _ _ _ j3 _ _ => apply infer_implies_pseobj j3
+  --     constructor; cases j4; case _ _ _ j4 _ _ => apply infer_implies_pseobj j4
+  --     constructor; cases j5; case _ _ _ j5 _ _ => apply infer_implies_pseobj j5
+  --     constructor
+  --   })
+  --   (by {
+  --     intros Γ e T i a j b A B j1 j2 j3 ih1 ih2 ih3
+  --     cases j2; case _ _ j2 _ =>
+  --     cases j3; case _ _ _ j3 _ _ =>
+  --     have lem1 := infer_implies_pseobj j2
+  --     have lem2 := infer_implies_pseobj j3
+  --     apply PseObj.ctor _ ih2 lem1 lem2; simp
+  --   })
+  --   (by {
+  --     intros A B Γ f a e h j1 j2 j3 fve ih1 ih2 ih3
+  --     cases ih1; case _ S _ _ ih1 =>
+  --     have lem : ∀ x ∉ fv B, PseObj ({0 |-> x}B) := by {
+  --       have yfresh := @Name.fresh_is_fresh (fv (inter A B))
+  --       generalize ydef : @Name.fresh (fv (inter A B)) = y at *
+  --       simp at *; replace ih1 := ih1 y yfresh
+  --       intro x xn; unfold inter at ih1
+  --       rw [Syntax.open_vanish] at ih1
+  --       cases ih1; case _ S' _ _ ih1 => {
+  --         rw [Syntax.open_vanish h.2] at ih1
+  --         apply ih1 x xn
+  --       }
+  --       apply h.1
+  --     }
+  --     apply PseObj.bind _ ih2 lem; simp
+  --   })
+  --   (by {
+  --     intros; constructor; simp; constructor
+  --     simp; intro x; constructor
+  --   })
+  --   (by {
+  --     intros Γ t A B j step ih
+  --     apply preservation_of_pseobj ih step
+  --   })
+  --   (by {
+  --     intros Γ t A B K j1 j2 cv ih1 ih2
+  --     cases j2; case _ _ j2 _ =>
+  --     apply infer_implies_pseobj j2
+  --   })
+  --   (by simp)
+  --   (by simp)
+  --   Γ
+  --   t
+  --   A
+  --   j
 
 
   -- lemma erase_free_red :

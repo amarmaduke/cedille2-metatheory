@@ -16,16 +16,15 @@ namespace Cedille
   @[simp low] lemma refold_proj : Syntax.ctor (Constructor.proj i) t kindu kindu = proj i t := by congr
   @[simp low] lemma refold_eq : Syntax.ctor Constructor.eq t1 t2 t3 = eq t1 t2 t3 := by congr
   @[simp low] lemma refold_refl : Syntax.ctor Constructor.refl t kindu kindu = refl t := by congr
-  @[simp low] lemma refold_Jh : Syntax.ctor Constructor.eqind t1 t2 t3 = Jh t1 t2 t3 := by congr
-  @[simp low] lemma refold_J0 : Syntax.ctor Constructor.j0 t1 t2 kindu = J0 t1 t2 := by congr
-  @[simp low] lemma refold_Jω : Syntax.ctor Constructor.jω t1 t2 kindu = Jω t1 t2 := by congr
-  @[simp low] lemma refold_J : Jh (J0 t1 t2) (J0 t3 t4) (Jω t5 t6) = J t1 t2 t3 t4 t5 t6 := by congr
+  @[simp low] lemma refold_subst : Syntax.ctor Constructor.subst t1 t2 kindu = subst t1 t2 := by congr
   @[simp low] lemma refold_promote : Syntax.ctor Constructor.promote t kindu kindu = promote t := by congr
   @[simp low] lemma refold_delta : Syntax.ctor Constructor.delta t kindu kindu = delta t := by congr
-  @[simp low] lemma refold_phi : Syntax.ctor Constructor.phi t1 t2 t3 = phi t1 t2 t3 := by congr
+  @[simp low] lemma refold_phi : Syntax.ctor Constructor.phi t1 t2 kindu = phi t1 t2 := by congr
 
   @[simp low] lemma const_to_typeu : const Constant.typeU = typeu := by congr
   @[simp low] lemma const_to_kindu : const Constant.kindU = kindu := by congr
+
+  @[simp] lemma shift_shift : Syntax.shift t a c = shift t a c := by rfl
 
   @[simp] lemma size_const : size (const k) = 0 := by congr
   @[simp] lemma size_typeu : size (typeu) = 0 := by congr
@@ -40,15 +39,10 @@ namespace Cedille
   @[simp] lemma size_fst : size (proj i t) = size t + 1 := by congr
   @[simp] lemma size_eq : size (eq t1 t2 t3) = size t1 + size t2 + size t3 + 1 := by congr
   @[simp] lemma size_refl : size (refl t) = size t + 1 := by congr
-  @[simp] lemma size_Jh : size (Jh t1 t2 t3) = size t1 + size t2 + size t3 + 1 := by congr
-  @[simp] lemma size_J0 : size (J0 t1 t2) = size t1 + size t2 + 1 := by congr
-  @[simp] lemma size_Jω : size (Jω t1 t2) = size t1 + size t2 + 1 := by congr
-  @[simp] lemma size_J : size (J t1 t2 t3 t4 t5 t6) = size t1 + size t2 + size t3 + size t4 + size t5 + size t6 + 4 := by {
-    unfold J; rw [size_Jh, size_J0, size_J0, size_Jω]; linarith
-  }
+  @[simp] lemma size_subst : size (subst t1 t2) = size t1 + size t2 + 1 := by congr
   @[simp] lemma size_promote : size (promote t) = size t + 1 := by congr
   @[simp] lemma size_delta : size (delta t) = size t + 1 := by congr
-  @[simp] lemma size_phi : size (phi t1 t2 t3) = size t1 + size t2 + size t3 + 1 := by congr
+  @[simp] lemma size_phi : size (phi t1 t2) = size t1 + size t2 + 1 := by congr
 
   @[simp] lemma size_bind : size (Syntax.bind k t1 t2) = size t1 + size t2 + 1 := by congr
   @[simp] lemma size_ctor : size (Syntax.ctor k t1 t2 t3) = size t1 + size t2 + size t3 + 1 := by congr
@@ -85,15 +79,8 @@ namespace Cedille
   @[simp] lemma fv_refl : fv (refl t) = fv t := by {
     unfold refl; rw [@fv_ctor _ t _ _]; simp; repeat rw [List.append_nil]
   }
-  @[simp] lemma fv_Jh : fv (Jh t1 t2 t3) = fv t1 ++ fv t2 ++ fv t3 := by congr
-  @[simp] lemma fv_J0 : fv (J0 t1 t2) = fv t1 ++ fv t2 := by {
-    unfold J0; rw [@fv_ctor _ t1 t2 _]; simp
-  }
-  @[simp] lemma fv_Jω : fv (Jω t1 t2) = fv t1 ++ fv t2 := by {
-    unfold Jω; rw [@fv_ctor _ t1 t2 _]; simp
-  }
-  @[simp] lemma fv_J : fv (J t1 t2 t3 t4 t5 t6) = fv t1 ++ fv t2 ++ fv t3 ++ fv t4 ++ fv t5 ++ fv t6 := by {
-    unfold J; rw [fv_Jh, fv_J0, fv_J0, fv_Jω]; simp
+  @[simp] lemma fv_subst: fv (subst t1 t2) = fv t1 ++ fv t2 := by {
+    unfold subst; rw [@fv_ctor _ t1 t2 _]; simp; repeat rw [List.append_nil]
   }
   @[simp] lemma fv_promote : fv (promote t) = fv t := by {
     unfold promote; rw [@fv_ctor _ t _ _]; simp; repeat rw [List.append_nil]
@@ -101,7 +88,9 @@ namespace Cedille
   @[simp] lemma fv_delta : fv (delta t) = fv t := by {
     unfold delta; rw [@fv_ctor _ t _ _]; simp; repeat rw [List.append_nil]
   }
-  @[simp] lemma fv_phi : fv (phi t1 t2 t3) = fv t1 ++ fv t2 ++ fv t3 := by congr
+  @[simp] lemma fv_phi : fv (phi t1 t2) = fv t1 ++ fv t2 := by {
+    unfold phi; rw [@fv_ctor _ t1 t2 _]; simp; repeat rw [List.append_nil]
+  }
 
   @[simp low] lemma lc_lc : Syntax.lc i t = lc i t := by congr
   @[simp] lemma lc_ctor : lc i (Syntax.ctor k t1 t2 t3) = (lc i t1 ∧ lc i t2 ∧ lc i t3) := by {
@@ -185,15 +174,13 @@ namespace Cedille
   lemma lc_bound_lt : j < i -> lc i (bound j) = True := by {
     intro h; unfold lc; unfold Syntax.lc; simp
     intro k gt; exists @Name.fresh []
-    unfold HasOpen.opn; unfold Syntax.instHasOpenSyntax; simp
     unfold Syntax.opn; unfold bound; simp
-    intro h2; subst h2
+    intro h2
     exfalso; linarith
   }
   lemma lc_bound_le : i ≤ j -> lc i (bound j) = False := by {
     intro h; unfold lc; unfold Syntax.lc; simp
     exists j; simp [*]; intro x
-    unfold HasOpen.opn; unfold Syntax.instHasOpenSyntax; simp
     unfold Syntax.opn; unfold bound; simp
     intro h; injection h
   }
@@ -230,29 +217,16 @@ namespace Cedille
   @[simp] lemma lc_refl : lc i (refl t) = lc i t := by {
     unfold refl; rw [lc_ctor]; simp
   }
-  @[simp] lemma lc_Jh : lc i (Jh t1 t2 t3) = (lc i t1 ∧ lc i t2 ∧ lc i t3)
-    := by unfold Jh; rw [lc_ctor]
-  @[simp] lemma lc_J0 : lc i (J0 t1 t2) = (lc i t1 ∧ lc i t2) := by {
-    unfold J0; rw [lc_ctor]; simp
-  }
-  @[simp] lemma lc_Jω : lc i (Jω t1 t2) = (lc i t1 ∧ lc i t2) := by {
-    unfold Jω; rw [lc_ctor]; simp
-  }
-  @[simp] lemma lc_J : lc i (J t1 t2 t3 t4 t5 t6)
-    = (lc i t1 ∧ lc i t2 ∧ lc i t3 ∧ lc i t4 ∧ lc i t5 ∧ lc i t6)
-  := by {
-    unfold J; rw [lc_Jh, lc_J0, lc_J0, lc_Jω]; simp
-    apply Iff.intro _ _
-    { intro h; casesm* _ ∧ _; case _ => simp [*] }
-    { intro h; casesm* _ ∧ _; case _ => simp [*] }
-  }
+  @[simp] lemma lc_subst : lc i (subst t1 t2) = (lc i t1 ∧ lc i t2)
+    := by unfold subst; rw [lc_ctor]; simp
+
   @[simp] lemma lc_promote : lc i (promote t) = lc i t := by {
     unfold promote; rw [lc_ctor]; simp
   }
   @[simp] lemma lc_delta : lc i (delta t) = lc i t := by {
     unfold delta; rw [lc_ctor]; simp
   }
-  @[simp] lemma lc_phi : lc i (phi t1 t2 t3) = (lc i t1 ∧ lc i t2 ∧ lc i t3)
-    := by unfold phi; rw [lc_ctor]
+  @[simp] lemma lc_phi : lc i (phi t1 t2) = (lc i t1 ∧ lc i t2)
+    := by unfold phi; rw [lc_ctor]; simp
 
 end Cedille

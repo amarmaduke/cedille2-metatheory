@@ -46,19 +46,12 @@ namespace Cedille
   lemma red_fv_step : t1 -β> t2 -> fv t2 ⊆ fv t1 := by {
     intros h
     induction h <;> simp [*]
-    case beta m z1 z2 z3 x xn => {
+    case beta m z1 z2 z3 => {
       apply FvSet.subset_right _
       apply FvSet.subset_comm _
-      apply @fv_subst x z3 z2
+      apply @fv_open z3 z2
     }
     case snd z1 z2 z3 => {
-      apply FvSet.subset_right; apply FvSet.subset_left; simp
-    }
-    case eqind z1 z2 z3 z4 z5 z6 => {
-      apply And.intro _ _
-      apply FvSet.subset_right; apply FvSet.subset_right; apply FvSet.subset_right;
-      apply FvSet.subset_right; apply FvSet.subset_right; simp
-      apply FvSet.subset_right; apply FvSet.subset_right; apply FvSet.subset_right;
       apply FvSet.subset_right; apply FvSet.subset_left; simp
     }
     case bind1 z1 z2 k z3 h ih => {
@@ -288,8 +281,9 @@ namespace Cedille
     apply red_ctor2 s2; apply red_ctor3 s3
   }
 
+  -- Note: don't think Constructor.subst needs to be in the list
   lemma red_ctor_rev :
-    (∀ i md, k ∉ [Constructor.proj i, Constructor.app md, Constructor.eqind, Constructor.promote]) ->
+    (∀ i md, k ∉ [Constructor.proj i, Constructor.app md, Constructor.subst, Constructor.promote]) ->
     Syntax.ctor k A B C -β>* Syntax.ctor k A' B' C' ->
     A -β>* A' ∧ B -β>* B' ∧ C -β>* C'
   := by {
@@ -306,12 +300,11 @@ namespace Cedille
     case step t1 t2 t3 r1 r2 ih => {
       rw [<-lhsdef] at r1
       cases r1
-      case beta md _ _ _ _ => exfalso; apply h 1 md; simp
+      case beta md _ _ => exfalso; apply h 1 md; simp
       case fst => exfalso; apply h 1 m0; simp
       case snd => exfalso; apply h 2 m0; simp
-      case eqind => exfalso; apply h 1 m0; simp
+      case subst => exfalso; apply h 1 m0; simp
       case promote k u => exfalso; apply h k m0; simp
-      case phi => exfalso; apply h 1 m0; simp
       case ctor1 T step => {
         replace ih := @ih T B C A' B' C' (by simp) rhsdef
         have lem := RedStar.step step ih.1

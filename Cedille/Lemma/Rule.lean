@@ -1,5 +1,6 @@
 
 import Cedille.Def
+import Cedille.Lemma.Refold
 
 namespace Cedille
 
@@ -78,102 +79,103 @@ namespace Cedille
     intro j; apply ConInfer.infer j RedStar.refl
   }
 
-  lemma infer_implies_pseobj : Γ ⊢ t : A -> PseObj t := λ j => @Infer.rec
-    (λ Γ t A _ => PseObj t)
-    (λ Γ t A _ => PseObj t)
-    (λ Γ t A _ => PseObj t)
-    (λ _ _ => True)
-    (by { intro Γ _ _; constructor })
-    (by {
-      intro _ _ _ _ _ _
-      constructor
-    })
-    (by {
-      intro Γ A m K B _j1 j2 ih1 ih2; simp at *
-      constructor; simp; apply ih1
-      apply ih2
-    })
-    (by {
-      intro Γ A m K t B j1 j2 j3 ih1 ih2; simp at *
-      cases m
-      case free => {
-        apply PseObj.bind; simp
-        apply ih1; intro x xn
-        have yfresh := @Name.fresh_is_fresh (fv t ++ fv B)
-        generalize ydef : @Name.fresh (fv t ++ fv B) = y at *
-        simp at *; replace ih2 := ih2 y yfresh
-        sorry
-      }
-      case type => {
-        apply PseObj.bind; simp
-        apply ih1; sorry
-      }
-      case erased => {
-        apply PseObj.lam; apply ih1
-        repeat sorry
-      }
-    })
-    (by {
-      intro x B Γ f m A a _xn _j1 _j2 ih1 ih2
-      constructor; simp; apply ih1; apply ih2
-      constructor
-    })
-    (by {
-      intro Γ A B _j1 j2 ih1 ih2; simp at *
-      constructor; simp; apply ih1
-      apply ih2
-    })
-    (by {
-      intro Γ T A B t s _j1 _j2 j3 e p1 p2 p3
-      simp at *; have xfresh := @Name.fresh_is_fresh (fv B)
-      generalize _xdef : @Name.fresh (fv B) = x at *
-      replace p3 := p3 x xfresh
-      apply PseObj.pair p2 p3 p1 e
-    })
-    (by {
-      intros; constructor; simp; simp [*]
-      constructor; constructor
-    })
-    (by {
-      intros; constructor; simp; simp [*]
-      constructor; constructor
-    })
-    (by {
-      intros; constructor <;> simp [*]
-    })
-    (by {
-      intros; constructor; simp; simp [*]
-      constructor; constructor
-    })
-    (by {
-      intros; constructor; simp
-      constructor; simp; simp [*]; simp [*]; constructor
-      constructor; simp; simp [*]; simp [*]; constructor
-      constructor; simp; simp [*]; simp [*]; constructor
-    })
-    (by {
-      intros; constructor; simp; simp [*]
-      constructor; constructor
-    })
-    (by {
-      intros; constructor; simp
-      all_goals simp [*]
-    })
-    (by {
-      intros; constructor; simp; simp [*]
-      constructor; constructor
-    })
-    (by simp)
-    (by {
-      intro Γ t A B K _j1 _j2 _cv ih1 _ih2
-      simp [*]
-    })
-    (by simp)
-    (by simp)
-    Γ
-    t
-    A
-    j
+  lemma infer_implies_pseobj : Γ ⊢ t : A -> PseObj t := by sorry
+  -- := λ j => @Infer.rec
+  --   (λ Γ t A _ => PseObj t)
+  --   (λ Γ t A _ => PseObj t)
+  --   (λ Γ t A _ => PseObj t)
+  --   (λ _ _ => True)
+  --   (by { intro Γ _ _; constructor })
+  --   (by {
+  --     intro _ _ _ _ _ _
+  --     constructor
+  --   })
+  --   (by {
+  --     intro Γ A m K B _j1 j2 ih1 ih2; simp at *
+  --     constructor; simp; apply ih1
+  --     apply ih2
+  --   })
+  --   (by {
+  --     intro Γ A m K t B j1 j2 j3 ih1 ih2; simp at *
+  --     cases m
+  --     case free => {
+  --       apply PseObj.bind; simp
+  --       apply ih1; intro x xn
+  --       have yfresh := @Name.fresh_is_fresh (fv t ++ fv B)
+  --       generalize ydef : @Name.fresh (fv t ++ fv B) = y at *
+  --       simp at *; replace ih2 := ih2 y yfresh
+  --       sorry
+  --     }
+  --     case type => {
+  --       apply PseObj.bind; simp
+  --       apply ih1; sorry
+  --     }
+  --     case erased => {
+  --       apply PseObj.lam; apply ih1
+  --       repeat sorry
+  --     }
+  --   })
+  --   (by {
+  --     intro x B Γ f m A a _xn _j1 _j2 ih1 ih2
+  --     constructor; simp; apply ih1; apply ih2
+  --     constructor
+  --   })
+  --   (by {
+  --     intro Γ A B _j1 j2 ih1 ih2; simp at *
+  --     constructor; simp; apply ih1
+  --     apply ih2
+  --   })
+  --   (by {
+  --     intro Γ T A B t s _j1 _j2 j3 e p1 p2 p3
+  --     simp at *; have xfresh := @Name.fresh_is_fresh (fv B)
+  --     generalize _xdef : @Name.fresh (fv B) = x at *
+  --     replace p3 := p3 x xfresh
+  --     apply PseObj.pair p2 p3 p1 e
+  --   })
+  --   (by {
+  --     intros; constructor; simp; simp [*]
+  --     constructor; constructor
+  --   })
+  --   (by {
+  --     intros; constructor; simp; simp [*]
+  --     constructor; constructor
+  --   })
+  --   (by {
+  --     intros; constructor <;> simp [*]
+  --   })
+  --   (by {
+  --     intros; constructor; simp; simp [*]
+  --     constructor; constructor
+  --   })
+  --   (by {
+  --     intros; constructor; simp
+  --     constructor; simp; simp [*]; simp [*]; constructor
+  --     constructor; simp; simp [*]; simp [*]; constructor
+  --     constructor; simp; simp [*]; simp [*]; constructor
+  --   })
+  --   (by {
+  --     intros; constructor; simp; simp [*]
+  --     constructor; constructor
+  --   })
+  --   (by {
+  --     intros; constructor; simp
+  --     all_goals simp [*]
+  --   })
+  --   (by {
+  --     intros; constructor; simp; simp [*]
+  --     constructor; constructor
+  --   })
+  --   (by simp)
+  --   (by {
+  --     intro Γ t A B K _j1 _j2 _cv ih1 _ih2
+  --     simp [*]
+  --   })
+  --   (by simp)
+  --   (by simp)
+  --   Γ
+  --   t
+  --   A
+  --   j
 
     lemma cinfer_implies_pseobj : Γ ⊢ t >: A -> PseObj t := by {
       intro j; cases j; case _ _ j _ =>

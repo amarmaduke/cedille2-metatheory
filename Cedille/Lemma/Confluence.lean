@@ -21,9 +21,7 @@ namespace Cedille
       (Syntax.bind (Binder.lam _) _t1 t2)
       t3
       (Syntax.const Constant.kindU)
-      =>
-      let x := @Name.fresh (fv t2);
-      [x := parp t3]{0 <-| x}(parp t2)
+      => [0 := parp t3](parp t2)
     | Syntax.ctor (Constructor.proj 1)
       (Syntax.ctor Constructor.pair u1 _u2 _u3)
       (Syntax.const Constant.kindU)
@@ -39,17 +37,11 @@ namespace Cedille
       (Syntax.const Constant.kindU)
       (Syntax.const Constant.kindU)
       => parp u2
-    | Syntax.ctor Constructor.eqind
-      _t1
-      _t2
-      (Syntax.ctor Constructor.jω
-        (Syntax.ctor Constructor.refl
-          v1
-          (Syntax.const Constant.kindU)
-          (Syntax.const Constant.kindU))
-        u2
-        (Syntax.const Constant.kindU))
-      => app m0 (parp u2) (parp v1)
+    | Syntax.ctor Constructor.subst
+      (Syntax.ctor Constructor.refl t _ _)
+      P
+      _
+      => (lam mf ((parp P) @τ (parp t)) (bound 0))
     | Syntax.ctor Constructor.promote
       (Syntax.ctor Constructor.refl
         (Syntax.ctor (Constructor.proj _)
@@ -65,12 +57,11 @@ namespace Cedille
     | Syntax.ctor k t1 t2 t3 => Syntax.ctor k (parp t1) (parp t2) (parp t3)
 
   inductive ParRed : Term -> Term -> Prop where
-  | beta {x m t1 t2 t3 t1' t2' t3'} :
-    x ∉ fv t2' ->
+  | beta {m t1 t2 t3 t1' t2' t3'} :
     ParRed t1 t1' ->
     ParRed t2 t2' ->
     ParRed t3 t3' ->
-    ParRed (app m (lam m t1 t2) t3) ([x := t3']{0 |-> x}t2')
+    ParRed (app m (lam m t1 t2) t3) ([0 := t3']t2')
   | fst :
     ParRed t1 t1' ->
     ParRed t2 t2' ->
@@ -81,22 +72,13 @@ namespace Cedille
     ParRed t2 t2' ->
     ParRed t3 t3' ->
     ParRed (proj 2 (pair t1 t2 t3)) t2'
-  | eqind :
+  | subst :
     ParRed t1 t1' ->
     ParRed t2 t2' ->
-    ParRed t3 t3' ->
-    ParRed t4 t4' ->
-    ParRed t5 t5' ->
-    ParRed t6 t6' ->
-    ParRed (J t1 t2 t3 t4 (refl t5) t6) (t6' @0 t5')
+    ParRed (subst (refl t1) t2) (lam mf (t2' @τ t1') (bound 0))
   | promote :
     ParRed t t' ->
     ParRed (promote (refl (proj i t))) (refl t')
-  | phi :
-    ParRed t1 t1' ->
-    ParRed t2 t2' ->
-    ParRed t3 t3' ->
-    ParRed (proj 1 (phi t1 t2 t3)) t1'
   | bind :
     ParRed t1 t1' ->
     ParRed t2 t2' ->
@@ -146,8 +128,8 @@ namespace Cedille
   lemma red_implies_par_step : t -β> s -> t -p> s := by {
     intro step
     induction step
-    case beta m t1 t2 t3 x xn => {
-      apply @ParRed.beta x m t1 t2 t3 t1 t2 t3 xn; apply ParRed.refl
+    case beta m t1 t2 t3 => {
+      apply @ParRed.beta m t1 t2 t3 t1 t2 t3; apply ParRed.refl
       apply ParRed.refl
       apply ParRed.refl
     }
@@ -159,17 +141,12 @@ namespace Cedille
       apply ParRed.snd
       apply ParRed.refl; apply ParRed.refl; apply ParRed.refl
     }
-    case eqind => {
-      apply ParRed.eqind
-      apply ParRed.refl; apply ParRed.refl; apply ParRed.refl
-      apply ParRed.refl; apply ParRed.refl; apply ParRed.refl
+    case subst => {
+      apply ParRed.subst
+      apply ParRed.refl; apply ParRed.refl
     }
     case promote => {
       apply ParRed.promote; apply ParRed.refl
-    }
-    case phi => {
-      apply ParRed.phi
-      apply ParRed.refl; apply ParRed.refl; apply ParRed.refl
     }
     case bind1 t1 t1' k t2 _ ih => {
       apply ParRed.bind; exact ih; apply ParRed.refl

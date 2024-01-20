@@ -5,130 +5,102 @@ import Cedille.Lemma.Refold
 
 namespace Cedille
 
-  @[simp] lemma opn_const : {i |-> x}(const c) = const c := by congr
-  @[simp] lemma opn_free : {i |-> y}(free x) = free x := by congr
-  @[simp] lemma opn_bound
-    : {i |-> x}(bound j) = if j == i then free x else bound j
+  @[simp] lemma shift_bind
+    : shift (Syntax.bind k t1 t2) a c = Syntax.bind k (shift t1 a c) (shift t2 a (Nat.succ c))
+  := by congr
+  @[simp] lemma shift_ctor
+    : shift (Syntax.ctor k t1 t2 t3) a c = Syntax.ctor k (shift t1 a c) (shift t2 a c) (shift t3 a c)
   := by congr
 
-  @[simp] lemma opn_typeu : {i |-> x}typeu = typeu := by congr
-  @[simp] lemma opn_kindu : {i |-> x}kindu = kindu := by congr
-  @[simp] lemma opn_lam : {i |-> x}lam m t1 t2 = lam m ({i |-> x}t1) ({Nat.succ i |-> x}t2) := by congr
-  @[simp] lemma opn_pi : {i |-> x}pi m t1 t2 = pi m ({i |-> x}t1) ({Nat.succ i |-> x}t2) := by congr
-  @[simp] lemma opn_inter : {i |-> x}inter t1 t2 = inter ({i |-> x}t1) ({Nat.succ i |-> x}t2) := by congr
-  @[simp] lemma opn_app : {i |-> x}app m t1 t2 = app m ({i |-> x}t1) ({i |-> x}t2) := by congr
-  @[simp] lemma opn_pair : {i |-> x}pair t1 t2 t3 = pair ({i |-> x}t1) ({i |-> x}t2) ({i |-> x}t3)
+  @[simp] lemma shift_const : shift (const c) a c' = const c := by congr
+  @[simp] lemma shift_bound
+    : shift (bound j) a c = if j < c then bound j else bound (j + a)
+  := by congr
+  @[simp] lemma shift_free : shift (free x) a c = free x := by congr
+
+  @[simp] lemma shift_typeu : shift typeu a c = typeu := by congr
+  @[simp] lemma shift_kindu : shift kindu a c = kindu := by congr
+  @[simp] lemma shift_lam : shift (lam m t1 t2) a c = lam m (shift t1 a c) (shift t2 a (Nat.succ c)) := by congr
+  @[simp] lemma shift_pi : shift (pi m t1 t2) a c = pi m (shift t1 a c) (shift t2 a (Nat.succ c)) := by congr
+  @[simp] lemma shift_inter : shift (inter t1 t2) a c = inter (shift t1 a c) (shift t2 a (Nat.succ c)) := by congr
+  @[simp] lemma shift_app : shift (app m t1 t2) a c = app m (shift t1 a c) (shift t2 a c) := by congr
+  @[simp] lemma shift_pair : shift (pair t1 t2 t3) a c = pair (shift t1 a c) (shift t2 a c) (shift t3 a c)
     := by congr
-  @[simp] lemma opn_fst : {i |-> x}proj p t = proj p ({i |-> x}t) := by congr
-  @[simp] lemma opn_eq : {i |-> x}eq t1 t2 t3 = eq ({i |-> x}t1) ({i |-> x}t2) ({i |-> x}t3) := by congr
-  @[simp] lemma opn_refl : {i |-> x}refl t = refl ({i |-> x}t) := by congr
-  @[simp] lemma opn_Jh : {i |-> x}Jh t1 t2 t3 = Jh ({i |-> x}t1) ({i |-> x}t2) ({i |-> x}t3) := by congr
-  @[simp] lemma opn_J0 : {i |-> x}J0 t1 t2 = J0 ({i |-> x}t1) ({i |-> x}t2) := by congr
-  @[simp] lemma opn_Jω : {i |-> x}Jω t1 t2 = Jω ({i |-> x}t1) ({i |-> x}t2) := by congr
-  @[simp] lemma opn_J
-    : {i |-> x}J t1 t2 t3 t4 t5 t6
-      = J ({i |-> x}t1) ({i |-> x}t2) ({i |-> x}t3) ({i |-> x}t4) ({i |-> x}t5) ({i |-> x}t6)
-    := by congr
-  @[simp] lemma opn_promote : {i |-> x}promote t = promote ({i |-> x}t) := by congr
-  @[simp] lemma opn_delta : {i |-> x}delta t = delta ({i |-> x}t) := by congr
-  @[simp] lemma opn_phi : {i |-> x}phi t1 t2 t3 = phi ({i |-> x}t1) ({i |-> x}t2) ({i |-> x}t3)
+  @[simp] lemma shift_fst : shift (proj p t) a c = proj p (shift t a c) := by congr
+  @[simp] lemma shift_eq : shift (eq t1 t2 t3) a c = eq (shift t1 a c) (shift t2 a c) (shift t3 a c) := by congr
+  @[simp] lemma shift_refl : shift (refl t) a c = refl (shift t a c) := by congr
+  @[simp] lemma shift_Jh : shift (subst t1 t2) a c = subst (shift t1 a c) (shift t2 a c) := by congr
+  @[simp] lemma shift_promote : shift (promote t) a c = promote (shift t a c) := by congr
+  @[simp] lemma shift_delta : shift (delta t) a c = delta (shift t a c) := by congr
+  @[simp] lemma shift_phi : shift (phi t1 t2) a c = phi (shift t1 a c) (shift t2 a c)
     := by congr
 
-  @[simp] lemma cls_const : {i <-| x}(const c) = const c := by congr
-  @[simp] lemma cls_bound : {i <-| x}(bound i) = bound i := by congr
+  @[simp] lemma opn_const : [i := v](const c) = const c := by congr
+  @[simp] lemma opn_free : [i := v](free x) = free x := by congr
+  @[simp] lemma opn_bound
+    : [i := v](bound j) = if j == i then v else bound j
+  := by congr
+
+  @[simp] lemma opn_typeu : [i := v]typeu = typeu := by congr
+  @[simp] lemma opn_kindu : [i := v]kindu = kindu := by congr
+  @[simp] lemma opn_lam : [i := v]lam m t1 t2 = lam m ([i := v]t1) ([Nat.succ i := v]t2) := by congr
+  @[simp] lemma opn_pi : [i := v]pi m t1 t2 = pi m ([i := v]t1) ([Nat.succ i := v]t2) := by congr
+  @[simp] lemma opn_inter : [i := v]inter t1 t2 = inter ([i := v]t1) ([Nat.succ i := v]t2) := by congr
+  @[simp] lemma opn_app : [i := v]app m t1 t2 = app m ([i := v]t1) ([i := v]t2) := by congr
+  @[simp] lemma opn_pair : [i := v]pair t1 t2 t3 = pair ([i := v]t1) ([i := v]t2) ([i := v]t3)
+    := by congr
+  @[simp] lemma opn_fst : [i := v]proj p t = proj p ([i := v]t) := by congr
+  @[simp] lemma opn_eq : [i := v]eq t1 t2 t3 = eq ([i := v]t1) ([i := v]t2) ([i := v]t3) := by congr
+  @[simp] lemma opn_refl : [i := v]refl t = refl ([i := v]t) := by congr
+  @[simp] lemma opn_Jh : [i := v]subst t1 t2 = subst ([i := v]t1) ([i := v]t2) := by congr
+  @[simp] lemma opn_promote : [i := v]promote t = promote ([i := v]t) := by congr
+  @[simp] lemma opn_delta : [i := v]delta t = delta ([i := v]t) := by congr
+  @[simp] lemma opn_phi : [i := v]phi t1 t2 = phi ([i := v]t1) ([i := v]t2) := by congr
+
+  @[simp] lemma cls_const : [i =: v](const c) = const c := by congr
+  @[simp] lemma cls_bound : [i =: v](bound j) = bound j := by congr
   @[simp] lemma cls_free
     : {i <-| v}(free x) = if x == v then bound i else free x
   := by congr
 
-  @[simp] lemma cls_typeu : {i <-| x}typeu = typeu := by congr
-  @[simp] lemma cls_kindu : {i <-| x}kindu = kindu := by congr
-  @[simp] lemma cls_lam : {i <-| x}lam m t1 t2 = lam m ({i <-| x}t1) ({Nat.succ i <-| x}t2) := by congr
-  @[simp] lemma cls_pi : {i <-| x}pi m t1 t2 = pi m ({i <-| x}t1) ({Nat.succ i <-| x}t2) := by congr
-  @[simp] lemma cls_inter : {i <-| x}inter t1 t2 = inter ({i <-| x}t1) ({Nat.succ i <-| x}t2) := by congr
-  @[simp] lemma cls_app : {i <-| x}app m t1 t2 = app m ({i <-| x}t1) ({i <-| x}t2) := by congr
-  @[simp] lemma cls_pair : {i <-| x}pair t1 t2 t3 = pair ({i <-| x}t1) ({i <-| x}t2) ({i <-| x}t3)
+  @[simp] lemma cls_typeu : [i =: v]typeu = typeu := by congr
+  @[simp] lemma cls_kindu : [i =: v]kindu = kindu := by congr
+  @[simp] lemma cls_lam : [i =: v]lam m t1 t2 = lam m ([i =: v]t1) ([shift i 1 0 =: v]t2) := by congr
+  @[simp] lemma cls_pi : [i =: v]pi m t1 t2 = pi m ([i =: v]t1) ([shift i 1 0 =: v]t2) := by congr
+  @[simp] lemma cls_inter : [i =: v]inter t1 t2 = inter ([i =: v]t1) ([shift i 1 0 =: v]t2) := by congr
+  @[simp] lemma cls_app : [i =: v]app m t1 t2 = app m ([i =: v]t1) ([i =: v]t2) := by congr
+  @[simp] lemma cls_pair : [i =: v]pair t1 t2 t3 = pair ([i =: v]t1) ([i =: v]t2) ([i =: v]t3)
     := by congr
-  @[simp] lemma cls_fst : {i <-| x}proj p t = proj p ({i <-| x}t) := by congr
-  @[simp] lemma cls_eq : {i <-| x}eq t1 t2 t3 = eq ({i <-| x}t1) ({i <-| x}t2) ({i <-| x}t3) := by congr
-  @[simp] lemma cls_refl : {i <-| x}refl t = refl ({i <-| x}t) := by congr
-  @[simp] lemma cls_Jh : {i <-| x}Jh t1 t2 t3 = Jh ({i <-| x}t1) ({i <-| x}t2) ({i <-| x}t3) := by congr
-  @[simp] lemma cls_J0 : {i <-| x}J0 t1 t2 = J0 ({i <-| x}t1) ({i <-| x}t2) := by congr
-  @[simp] lemma cls_Jω : {i <-| x}Jω t1 t2 = Jω ({i <-| x}t1) ({i <-| x}t2) := by congr
-  @[simp] lemma cls_J
-    : {i <-| x}J t1 t2 t3 t4 t5 t6
-      = J ({i <-| x}t1) ({i <-| x}t2) ({i <-| x}t3) ({i <-| x}t4) ({i <-| x}t5) ({i <-| x}t6)
-    := by congr
-  @[simp] lemma cls_promote : {i <-| x}promote t = promote ({i <-| x}t) := by congr
-  @[simp] lemma cls_delta : {i <-| x}delta t = delta ({i <-| x}t) := by congr
-  @[simp] lemma cls_phi : {i <-| x}phi t1 t2 t3 = phi ({i <-| x}t1) ({i <-| x}t2) ({i <-| x}t3)
+  @[simp] lemma cls_fst : [i =: v]proj p t = proj p ([i =: v]t) := by congr
+  @[simp] lemma cls_eq : [i =: v]eq t1 t2 t3 = eq ([i =: v]t1) ([i =: v]t2) ([i =: v]t3) := by congr
+  @[simp] lemma cls_refl : [i =: v]refl t = refl ([i =: v]t) := by congr
+  @[simp] lemma cls_Jh : [i =: v]subst t1 t2 = subst ([i =: v]t1) ([i =: v]t2) := by congr
+  @[simp] lemma cls_promote : [i =: v]promote t = promote ([i =: v]t) := by congr
+  @[simp] lemma cls_delta : [i =: v]delta t = delta ([i =: v]t) := by congr
+  @[simp] lemma cls_phi : [i =: v]phi t1 t2 = phi ([i =: v]t1) ([i =: v]t2)
     := by congr
 
-  @[simp] lemma subst_const {v : Term} : [x := v](const c) = const c := by congr
-  @[simp] lemma subst_bound {v : Term} : [x := v](bound j) = bound j := by congr
-  @[simp] lemma subst_free : [x := v](free x) = v
-    := by unfold free; rw [Syntax.subst_free]
-
-  @[simp] lemma subst_typeu {v : Term} : [x := v]typeu = typeu := by congr
-  @[simp] lemma subst_kindu {v : Term} : [x := v]kindu = kindu := by congr
-  @[simp] lemma subst_lam {v : Term}
-    : [x := v]lam m t1 t2 = lam m ([x := v]t1) ([x := v]t2)
-    := by unfold lam; rw [Syntax.subst_bind]
-  @[simp] lemma subst_pi {v : Term}
-    : [x := v]pi m t1 t2 = pi m ([x := v]t1) ([x := v]t2)
-    := by unfold pi; rw [Syntax.subst_bind]
-  @[simp] lemma subst_inter {v : Term}
-    : [x := v]inter t1 t2 = inter ([x := v]t1) ([x := v]t2)
-    := by unfold inter; rw [Syntax.subst_bind]
-  @[simp] lemma subst_app {v : Term} : [x := v]app m t1 t2 = app m ([x := v]t1) ([x := v]t2)
-    := by unfold app; rw [Syntax.subst_ctor]; simp
-  @[simp] lemma subst_pair {v : Term}
-    : [x := v]pair t1 t2 t3 = pair ([x := v]t1) ([x := v]t2) ([x := v]t3)
-    := by unfold pair; rw [Syntax.subst_ctor]
-  @[simp] lemma subst_fst {v : Term} : [x := v]proj p t = proj p ([x := v]t)
-    := by congr
-  @[simp] lemma subst_eq {v : Term}
-    : [x := v]eq t1 t2 t3 = eq ([x := v]t1) ([x := v]t2) ([x := v]t3)
-    := by unfold eq; rw [Syntax.subst_ctor]
-  @[simp] lemma subst_refl {v : Term} : [x := v]refl t = refl ([x := v]t)
-    := by unfold refl; rw [Syntax.subst_ctor]; simp
-  @[simp] lemma subst_head_Jh {v : Term}
-    : [x := v]Jh t1 t2 t3 = Jh ([x := v]t1) ([x := v]t2) ([x := v]t3)
-    := by unfold Jh; rw [Syntax.subst_ctor]
-  @[simp] lemma subst_head_J0 {v : Term} : [x := v]J0 t1 t2 = J0 ([x := v]t1) ([x := v]t2)
-    := by unfold J0; rw [Syntax.subst_ctor]; simp
-  @[simp] lemma subst_head_Jω {v : Term} : [x := v]Jω t1 t2 = Jω ([x := v]t1) ([x := v]t2)
-    := by unfold Jω; rw [Syntax.subst_ctor]; simp
-  @[simp] lemma subst_head_J {v : Term}
-    : [x := v]J t1 t2 t3 t4 t5 t6
-      = J ([x := v]t1) ([x := v]t2) ([x := v]t3) ([x := v]t4) ([x := v]t5) ([x := v]t6)
-    := by unfold J; rw [subst_head_Jh, subst_head_J0, subst_head_J0, subst_head_Jω]
-  @[simp] lemma subst_promote {v : Term} : [x := v]promote t = promote ([x := v]t)
-    := by unfold promote; rw [Syntax.subst_ctor]; simp
-  @[simp] lemma subst_delta {v : Term} : [x := v]delta t = delta ([x := v]t)
-    := by unfold delta; rw [Syntax.subst_ctor]; simp
-  @[simp] lemma subst_phi {v : Term}
-    : [x := v]phi t1 t2 t3 = phi ([x := v]t1) ([x := v]t2) ([x := v]t3)
-    := by unfold phi; rw [Syntax.subst_ctor]
-
-  lemma subst_free_neq {v : Term} : x ≠ y -> [x := v](free y) = free y := by {
+  @[simp] lemma shift_lc : lc c t -> shift t a c = t := by {
     intro h
-    unfold HasSubst.subst; unfold Syntax.instHasSubstSyntax; simp
-    unfold Syntax.subst; unfold free; simp
-    intro h2; exfalso; apply h; rw [h2]
+    induction t generalizing c <;> simp at *
+    case bound k => {
+      intro h2; exfalso; linarith
+    }
+    case bind k t1 t2 ih1 ih2 => {
+      cases h; case _ h1 h2 =>
+      rw [ih1 h1, ih2 h2]; simp
+    }
+    case ctor k t1 t2 t3 ih1 ih2 ih3 => {
+      casesm* _ ∧ _; case _ h1 h2 h3 =>
+      rw [ih1 h1, ih2 h2, ih3 h3]; simp
+    }
   }
 
-  -- lemma open_to_close {t1 : Term} {t2 : Term}
-  --   : x ∉ fv t1 -> {i |-> x}t1 = t2 -> t1 = {i <-| x}t2
-  -- := by {
-  --   intro xn h
-  --   have h2 : {_<-| x}{_|-> x}t1 = {_<-| x}t2 := by congr
-  --   rw [close_open_cancel xn] at h2
-  --   exact h2
-  -- }
-
-  -- lemma to_open {n} (t : Term n) (x : Name) : ∃ s, t = {_|-> x}s := by {
-  --   sorry
-  -- }
+  @[simp] lemma shift_lc0 : lc 0 t -> shift t a c = t := by {
+    intro h
+    have h := Syntax.lc0 h c
+    apply shift_lc h
+  }
 
   lemma var_not_in_close {t : Term} : x ∉ fv ({i <-| x}t) := by sorry
 
@@ -142,8 +114,8 @@ namespace Cedille
   lemma fv_open2 (i : Nat) (x : Name) (t : Term) : fv t ⊆ fv ({i |-> x}t)
   := by sorry
 
-  @[simp] lemma fv_subst (t1 t2 : Term)
-  : fv ([x := t1]{0 |-> x}t2) ⊆ fv t1 ++ fv t2
+  @[simp] lemma fv_open (t1 t2 : Term)
+  : fv ([0 := t1]t2) ⊆ fv t1 ++ fv t2
   := by sorry
 
   lemma fv_open_shrink {t1 t2 : Term}

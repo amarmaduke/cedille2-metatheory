@@ -84,24 +84,10 @@ namespace Cedille
     : erase (Syntax.ctor Constructor.refl t1 t2 t3) = lam mf kindu (bound 0)
   := by congr
 
-  @[simp] lemma erase_Jh : erase (Jh t1 t2 t3) = erase t3 := by generalize erase t3 = rhs; simp
-  @[simp] lemma erase_Jh_unfolded
-    : erase (Syntax.ctor Constructor.eqind t1 t2 t3) = erase t3
-  := by generalize erase t3 = rhs; simp
-
-  @[simp] lemma erase_J0 : erase (J0 t1 t2) = kindu := by congr
-  @[simp] lemma erase_J0_unfolded
-    : erase (Syntax.ctor Constructor.j0 t1 t2 t3) = kindu
-  := by congr
-
-  @[simp] lemma erase_Jω : erase (Jω t1 t2) = (erase t1) @ω (erase t2) := by congr
-  @[simp] lemma erase_Jω_unfolded
-    : erase (Syntax.ctor Constructor.jω t1 t2 t3) = (erase t1) @ω (erase t2)
-  := by congr
-
-  @[simp] lemma erase_J : erase (J t1 t2 t3 t4 t5 t6) = (erase t5) @ω (erase t6) := by {
-    unfold J; rw [erase_Jh, erase_Jω]
-  }
+  @[simp] lemma erase_subst : erase (subst t1 t2) = erase t1 := by generalize erase t1 = rhs; simp
+  @[simp] lemma erase_subst_unfolded
+    : erase (Syntax.ctor Constructor.subst t1 t2 t3) = erase t1
+  := by rfl
 
   @[simp] lemma erase_promote : erase (promote t) = erase t := by rfl
   @[simp] lemma erase_promote_unfolded
@@ -113,7 +99,10 @@ namespace Cedille
     : erase (Syntax.ctor Constructor.delta t1 t2 t3) = erase t1
   := by rfl
 
-  @[simp] lemma erase_phi : erase (phi t1 t2 t3) = erase t1 := by rfl
+  @[simp] lemma erase_phi : erase (phi t1 t2) = erase t1 := by rfl
+  @[simp] lemma erase_phi_unfolded
+    : erase (Syntax.ctor Constructor.phi t1 t2 t3) = erase t1
+  := by rfl
 
   @[simp] lemma erase_idem {t : Term} : erase (erase t) = erase t := by {
     induction t <;> try simp
@@ -124,6 +113,162 @@ namespace Cedille
     case ctor k t1 t2 t3 ih1 ih2 ih3 => {
       cases k <;> try simp [*]
       case app md => cases md <;> simp [*]
+    }
+  }
+
+  theorem erase_lam_invariant (i : Nat) :
+    (ᴎ x, x ∉ (fv ∘ erase) ({i |-> x}t)) ->
+    ᴎ x, erase ({i |-> x}t) = erase t
+  := by {
+    intro h
+    cases h; case _ S h =>
+    exists S; intro x xn
+    replace h := h x xn
+    simp at *
+    induction t generalizing i
+    case bound k => {
+      simp at *; split
+      case _ h2 => subst h2; simp at h
+      case _ h2 => simp
+    }
+    case free => simp
+    case const => simp
+    case bind k t1 t2 ih1 ih2 => {
+      cases k
+      case' lam md => cases md
+      all_goals simp at *
+      case lam.erased => rw [ih2 _ h]
+      case lam.free => rw [ih2 _ h]
+      all_goals {
+        replace h := demorgan h
+        cases h; case _ h1 h2 =>
+        rw [ih1 _ h1, ih2 _ h2]
+      }
+    }
+    case ctor k t1 t2 t3 ih1 ih2 ih3 => {
+      cases k
+      case' app md => cases md
+      all_goals simp at *
+      any_goals try rw [ih1 _ h]
+      case eq => {
+        replace h := demorgan3 h
+        casesm* _ ∧ _; case _ h1 h2 h3 =>
+        rw [ih1 _ h1, ih2 _ h2, ih3 _ h3]
+      }
+      all_goals {
+        replace h := demorgan h
+        cases h; case _ h1 h2 =>
+        rw [ih1 _ h1, ih2 _ h2]
+      }
+    }
+  }
+
+  lemma test :
+    (ᴎ x, lc i (erase ({i |-> x}t))) ->
+    ᴎ x, erase ({i |-> x}t) = {i |-> x}(erase t)
+  := by sorry
+
+  lemma erase_pseobj_open (i : Nat) :
+    (ᴎ x, PseObj (erase ({i |-> x}t))) ->
+    ᴎ x, PseObj ({i |-> x}(erase t))
+  := by {
+    intro h
+    cases h; case _ S h =>
+    exists S; intro x xn
+    replace h := h x xn
+    simp at *
+    generalize sdef : erase ({i |-> x}t) = s at *
+    have lem := pseobj_is_lc0 h
+    cases h
+    case ax => sorry
+    case var => sorry
+    case bind k A B hn p1 S1 p2 => {
+      cases k
+      case' lam md => cases md
+      all_goals simp at *
+      case lam.free => sorry
+      case lam.type => sorry
+      case pi md => sorry
+      case inter => {
+        induction t generalizing i <;> simp at *
+        case bound => split at sdef <;> simp at sdef
+        case bind k u1 u2 uih1 uih2 => {
+          cases k
+          case' lam md => cases md
+          all_goals simp at *
+          case lam.erased => {
+            have lem1 := uih2 _ sdef
+            sorry
+          }
+          case inter => sorry
+        }
+        case ctor k u1 u2 u3 uih1 uih2 uih3 => {
+          cases k
+          case' app md => cases md
+          all_goals simp at *; try apply uih1 i sdef
+        }
+      }
+    }
+    case lam A t p1 S1 p2 S2 p3 => {
+      simp at *
+      -- impossible by sdef
+      sorry
+    }
+    case pair => sorry
+    case ctor => sorry
+  }
+
+  theorem erase_pseobj : PseObj t -> PseObj (erase t) := by {
+    intro p
+    induction p
+    case ax => simp; constructor
+    case var => simp; constructor
+    case bind k A B hn _p1 S _p2 ih1 ih2 => {
+      cases k
+      case' lam md => cases md
+      any_goals simp [*]
+      case lam.free => {
+        have h := erase_pseobj_open 0 (Exists.intro S ih2)
+        cases h; case _ S' h =>
+        constructor; exact hn; constructor; exact h
+      }
+      case lam.erased => exfalso; apply hn rfl
+      all_goals {
+        have h := erase_pseobj_open 0 (Exists.intro S ih2)
+        cases h; case _ S' h =>
+        constructor; exact hn; exact ih1; exact h
+      }
+    }
+    case lam t A p1 S1 p2 S2 p3 _ih1 ih2 => {
+      simp at *
+      have h := erase_lam_invariant 0 (Exists.intro S2 p3)
+      cases h; case _ S3 h =>
+      have xfresh := @Name.fresh_is_fresh (S1 ++ S3)
+      generalize _xdef : @Name.fresh (S1 ++ S3) = x at *
+      simp at xfresh; replace xfresh := demorgan xfresh
+      cases xfresh; case _ xn1 xn2 =>
+      replace ih2 := ih2 x xn1
+      replace h := h x xn2
+      simp at h; rw [h] at ih2; exact ih2
+    }
+    case pair t s T p1 p2 p3 he ih1 _ih2 _ih3 => {
+      simp; exact ih1
+    }
+    case ctor k t1 t2 t3 hn _p1 _p2 _p3 ih1 ih2 ih3 => {
+      cases k
+      any_goals simp [*]
+      case app md => {
+        cases md <;> simp [*]
+        all_goals {
+          constructor; exact hn;
+          exact ih1; exact ih2; constructor
+        }
+      }
+      case eq => constructor <;> simp [*]
+      case refl => {
+        constructor; simp; constructor; simp
+        swap; exact []; intro x _; constructor
+      }
     }
   }
 

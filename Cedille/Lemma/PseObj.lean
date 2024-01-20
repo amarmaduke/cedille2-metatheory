@@ -33,38 +33,40 @@ namespace Cedille
   theorem pseobj_is_lc0 : PseObj t -> lc 0 t := by {
     intro pseobj
     induction pseobj <;> simp [*]
-    case bind k A B hn p1 p2 ih1 ih2 => {
-      have xfresh := @Name.fresh_is_fresh (fv B)
-      generalize _xdef : @Name.fresh (fv B) = x at *
-      apply lc_of_open x; simp [*]
+    case bind k A B hn p1 S p2 ih1 ih2 => {
+      have xfresh := @Name.fresh_is_fresh S
+      generalize _xdef : @Name.fresh S = x at *
+      apply lc_of_open x
+      apply ih2 x xfresh
     }
-    case lam A t p1 p2 h ih1 ih2 => {
-      have xfresh := @Name.fresh_is_fresh (fv t)
-      generalize _xdef : @Name.fresh (fv t) = x at *
-      apply lc_of_open x; simp [*]
+    case lam A t p1 S1 p2 S2 p3 ih3 ih2 => {
+      have xfresh := @Name.fresh_is_fresh S1
+      generalize _xdef : @Name.fresh S1 = x at *
+      apply lc_of_open x
+      apply ih2 x xfresh
     }
   }
 
-  lemma pseobj_rename : PseObj t -> PseObj ({i |-> y}{i <-| x}t) := by {
-    intro h
-    induction h generalizing i y x <;> simp
-    case ax => constructor
-    case var z => split <;> (simp; constructor)
-    case bind k A B hn p1 p2 ih1 ih2 => {
-      apply PseObj.bind hn ih1 _
-      intro z zn; simp at zn
-      have lem1 := fv_open2 (Nat.succ i) y ({Nat.succ i <-| x}B)
-      have lem2 := FvSet.not_mem_subset_not_mem zn lem1
-      have lem3 : z ≠ x := by sorry
-      have lem4 := fv_close_var lem3 lem2
-      replace ih2 := @ih2 z lem4 (Nat.succ i)
-      rw [Syntax.oc5, Syntax.oc7]; exact ih2
-      simp; simp [*]; simp
-    }
-    case lam => sorry
-    case pair => sorry
-    case ctor => sorry
-  }
+  -- lemma pseobj_rename : PseObj t -> PseObj ({i |-> y}{i <-| x}t) := by {
+  --   intro h
+  --   induction h generalizing i y x <;> simp
+  --   case ax => constructor
+  --   case var z => split <;> (simp; constructor)
+  --   case bind k A B hn p1 p2 ih1 ih2 => {
+  --     apply PseObj.bind hn ih1 _
+  --     intro z zn; simp at zn
+  --     have lem1 := fv_open2 (Nat.succ i) y ({Nat.succ i <-| x}B)
+  --     have lem2 := FvSet.not_mem_subset_not_mem zn lem1
+  --     have lem3 : z ≠ x := by sorry
+  --     have lem4 := fv_close_var lem3 lem2
+  --     replace ih2 := @ih2 z lem4 (Nat.succ i)
+  --     rw [Syntax.oc5, Syntax.oc7]; exact ih2
+  --     simp; simp [*]; simp
+  --   }
+  --   case lam => sorry
+  --   case pair => sorry
+  --   case ctor => sorry
+  -- }
 
   -- Not yet used
   -- lemma pseobj_open : PseObj ({_|-> x}t) -> PseObj ({_|-> y}t) := by sorry
