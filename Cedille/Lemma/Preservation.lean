@@ -11,9 +11,17 @@ import Cedille.Lemma.Rule
 
 namespace Cedille
 
+  inductive ParCtxRed : (Map! Term) -> (Map! Term) -> Prop where
+  | empty : ParCtxRed [] []
+  | step : ParCtxRed Γ Γ' -> A -β>* A' -> ParCtxRed (Γ ++ [x : A]) (Γ' ++ [x : A'])
+
   inductive CtxRed : (Map! Term) -> (Map! Term) -> Prop where
   | head (x:Name) A : CtxRed Γ Δ -> CtxRed (Γ ++ [x:A]) (Δ ++ [x:A])
   | tail (x:Name) Γ : A -β> B -> CtxRed (Γ ++ [x:A]) (Γ ++ [x:B])
+
+  inductive CtxRedStar : (Map! Term) -> (Map! Term) -> Prop where
+  | refl : CtxRedStar t t
+  | step : CtxRed t1 t2 -> CtxRedStar t2 t3 -> CtxRedStar t1 t3
 
   @[simp] lemma ctx_red_not_empty : ¬ CtxRed [] Γ := by sorry
 
@@ -140,46 +148,26 @@ namespace Cedille
   -- }
 
   lemma preservation_infer_step :
-    Γ ⊢ t : A ->
-    (∀ s, t -β> s -> ∃ B, A -β>* B ∧ Γ ⊢ s : B)
-    ∧ (∀ Δ, CtxRed Γ Δ -> ∃ B, A -β>* B ∧ Δ ⊢ t : B)
+    Γ ⊢ t : A -> t -p> s -> ParCtxRed Γ Δ -> ∃ B, A -p> B ∧ Δ ⊢ s : B
   := λ j => @Infer.rec
-    (λ Γ t A j => (∀ s, t -β> s -> ∃ B, A -β>* B ∧ Γ ⊢ s : B)
-      ∧ (∀ Δ, CtxRed Γ Δ -> ∃ B, A -β>* B ∧ Δ ⊢ t : B))
-    (λ Γ t A j => (∀ s, t -β> s -> ∃ B, A -β>* B ∧ Γ ⊢ s >: B)
-      ∧ (∀ Δ, CtxRed Γ Δ -> ∃ B, A -β>* B ∧ Δ ⊢ t >: B))
-    (λ Γ t A j => (∀ s, t -β> s -> Γ ⊢ s =: A)
-      ∧ (∀ B, A -β> B -> Γ ⊢ t =: B)
-      ∧ (∀ Δ, CtxRed Γ Δ -> Δ ⊢ t =: A))
-    (λ Γ j => ∀ Δ, CtxRed Γ Δ -> ⊢ Δ)
+    (λ Γ t A j => ∀ Δ s, t -p> s -> ParCtxRed Γ Δ -> ∃ B, A -p> B ∧ Δ ⊢ s : B)
+    (λ Γ t A j => ∀ Δ s, t -p> s -> ParCtxRed Γ Δ -> ∃ B, A -p> B ∧ Δ ⊢ s >: B)
+    (λ Γ t A j => ∀ Δ s, t -p> s -> ParCtxRed Γ Δ -> Δ ⊢ s =: A)
+    (λ Γ j => ∀ Δ, ParCtxRed Γ Δ -> ⊢ Δ)
     (by {
-      intro Γ wf ih1; apply And.intro _ _
-      { intro s step; cases step }
-      {
-        intro Δ step; exists kindu; apply And.intro _ _
-        apply RedStar.refl; constructor
-        apply ih1 _ step
-      }
+      intro Γ wf ih Δ s step1 step2
+      cases step1; case _ =>
+      exists kindu; apply And.intro _ _
+      constructor; simp
+      replace ih := ih _ step2
+      constructor; exact ih
     })
     (by {
-      intro Γ x A wf xn ih; apply And.intro _ _
-      { intro s step; cases step }
-      {
-        intro Δ step; replace ih := ih Δ step
-        have lem := ctx_red_in step xn
-        cases lem
-        case _ h => {
-          exists A; apply And.intro _ _
-          apply RedStar.refl
-          constructor; exact ih; exact h
-        }
-        case _ h => {
-          casesm* ∃ _, _, _ ∧ _; case _ B step2 xn2 =>
-          exists B; apply And.intro _ _
-          apply RedStar.step step2 RedStar.refl
-          constructor; exact ih; exact xn2
-        }
-      }
+      intro Γ x A wf xin ih s Δ step
+      sorry
+    })
+    (by {
+      sorry
     })
     (by {
       sorry
@@ -188,42 +176,7 @@ namespace Cedille
       sorry
     })
     (by {
-      intro Γ f m A B a S j1 j2 ih1 ih2
       sorry
-    })
-    (by {
-      intro Γ A B j1 j2 ih1 ih2; simp at *
-      apply And.intro _ _
-      {
-        intro s step; exists typeu; apply And.intro RedStar.refl _
-        cases step
-        case bind1 A' step => {
-          have lem1 := ih1.1 A' step
-          cases lem1; case _ T lem1 =>
-          have lem2 := red_force_const lem1.1; subst lem2
-          constructor; apply lem1.2; intro x xn
-          have lem3 := (ih2 x xn).2
-          have lem4 : CtxRed (Γ ++ [x:A]) (Γ ++ [x:A']) := by sorry
-          have lem5 := lem3 _ lem4
-          cases lem5; case _ T' lem5 =>
-          have lem6 := red_force_const lem5.1; subst lem6
-          apply lem5.2
-        }
-        case bind2 B' step => {
-          have xfresh := @Name.fresh_is_fresh (fv B)
-          generalize xdef : @Name.fresh (fv B) = x at *
-          replace ih2 := ih2 x xfresh
-          have lem1 : {0 |-> x}B -β> {0 |-> x}B' := by sorry
-          have lem2 := ih2.1 _ lem1
-          cases lem2; case _ T lem2 =>
-          have lem3 := red_force_const lem2.1; subst lem3
-          simp at *; constructor; exact j1; intro y yfresh
-          sorry
-        }
-      }
-      {
-        sorry
-      }
     })
     (by {
       sorry
@@ -231,242 +184,82 @@ namespace Cedille
     sorry
     sorry
     (by {
-      intro Γ A a b j1 j2 j3 ih1 ih2 ih3
-      apply And.intro _ _
-      {
-        intro s step
-        exists typeu; apply And.intro RedStar.refl
-        cases step
-        case ctor1 A' step => {
-          have lem1 := ih1.1 A' step
-          cases lem1; case _ T lem1 =>
-          have lem2 := red_force_const lem1.1; subst lem2; simp at *
-          have lem3 := ih2.2.1 A' step
-          have lem4 := ih3.2.1 A' step
-          constructor; exact lem1.2; exact lem3; exact lem4
-        }
-        case ctor2 a' step => sorry
-        case ctor3 b' step => sorry
-      }
-      {
-        sorry
-      }
+      sorry
     })
     (by {
-      intro Γ t A j ih
-      cases ih; case _ ih1 ih2 =>
-      apply And.intro _ _
-      {
-        intro s step; cases step
-        case ctor1 t' step => {
-          replace ih1 := ih1 t' step
-          casesm* ∃ _, _, _ ∧ _; case _ B step2 j2 =>
-          exists eq B t' t'; apply And.intro _ _
-          have lem1 := RedStar.step step RedStar.refl
-          apply red_ctor step2 lem1 lem1
-          constructor; exact j2
-        }
-        case ctor2 _ step => cases step
-        case ctor3 _ step => cases step
-      }
-      {
-        sorry
-      }
+      sorry
     })
     (by {
-      intro Γ A P x y r w j1 j2 j3 j4 j5 j6 ih1 ih2 ih3 ih4 ih5 ih6
-      casesm* _ ∧ _; case _ ih1 ih1' ih2 ih2' ih3 ih3' ih4 ih4' ih5 ih5' ih6 ih6' =>
-      apply And.intro _ _
-      {
-        intro s step; cases step
-        case eqind t5 => sorry
-        case ctor1 => sorry
-        case ctor2 => sorry
-        case ctor3 => sorry
-      }
-      {
-        sorry
-      }
+      sorry
     })
     (by {
-      intro Γ e T i a j b A B j1 j2 j3 ih1 ih2 ih3
-      casesm* _ ∧ _; case _ ih1 ih2 ih3 ih4 ih5 ih6 =>
-      apply And.intro _ _
-      {
-        intro s step; cases step
-        case promote k u ih => {
-          sorry
-        }
-        case ctor1 => sorry
-        case ctor2 _ step => cases step
-        case ctor3 _ step => cases step
-      }
-      {
-        sorry
-      }
+      sorry
     })
     (by {
-      intro A B Γ f a e h j1 j2 j3 fve ih1 ih2 ih3
-      casesm* _ ∧ _; case _ ih1 ih2 ih3 ih4 ih5 ih6 =>
-      apply And.intro _ _
-      {
-        intro s step
-        cases step
-        case ctor1 a' step => sorry
-        case ctor2 f' step => sorry
-        case ctor3 e' step => sorry
-      }
-      {
-        sorry
-      }
+      sorry
     })
     (by {
-      intro Γ e j ih
-      cases ih; case _ ih1 ih2 =>
-      apply And.intro _ _
-      {
-        intro s step; cases step
-        case ctor1 _ e' step => {
-          replace ih1 := ih1 e' step
-          casesm* ∃ _, _, _ ∧ _; case _ D step2 j2 =>
-          simp; exists (pi m0 typeu (bound 0)); apply And.intro _ _
-          apply RedStar.refl; constructor
-          exact ih1
-        }
-        case ctor2 _ step => cases step
-        case ctor3 _ step => cases step
-      }
-      {
-        intro Δ step; replace ih2 := ih2.2 Δ step
-        exists (pi m0 typeu (bound 0)); apply And.intro RedStar.refl _
-        constructor; exact ih2
-      }
+      sorry
     })
     (by {
-      intro Γ t A B j step ih
-      cases ih; case _ ih1 ih2 =>
-      apply And.intro _ _
-      {
-        intro s r; replace ih1 := ih1 s r
-        casesm* ∃ _, _, _ ∧ _; case _ C r j2 =>
-        have lem := confluence step r
-        casesm* ∃ _, _, _ ∧ _; case _ Z r1 r2 =>
-        exists Z; simp [*]; constructor; exact j2; simp [*]
-      }
-      {
-        intros Δ r; replace ih2 := ih2 Δ r
-        casesm* ∃ _, _, _ ∧ _; case _ C r j2 =>
-        have lem := confluence step r
-        casesm* ∃ _, _, _ ∧ _; case _ Z r1 r2 =>
-        exists Z; simp [*]; constructor; exact j2; simp [*]
-      }
+      intro Γ t A B j1 step ih Δ s step1 step2
+      replace ih := ih _ _ step1 step2
+      casesm* ∃ _, _, _ ∧ _; case _ A' step3 j2 =>
+      have lem1 : ∃ B', A' -β>* B' ∧ B -p> B' := sorry
+      casesm* ∃ _, _, _ ∧ _; case _ B' r1 r2 =>
+      exists B'; apply And.intro r2 _
+      constructor; exact j2; apply r1
     })
     (by {
-      intro Γ t A B K j1 j2 cv ih1 ih2
-      casesm* _ ∧ _; case _ ih1 ih2 ih3 ih4 =>
-      apply And.intro _ _
-      {
-        intro s r; replace ih1 := ih1 s r
-        casesm* ∃ _, _, _ ∧ _; case _ C r j3 =>
-        constructor
-        exact j3; exact j2
-        have lem1 : C === A := by {
-          apply Conv.conv; apply RedStar.refl; exact r
-          apply BetaConv.refl
-        }
-        have lem2 := infer_implies_pseobj_type j1
-        apply Conv.trans lem2 lem1 cv
-      }
-      apply And.intro _ _
-      {
-        intro C step
-        have lem1 := ih3 C step
-        casesm* ∃ _, _, _ ∧ _; case _ T step2 j' =>
-        have lem2 := red_force_const step2; subst lem2
-        constructor; exact j1; exact j'
-        have lem3 := RedStar.step step RedStar.refl
-        have lem4 := Conv.red_f (cinfer_implies_pseobj j2) (Conv.symm cv) lem3
-        apply Conv.symm lem4
-      }
-      {
-        intro Δ step
-        replace ih2 := ih2 Δ step
-        casesm* ∃ _, _, _ ∧ _; case _ D r j => {
-          constructor; exact j
-          replace ih4 := ih4 Δ step
-          casesm* ∃ _, _, _ ∧ _; case _ K' r' j' => {
-            have lem1 := red_force_const r'; subst lem1
-            exact j'
-          }
-          have lem1 := infer_implies_pseobj_type j1
-          apply Conv.red_f lem1 cv r
-        }
-      }
+      intro Γ t A B K j1 j2 cv ih1 ih2 Δ s step1 step2
+      replace ih1 := ih1 _ _ step1 step2
+      casesm* ∃ _, _, _ ∧ _; case _ A' step3 j3 =>
+      have lem1 : A -β>* A' := sorry
+      replace ih2 := ih2 Δ B (ParRed.refl) step2
+      casesm* ∃ _, _, _ ∧ _; case _ T step4 j4 =>
+      cases step4; case _ =>
+      constructor; exact j3; exact j4
+      apply Conv.red_f (infer_implies_pseobj_type j1) cv lem1
     })
-    (by simp)
     (by {
-      intro x Γ A K xn wf j ih1 ih2 Δ step
-      have lem := Map.append_cases Δ
-      cases lem
-      case _ h => subst h; constructor
-      case _ h => {
-        casesm* ∃ _, _; case _ x' A' Δ' e =>
-        subst e
-        have lem1 := ctx_red_append step
-        cases lem1
-        case _ lem1 => {
-          casesm* _ ∧ _; case _ ih2 ih3 step2 e1 e2 =>
-          subst e1; subst e2
-          have wfΔ := ih1 Δ' step2
-          constructor
-          apply FvSet.not_mem_subset_not_mem xn (ctx_red_fv step2)
-          exact wfΔ
-          replace ih3 := ih3 Δ' step2
-          casesm* ∃ _, _, _ ∧ _; case _ K' r j =>
-          have lem2 := red_force_const r; subst lem2
-          exact j
-        }
-        case _ lem1 => {
-          casesm* _ ∧ _; case _ ih2 ih3 step2 e1 e2 =>
-          subst e1; subst e2; constructor
-          apply xn; apply wf
-          replace ih2 := ih2 A' step2
-          casesm* ∃ _, _, _ ∧ _; case _ K' r j =>
-          have lem2 := red_force_const r; subst lem2
-          exact j
-        }
-      }
+      intro Δ step
+      sorry
+    })
+    (by {
+      sorry
     })
     Γ
     t
     A
     j
+    Δ
+    s
 
-  lemma preservation_chck_step :
-    Γ ⊢ t =: A ->
-    (∀ s, t -β> s -> Γ ⊢ s =: A)
-    ∧ (∀ Δ, CtxRed Γ Δ -> Δ ⊢ t =: A)
-  := by {
-    intro j
-    cases j; case _ T K j cv j2 =>
-    have lem := preservation_infer_step j
-    cases lem; case _ lem1 lem2 =>
-    apply And.intro _ _
-    {
-      intro s step
-      replace lem1 := lem1 s step
-      casesm* ∃ _, _, _ ∧ _; case _ D r j3 =>
-      constructor; exact j3; exact j2
-      apply Conv.red_f _ cv r
-      apply infer_implies_pseobj_type j
-    }
-    {
-      intro Δ step
-      replace lem2 := lem2 Δ step
-      casesm* ∃ _, _, _ ∧ _; case _ D r j3 =>
-      sorry
-    }
-  }
+  -- lemma preservation_chck_step :
+  --   Γ ⊢ t =: A ->
+  --   (∀ s, t -β> s -> Γ ⊢ s =: A)
+  --   ∧ (∀ Δ, CtxRed Γ Δ -> Δ ⊢ t =: A)
+  -- := by {
+  --   intro j
+  --   cases j; case _ T K j cv j2 =>
+  --   have lem := preservation_infer_step j
+  --   cases lem; case _ lem1 lem2 =>
+  --   apply And.intro _ _
+  --   {
+  --     intro s step
+  --     replace lem1 := lem1 s step
+  --     casesm* ∃ _, _, _ ∧ _; case _ D r j3 =>
+  --     constructor; exact j3; exact j2
+  --     apply Conv.red_f _ cv r
+  --     apply infer_implies_pseobj_type j
+  --   }
+  --   {
+  --     intro Δ step
+  --     replace lem2 := lem2 Δ step
+  --     casesm* ∃ _, _, _ ∧ _; case _ D r j3 =>
+  --     sorry
+  --   }
+  -- }
 
   -- lemma preservation_of_infer_step_subst :
   --   Γ ⊢ lam m u1 u2 >: pi m A B ->

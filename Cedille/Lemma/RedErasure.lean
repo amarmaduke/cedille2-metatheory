@@ -354,7 +354,8 @@ namespace Cedille
     }
   }
 
-  -- lemma infer_implies_pseobj_type : Γ ⊢ t : A -> PseObj A := λ j => @Infer.rec
+  lemma infer_implies_pseobj_type : Γ ⊢ t : A -> PseObj A := by sorry
+  -- := λ j => @Infer.rec
   --   (λ Γ t A _ => PseObj A)
   --   (λ Γ t A _ => PseObj A)
   --   (λ Γ t A _ => PseObj A)

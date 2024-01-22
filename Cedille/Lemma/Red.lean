@@ -391,14 +391,14 @@ namespace Cedille
   --   case ctor3 => sorry
   -- }
 
-  lemma red_norm : A -β>* A' -> (∀ z, ¬ A -β> z) -> A = A' := by {
-    intro step norm
-    induction step
-    case refl => simp
-    case step u u' v s1 _s2 _ih => {
-      exfalso; apply norm u' s1
-    }
-  }
+  -- lemma red_norm : A -β>* A' -> (∀ z, ¬ A -β> z) -> A = A' := by {
+  --   intro step norm
+  --   induction step
+  --   case refl => simp
+  --   case step u u' v s1 _s2 _ih => {
+  --     exfalso; apply norm u' s1
+  --   }
+  -- }
 
   lemma red_force_mode_pi_domain : Mode.pi_domain m K -β>* A -> A = Mode.pi_domain m K := by {
     intro step

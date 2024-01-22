@@ -113,7 +113,7 @@ namespace Cedille
     | Syntax.ctor Constructor.delta t _ _ => erase t
     | Syntax.ctor Constructor.phi t1 _t2 _t3 => erase t1
 
-  inductive Red : Term -> Term -> Sort _ where
+  inductive Red : Term -> Term -> Prop where
   | beta {m t1 t2 t3} : Red (app m (lam m t1 t2) t3) ([0 := t3]t2)
   | fst : Red (proj 1 (pair t1 t2 t3)) t1
   | snd : Red (proj 2 (pair t1 t2 t3)) t2
