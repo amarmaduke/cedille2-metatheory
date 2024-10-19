@@ -116,161 +116,349 @@ namespace Cedille
     }
   }
 
-  theorem erase_lam_invariant (i : Nat) :
-    (ᴎ x, x ∉ (fv ∘ erase) ({i |-> x}t)) ->
-    ᴎ x, erase ({i |-> x}t) = erase t
-  := by {
-    intro h
-    cases h; case _ S h =>
-    exists S; intro x xn
-    replace h := h x xn
-    simp at *
-    induction t generalizing i
-    case bound k => {
-      simp at *; split
-      case _ h2 => subst h2; simp at h
-      case _ h2 => simp
-    }
-    case free => simp
-    case const => simp
-    case bind k t1 t2 ih1 ih2 => {
-      cases k
-      case' lam md => cases md
-      all_goals simp at *
-      case lam.erased => rw [ih2 _ h]
-      case lam.free => rw [ih2 _ h]
-      all_goals {
-        replace h := demorgan h
-        cases h; case _ h1 h2 =>
-        rw [ih1 _ h1, ih2 _ h2]
-      }
-    }
-    case ctor k t1 t2 t3 ih1 ih2 ih3 => {
-      cases k
-      case' app md => cases md
-      all_goals simp at *
-      any_goals try rw [ih1 _ h]
-      case eq => {
-        replace h := demorgan3 h
-        casesm* _ ∧ _; case _ h1 h2 h3 =>
-        rw [ih1 _ h1, ih2 _ h2, ih3 _ h3]
-      }
-      all_goals {
-        replace h := demorgan h
-        cases h; case _ h1 h2 =>
-        rw [ih1 _ h1, ih2 _ h2]
-      }
-    }
-  }
+  -- inductive Erased : Term -> Type where
+  -- | bound : Erased (bound i)
+  -- | free : Erased (free x)
+  -- | const : Erased (const K)
+  -- | pi : Erased a ->
+  --   ∀ S: FvSet!, (∀ x ∉ S, Erased ({0 |-> x}b)) ->
+  --   Erased (pi m a b)
+  -- | lamf :
+  --   ∀ S: FvSet!, (∀ x ∉ S, Erased ({0 |-> x}b)) ->
+  --   Erased (lam mf kindu b)
+  -- | lamt : Erased a ->
+  --   ∀ S: FvSet!, (∀ x ∉ S, Erased ({0 |-> x}b)) ->
+  --   Erased (lam mt a b)
+  -- | appf : Erased f -> Erased a -> Erased (app mf f a)
+  -- | appt : Erased f -> Erased a -> Erased (app mt f a)
+  -- | int : Erased a ->
+  --   ∀ S: FvSet!, (∀ x ∉ S, Erased ({0 |-> x}b)) ->
+  --   Erased (inter a b)
+  -- | eq : Erased a -> Erased b -> Erased c -> Erased (eq a b c)
 
-  lemma test :
-    (ᴎ x, lc i (erase ({i |-> x}t))) ->
-    ᴎ x, erase ({i |-> x}t) = {i |-> x}(erase t)
-  := by sorry
+  -- lemma erased_open
+  --   : Erased b -> Erased ({i |-> x}b)
+  -- := by {
+  --   intro er
+  --   induction er generalizing i
+  --   case bound j => {
+  --     simp; split <;> constructor
+  --   }
+  --   case free => constructor
+  --   case const => constructor
+  --   case pi A B m _h1 S h2 ih1 ih2 => {
+  --     simp; constructor; apply ih1
+  --     swap; exact S; intro y yn
+  --     have lem1 := Syntax.oc5 0 (.succ i) y x B (by simp)
+  --     simp at *; rw [lem1]
+  --     apply ih2 y yn
+  --   }
+  --   case lamf B S h ih => {
+  --     simp; constructor
+  --     swap; exact S; intro y yn
+  --     have lem1 := Syntax.oc5 0 (.succ i) y x B (by simp)
+  --     simp at *; rw [lem1]
+  --     apply ih y yn
+  --   }
+  --   case lamt A B _h1 S h2 ih1 ih2 => {
+  --     simp; constructor; apply ih1
+  --     swap; exact S; intro y yn
+  --     have lem1 := Syntax.oc5 0 (.succ i) y x B (by simp)
+  --     simp at *; rw [lem1]
+  --     apply ih2 y yn
+  --   }
+  --   case appf f a _h1 _h2 ih1 ih2 => {
+  --     simp at *; constructor; apply ih1; apply ih2
+  --   }
+  --   case appt f a _h1 _h2 ih1 ih2 => {
+  --     simp at *; constructor; apply ih1; apply ih2
+  --   }
+  --   case int A B _h1 S h2 ih1 ih2 => {
+  --     simp; constructor; apply ih1
+  --     swap; exact S; intro y yn
+  --     have lem1 := Syntax.oc5 0 (.succ i) y x B (by simp)
+  --     simp at *; rw [lem1]
+  --     apply ih2 y yn
+  --   }
+  --   case eq A B C _h1 _h2 _h3 ih1 ih2 ih3 => {
+  --     simp at *; constructor; apply ih1; apply ih2; apply ih3
+  --   }
+  -- }
 
-  lemma erase_pseobj_open (i : Nat) :
-    (ᴎ x, PseObj (erase ({i |-> x}t))) ->
-    ᴎ x, PseObj ({i |-> x}(erase t))
-  := by {
-    intro h
-    cases h; case _ S h =>
-    exists S; intro x xn
-    replace h := h x xn
-    simp at *
-    generalize sdef : erase ({i |-> x}t) = s at *
-    have lem := pseobj_is_lc0 h
-    cases h
-    case ax => sorry
-    case var => sorry
-    case bind k A B hn p1 S1 p2 => {
-      cases k
-      case' lam md => cases md
-      all_goals simp at *
-      case lam.free => sorry
-      case lam.type => sorry
-      case pi md => sorry
-      case inter => {
-        induction t generalizing i <;> simp at *
-        case bound => split at sdef <;> simp at sdef
-        case bind k u1 u2 uih1 uih2 => {
-          cases k
-          case' lam md => cases md
-          all_goals simp at *
-          case lam.erased => {
-            have lem1 := uih2 _ sdef
-            sorry
-          }
-          case inter => sorry
-        }
-        case ctor k u1 u2 u3 uih1 uih2 uih3 => {
-          cases k
-          case' app md => cases md
-          all_goals simp at *; try apply uih1 i sdef
-        }
-      }
-    }
-    case lam A t p1 S1 p2 S2 p3 => {
-      simp at *
-      -- impossible by sdef
-      sorry
-    }
-    case pair => sorry
-    case ctor => sorry
-  }
+  -- lemma erase_is_erased : Erased (erase t) := by {
+  --   induction t <;> try constructor
+  --   case bind k t1 t2 ih1 ih2 => {
+  --     cases k
+  --     case' lam md => cases md
+  --     case lam.erased => simp [*]
+  --     case lam.free => {
+  --       simp; constructor
+  --       swap; exact []; intro x _
+  --       apply erased_open ih2
+  --     }
+  --     all_goals {
+  --       simp; constructor; apply ih1
+  --       swap; exact []; intro x xn
+  --       apply erased_open ih2
+  --     }
+  --   }
+  --   case ctor k t1 t2 t3 ih1 ih2 ih3 => {
+  --     cases k
+  --     case' app md => cases md
+  --     case refl => {
+  --       simp; constructor
+  --       swap; exact []; intro x _; simp
+  --       constructor
+  --     }
+  --     all_goals try (constructor; simp [*])
+  --     all_goals simp [*]
+  --   }
+  -- }
 
-  theorem erase_pseobj : PseObj t -> PseObj (erase t) := by {
-    intro p
-    induction p
-    case ax => simp; constructor
-    case var => simp; constructor
-    case bind k A B hn _p1 S _p2 ih1 ih2 => {
-      cases k
-      case' lam md => cases md
-      any_goals simp [*]
-      case lam.free => {
-        have h := erase_pseobj_open 0 (Exists.intro S ih2)
-        cases h; case _ S' h =>
-        constructor; exact hn; constructor; exact h
-      }
-      case lam.erased => exfalso; apply hn rfl
-      all_goals {
-        have h := erase_pseobj_open 0 (Exists.intro S ih2)
-        cases h; case _ S' h =>
-        constructor; exact hn; exact ih1; exact h
-      }
-    }
-    case lam t A p1 S1 p2 S2 p3 _ih1 ih2 => {
-      simp at *
-      have h := erase_lam_invariant 0 (Exists.intro S2 p3)
-      cases h; case _ S3 h =>
-      have xfresh := @Name.fresh_is_fresh (S1 ++ S3)
-      generalize _xdef : @Name.fresh (S1 ++ S3) = x at *
-      simp at xfresh; replace xfresh := demorgan xfresh
-      cases xfresh; case _ xn1 xn2 =>
-      replace ih2 := ih2 x xn1
-      replace h := h x xn2
-      simp at h; rw [h] at ih2; exact ih2
-    }
-    case pair t s T p1 p2 p3 he ih1 _ih2 _ih3 => {
-      simp; exact ih1
-    }
-    case ctor k t1 t2 t3 hn _p1 _p2 _p3 ih1 ih2 ih3 => {
-      cases k
-      any_goals simp [*]
-      case app md => {
-        cases md <;> simp [*]
-        all_goals {
-          constructor; exact hn;
-          exact ih1; exact ih2; constructor
-        }
-      }
-      case eq => constructor <;> simp [*]
-      case refl => {
-        constructor; simp; constructor; simp
-        swap; exact []; intro x _; constructor
-      }
-    }
-  }
+  -- lemma erased_and_lc_is_pseobj : Erased t -> lc 0 t -> PseObj t := by {
+  --   intro er cl
+  --   induction er <;> simp at *
+  --   case free => constructor
+  --   case const => constructor
+  --   case pi a b m _h1 S ih1 _h2 ih2 => {
+  --     constructor; simp; apply ih1 cl.1
+  --     swap; exact S; intro x xn
+  --     have lem1 := (lc_open x).1 cl.2
+  --     apply ih2 x xn lem1
+  --   }
+  --   case lamf b S _h ih => {
+  --     constructor; simp; constructor
+  --     swap; exact S; intro x xn
+  --     have lem1 := (lc_open x).1 cl
+  --     apply ih x xn lem1
+  --   }
+  --   case lamt a b _h1 S ih1 _h2 ih2 => {
+  --     constructor; simp; apply ih1 cl.1
+  --     swap; exact S; intro x xn
+  --     have lem1 := (lc_open x).1 cl.2
+  --     apply ih2 x xn lem1
+  --   }
+  --   case appf f a _h1 _h2 ih1 ih2 => {
+  --     constructor; simp
+  --     apply ih1 cl.1; apply ih2 cl.2;
+  --     constructor
+  --   }
+  --   case appt f a _h1 _h2 ih1 ih2 => {
+  --     constructor; simp
+  --     apply ih1 cl.1; apply ih2 cl.2;
+  --     constructor
+  --   }
+  --   case int a b _h1 S ih1 _h2 ih2 => {
+  --     constructor; simp; apply ih1 cl.1
+  --     swap; exact S; intro x xn
+  --     have lem1 := (lc_open x).1 cl.2
+  --     apply ih2 x xn lem1
+  --   }
+  --   case eq a b c _h1 _h2 _h3 ih1 ih2 ih3 => {
+  --     constructor; simp
+  --     apply ih1 cl.1; apply ih2 cl.2.1; apply ih3 cl.2.2
+  --   }
+  -- }
+
+  -- theorem erase_lam_invariant (i : Nat) :
+  --   (ᴎ x, x ∉ (fv ∘ erase) ({i |-> x}t)) ->
+  --   ᴎ x, erase ({i |-> x}t) = erase t
+  -- := by {
+  --   intro h
+  --   cases h; case _ S h =>
+  --   exists S; intro x xn
+  --   replace h := h x xn
+  --   simp at *
+  --   induction t generalizing i
+  --   case bound k => {
+  --     simp at *; split
+  --     case _ h2 => subst h2; simp at h
+  --     case _ h2 => simp
+  --   }
+  --   case free => simp
+  --   case const => simp
+  --   case bind k t1 t2 ih1 ih2 => {
+  --     cases k
+  --     case' lam md => cases md
+  --     all_goals simp at *
+  --     case lam.erased => rw [ih2 _ h]
+  --     case lam.free => rw [ih2 _ h]
+  --     all_goals {
+  --       replace h := demorgan h
+  --       cases h; case _ h1 h2 =>
+  --       rw [ih1 _ h1, ih2 _ h2]
+  --     }
+  --   }
+  --   case ctor k t1 t2 t3 ih1 ih2 ih3 => {
+  --     cases k
+  --     case' app md => cases md
+  --     all_goals simp at *
+  --     any_goals try rw [ih1 _ h]
+  --     case eq => {
+  --       replace h := demorgan3 h
+  --       casesm* _ ∧ _; case _ h1 h2 h3 =>
+  --       rw [ih1 _ h1, ih2 _ h2, ih3 _ h3]
+  --     }
+  --     all_goals {
+  --       replace h := demorgan h
+  --       cases h; case _ h1 h2 =>
+  --       rw [ih1 _ h1, ih2 _ h2]
+  --     }
+  --   }
+  -- }
+
+  -- lemma lc_open_erase : lc i (erase ({i |-> x}t)) -> lc (Nat.succ i) (erase t) := by {
+  --   sorry
+  -- }
+
+  -- lemma pseobj_implies_erasure_closed : PseObj t -> lc 0 (erase t) := by {
+  --   intro p
+  --   induction p <;> simp at *
+  --   case bind k A B hn _p1 S ih1 _p2 ih2 => {
+  --     cases k
+  --     case' lam md => cases md
+  --     case lam.erased => exfalso; apply hn rfl
+  --     case lam.free => {
+  --       simp; have xn := @Name.fresh_is_fresh S
+  --       generalize _xdef : @Name.fresh S = x at *
+  --       replace ih2 := ih2 x xn
+  --       apply lc_open_erase ih2
+  --     }
+  --     all_goals {
+  --       simp at *; apply And.intro ih1
+  --       have xn := @Name.fresh_is_fresh S
+  --       generalize xdef : @Name.fresh S = x at *
+  --       replace ih2 := ih2 x xn
+  --       apply lc_open_erase ih2
+  --     }
+  --   }
+  --   case lam A t h1 S1 S2 _ih1 _h2 h3 ih2 => {
+  --     have lem1 := erase_lam_invariant 0 (Exists.intro S2 h3)
+  --     cases lem1; case _ S3 lem1 =>
+  --     have xn := @Name.fresh_is_fresh (S1 ++ S2 ++ S3)
+  --     generalize xdef : @Name.fresh (S1 ++ S2 ++ S3) = x at *
+  --     simp at xn; replace xn := demorgan3 xn
+  --     have lem2 := ih2 x xn.1
+  --     simp at *; replace lem1 := lem1 x xn.2.2
+  --     rw [lem1] at lem2
+  --     exact lem2
+  --   }
+  --   case pair => simp [*]
+  --   case ctor k t1 t2 t3 hn _p1 _p2 _p3 ih1 ih2 ih3 => {
+  --     cases k
+  --     case' app md => cases md
+  --     all_goals simp [*]
+  --   }
+  -- }
+
+  -- lemma test :
+  --   (ᴎ x, lc i (erase ({i |-> x}t))) ->
+  --   ᴎ x, erase ({i |-> x}t) = {i |-> x}(erase t)
+  -- := by sorry
+
+  -- lemma erase_pseobj_open (i : Nat) :
+  --   (ᴎ x, PseObj (erase ({i |-> x}t))) ->
+  --   ᴎ x, PseObj ({i |-> x}(erase t))
+  -- := by {
+  --   intro h
+  --   cases h; case _ S h =>
+  --   exists S; intro x xn
+  --   replace h := h x xn
+  --   simp at *
+  --   generalize sdef : erase ({i |-> x}t) = s at *
+  --   have lem := pseobj_is_lc0 h
+  --   cases h
+  --   case ax => sorry
+  --   case var => sorry
+  --   case bind k A B hn p1 S1 p2 => {
+  --     cases k
+  --     case' lam md => cases md
+  --     all_goals simp at *
+  --     case lam.free => sorry
+  --     case lam.type => sorry
+  --     case pi md => sorry
+  --     case inter => {
+  --       induction t generalizing i <;> simp at *
+  --       case bound => split at sdef <;> simp at sdef
+  --       case bind k u1 u2 uih1 uih2 => {
+  --         cases k
+  --         case' lam md => cases md
+  --         all_goals simp at *
+  --         case lam.erased => {
+  --           have lem1 := uih2 _ sdef
+  --           sorry
+  --         }
+  --         case inter => sorry
+  --       }
+  --       case ctor k u1 u2 u3 uih1 uih2 uih3 => {
+  --         cases k
+  --         case' app md => cases md
+  --         all_goals simp at *; try apply uih1 i sdef
+  --       }
+  --     }
+  --   }
+  --   case lam A t p1 S1 p2 S2 p3 => {
+  --     simp at *
+  --     -- impossible by sdef
+  --     sorry
+  --   }
+  --   case pair => sorry
+  --   case ctor => sorry
+  -- }
+
+  -- theorem erase_pseobj : PseObj t -> PseObj (erase t) := by {
+  --   intro p
+  --   induction p
+  --   case ax => simp; constructor
+  --   case var => simp; constructor
+  --   case bind k A B hn _p1 S _p2 ih1 ih2 => {
+  --     cases k
+  --     case' lam md => cases md
+  --     any_goals simp [*]
+  --     case lam.free => {
+  --       have h := erase_pseobj_open 0 (Exists.intro S ih2)
+  --       cases h; case _ S' h =>
+  --       constructor; exact hn; constructor; exact h
+  --     }
+  --     case lam.erased => exfalso; apply hn rfl
+  --     all_goals {
+  --       have h := erase_pseobj_open 0 (Exists.intro S ih2)
+  --       cases h; case _ S' h =>
+  --       constructor; exact hn; exact ih1; exact h
+  --     }
+  --   }
+  --   case lam t A p1 S1 p2 S2 p3 _ih1 ih2 => {
+  --     simp at *
+  --     have h := erase_lam_invariant 0 (Exists.intro S2 p3)
+  --     cases h; case _ S3 h =>
+  --     have xfresh := @Name.fresh_is_fresh (S1 ++ S3)
+  --     generalize _xdef : @Name.fresh (S1 ++ S3) = x at *
+  --     simp at xfresh; replace xfresh := demorgan xfresh
+  --     cases xfresh; case _ xn1 xn2 =>
+  --     replace ih2 := ih2 x xn1
+  --     replace h := h x xn2
+  --     simp at h; rw [h] at ih2; exact ih2
+  --   }
+  --   case pair t s T p1 p2 p3 he ih1 _ih2 _ih3 => {
+  --     simp; exact ih1
+  --   }
+  --   case ctor k t1 t2 t3 hn _p1 _p2 _p3 ih1 ih2 ih3 => {
+  --     cases k
+  --     any_goals simp [*]
+  --     case app md => {
+  --       cases md <;> simp [*]
+  --       all_goals {
+  --         constructor; exact hn;
+  --         exact ih1; exact ih2; constructor
+  --       }
+  --     }
+  --     case eq => constructor <;> simp [*]
+  --     case refl => {
+  --       constructor; simp; constructor; simp
+  --       swap; exact []; intro x _; constructor
+  --     }
+  --   }
+  -- }
 
 --  lemma erase_weaken {m} {t : Term m} : (erase t)ʷ = erase tʷ := by sorry
 

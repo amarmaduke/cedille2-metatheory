@@ -247,4 +247,44 @@ namespace Cedille
   --   t
   --   (by simp)
 
+  -- mutual
+  --   def Infer.size : Γ ⊢ t : A -> Nat
+  --   | .ax wf => Wf.size wf + 1
+  --   | .var wf xn => sorry
+  --   | .pi j1 S j2 =>
+  --     have xn := @Name.fresh_is_fresh S
+  --     let x := @Name.fresh S
+  --     ConInfer.size j1 + ConInfer.size (j2 x xn) + 1
+  --   | .lam j S1 j1 S2 j2 S3 j3 => sorry
+  --   | .app j1 j2 => sorry
+  --   | .inter j S1 j1=> sorry
+  --   | .pair j1 j2 j3 _ => sorry
+  --   | .fst j => sorry
+  --   | .snd j => sorry
+  --   | .eq j1 j2 j3 => sorry
+  --   | .refl j1 j2 => sorry
+  --   | .subst j1 j2 => sorry
+  --   | .promote j1 j2 j3 => sorry
+  --   | .phi j1 j2 j3 j4 => sorry
+  --   | .delta j => sorry
+
+  --   def ConInfer.size : Γ ⊢ t >: A -> Nat
+  --   | .Infer j _ => Infer.size j + 1
+
+  --   def Check.size : Γ ⊢ t =: A -> Nat
+  --   | .check j1 j2 _ => Infer.size j1 + ConInfer.size j2 + 1
+
+  --   def Wf.size : ⊢ Γ -> Nat
+  --   | .nil => 0
+  --   | .append _ wf j => Wf.size wf + ConInfer.size j + 1
+  -- end
+  -- termination_by
+  --   Infer.size j => List.length Γ + size t + size A
+  --   ConInfer.size j => List.length Γ + size t + size A + 1
+  --   --Check.size j => size t + 1
+  --   Wf.size j => List.length Γ
+  -- decreasing_by
+  --   simp_wf
+  --   any_goals try simp at *; linarith
+
 end Cedille

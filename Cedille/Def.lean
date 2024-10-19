@@ -3,292 +3,358 @@ import Common
 
 namespace Cedille
 
-  inductive Projection where
-  | first
-  | second
-
-  instance : OfNat Projection 1 where
-    ofNat := Projection.first
-
-  instance : OfNat Projection 2 where
-    ofNat := Projection.second
-
-  inductive Mode where
-  | free
-  | erased
-  | type
-
-  notation "m0" => Mode.erased
-  notation "mt" => Mode.type
-  notation "mf" => Mode.free
-
-  inductive Binder where
-  | lam (m : Mode)
-  | pi (m : Mode)
-  | inter
-
-  inductive Constructor where
-  | app (m : Mode)
-  | pair
-  | proj (i : Projection)
-  | eq
-  | refl
-  | subst
-  | promote
-  | delta
-  | phi
-
-  inductive Constant where
-  | typeU : Constant
-  | kindU : Constant
-
-  notation:300 "Term" => @Syntax Binder Constructor Constant
-
-  def const (k : Constant) : Term := Syntax.const k
-  def typeu : Term := Syntax.const Constant.typeU
-  def kindu : Term := Syntax.const Constant.kindU
-  def free (x : Name) : Term := Syntax.free x
-  def bound (i : Nat) : Term := Syntax.bound i
-  def lam (m : Mode) (t1 : Term) (t2 : Term) : Term
-    := Syntax.bind (Binder.lam m) t1 t2
-  def pi (m : Mode) (t1 : Term) (t2 : Term) : Term
-    := Syntax.bind (Binder.pi m) t1 t2
-  def inter (t1 : Term) (t2 : Term) : Term := Syntax.bind Binder.inter t1 t2
-  def app (m : Mode) (t1 t2 : Term) : Term
-    := Syntax.ctor (Constructor.app m) t1 t2 kindu
-  def pair (t1 t2 t3 : Term) : Term := Syntax.ctor Constructor.pair t1 t2 t3
-  def proj (n : Projection) (t : Term) : Term := Syntax.ctor (Constructor.proj n) t kindu kindu
-  def eq (t1 t2 t3 : Term) : Term := Syntax.ctor Constructor.eq t1 t2 t3
-  def refl (t : Term) : Term := Syntax.ctor Constructor.refl t kindu kindu
-  def subst (t1 t2 : Term) : Term := Syntax.ctor Constructor.subst t1 t2 kindu
-  def promote (t : Term) : Term := Syntax.ctor Constructor.promote t kindu kindu
-  def delta (t : Term) : Term := Syntax.ctor Constructor.delta t kindu kindu
-  def phi (t1 t2 : Term) : Term := Syntax.ctor Constructor.phi t1 t2 kindu
-
-  def fv (t : Term) := Syntax.fv t
-  def lc (i : Nat) (t : Term) := Syntax.lc i t
-  def size (t : Term) := Syntax.size t
-  def shift (t : Term) (a c : Nat) := Syntax.shift t a c
-
-  notation:400 a:400 " @ω " b:401 => app mf a b
-  notation:400 a:400 " @0 " b:401 => app m0 a b
-  notation:400 a:400 " @τ " b:401 => app mt a b
-
-  -- notation:200 "[" i:200 " := " x:200 "]" t:200 => @Syntax.opn Binder Constructor Constant i x t
-  -- notation:200 "[" i:200 " =: " x:200 "]" t:200 => @Syntax.cls Binder Constructor Constant i x t
-  -- notation:200 "{" i:200 " |-> " x:200 "}" t:200 => @Syntax.opn Binder Constructor Constant i (free x) t
-  -- notation:200 "{" i:200 " <-| " x:200 "}" t:200 => @Syntax.cls Binder Constructor Constant (bound i) x t
-
-  syntax "ᴎ" ident "," term : term
-  macro_rules | `(ᴎ $id , $F) => `(∃ (S : FvSet!), ($id : Name) -> $id ∉ S -> $F)
-
-  def idt : Term := pi m0 typeu (pi mf (bound 0) (bound 1))
-
-  def cbool : Term := pi m0 typeu (pi mf (bound 0) (pi mf (bound 1) (bound 2)))
-  def ctt : Term := lam m0 typeu (lam mf (bound 0) (lam mf (bound 1) (bound 1)))
-  def cff : Term := lam m0 typeu (lam mf (bound 0) (lam mf (bound 1) (bound 0)))
-
-  def erase (t : Term) : Term :=
-    match t with
-    | Syntax.free x => free x
-    | Syntax.bound i => bound i
-    | Syntax.const c => const c
-    | Syntax.bind (Binder.lam m) t1 t2 =>
-      match m with
-      | m0 => erase t2
-      | mt => lam mt (erase t1) (erase t2)
-      | mf => lam mf kindu (erase t2)
-    | Syntax.bind (Binder.pi m) t1 t2 => pi m (erase t1) (erase t2)
-    | Syntax.bind Binder.inter t1 t2 => inter (erase t1) (erase t2)
-    | Syntax.ctor (Constructor.app m) t1 t2 _ =>
-      match m with
-      | m0 => erase t1
-      | m => app m (erase t1) (erase t2)
-    | Syntax.ctor Constructor.pair t1 _t2 _ => erase t1
-    | Syntax.ctor (Constructor.proj _) t _ _ => erase t
-    | Syntax.ctor Constructor.eq t1 t2 t3 => eq (erase t1) (erase t2) (erase t3)
-    | Syntax.ctor Constructor.refl _t _ _ => lam mf kindu (bound 0)
-    | Syntax.ctor Constructor.subst t1 _ _ => erase t1
-    | Syntax.ctor Constructor.promote t _ _ => erase t
-    | Syntax.ctor Constructor.delta t _ _ => erase t
-    | Syntax.ctor Constructor.phi t1 _t2 _t3 => erase t1
-
-  inductive Red : Term -> Term -> Prop where
-  | beta {m t1 t2 t3} : Red (app m (lam m t1 t2) t3) ([0 := t3]t2)
-  | fst : Red (proj 1 (pair t1 t2 t3)) t1
-  | snd : Red (proj 2 (pair t1 t2 t3)) t2
-  | subst : Red (subst (refl t1) t2) (lam mf (t2 @τ t1) (bound 0))
-  | promote : Red (promote (refl (proj i t))) (refl t)
-  | bind1 : Red t1 t1' -> Red (Syntax.bind k t1 t2) (Syntax.bind k t1' t2)
-  | bind2 : Red t2 t2' -> Red (Syntax.bind k t1 t2) (Syntax.bind k t1 t2')
-  | ctor1 : Red t1 t1' -> Red (Syntax.ctor k t1 t2 t3) (Syntax.ctor k t1' t2 t3)
-  | ctor2 : Red t2 t2' -> Red (Syntax.ctor k t1 t2 t3) (Syntax.ctor k t1 t2' t3)
-  | ctor3 : Red t3 t3' -> Red (Syntax.ctor k t1 t2 t3) (Syntax.ctor k t1 t2 t3')
-
-  notation:150 t1:150 " -β> " t2:150 => Red t1 t2
-
-  inductive RedStar : Term -> Term -> Prop where
-  | refl : RedStar t t
-  | step : t1 -β> t2 -> RedStar t2 t3 -> RedStar t1 t3
-
-  notation:150 t1:150 " -β>* " t2:150 => RedStar t1 t2
-  notation:150 t1:150 " -β>+ " t2:150 => ∃ k : Term, t1 -β> k ∧ k -β>* t2
-
-  inductive BetaConv : Term -> Term -> Prop where
-  | conv : t1 -β>* t -> t2 -β>* t -> BetaConv t1 t2
-
-  notation:150 t1:150 " =β= " t2:150 => BetaConv t1 t2
-
-  inductive Conv : Term -> Term -> Prop where
-  | conv :
-    t1 -β>* t1' ->
-    t2 -β>* t2' ->
-    (erase t1') =β= (erase t2') ->
-    Conv t1 t2
-
-  notation:150 t1:150 " === " t2:150 => Conv t1 t2
-
-  inductive PseObj : Term -> Prop
-  | ax : PseObj (const K)
-  | var : PseObj (free x)
-  | bind :
-    k ≠ (Binder.lam m0) ->
-    PseObj A ->
-    ∀ S: FvSet!, (∀ x ∉ S, PseObj ({0 |-> x}B)) ->
-    PseObj (Syntax.bind k A B)
-  | lam :
-    PseObj A ->
-    ∀ S: FvSet!, (∀ x ∉ S, PseObj ({0 |-> x}t)) ->
-    ∀ S: FvSet!, (∀ x ∉ S, x ∉ (fv ∘ erase) ({0 |-> x}t)) ->
-    PseObj (lam m0 A t)
-  | pair : PseObj t -> PseObj s -> PseObj T ->
-    erase t =β= erase s ->
-    PseObj (pair t s T)
-  | ctor :
-    k ≠ Constructor.pair ->
-    PseObj t1 ->
-    PseObj t2 ->
-    PseObj t3 ->
-    PseObj (Syntax.ctor k t1 t2 t3)
-
   namespace Mode
-    def pi_domain (m : Mode) (K : Constant) : Term :=
+    def dom (m : Mode) (K : Const) : Term :=
       match m with
-      | mf => typeu
-      | mt => const K
-      | m0 => const K
+      | mf => .const .type
+      | mt => .const K
+      | m0 => .const K
 
-    def pi_codomain (m : Mode) : Term :=
+    def codom (m : Mode) : Term :=
       match m with
-      | mf => typeu
-      | mt => kindu
-      | m0 => typeu
+      | mf => .const .type
+      | mt => .const .kind
+      | m0 => .const .type
   end Mode
 
-  mutual
+  notation "#" m => Term.bound (Term.mode_to_sort m) 0
 
-  inductive Infer : Map! Term -> Term -> Term -> Prop
-  -- Basic
-  | ax :
-    Wf Γ ->
-    Infer Γ typeu kindu
+  inductive Conv : CvTerm -> Term -> Term -> Prop
+  | sym : Conv c t2 t1 -> Conv (.sym c) t1 t2
+  | ax : Conv .ax ★ ★
+  | var : Conv .var (.bound K x) (.bound K x)
+  | pi : Conv c1 A1 A2 -> Conv c2 B1 B2 ->
+    Conv (.pi c1 c2) (.all m A1 B1) (.all m A2 B2)
+  | lam_mt : Conv c1 A1 A2 -> Conv c2 t1 t2 ->
+    Conv (.lam_mt c1 c2) (.lam mt A1 t1) (.lam mt A2 t2)
+  | lam_mf : Conv c t1 t2 ->
+    Conv (.lam_mf c) (.lam mf A1 t1) (.lam mf A2 t2)
+  | lam_eta : m ≠ m0 ->
+    Conv c (t1 β[ #m ]) (.app m t2 (#m)) ->
+    Conv (.lam_eta c) (.lam m A t1) t2
+  | lam_m0 : Conv c t1 t2 -> Conv (.lam_m0 c) (.lam m0 A t1) t2
+  | app : Conv c1 f1 f2 -> Conv c2 a1 a2 ->
+    Conv (.app c1 c2) (.app m f1 f2) (.app m a1 a2)
+  | app_beta :
+    Conv c (b β[t]) t2 ->
+    Conv (.app_beta c) (.app m (.lam m A b) t) t2
+  | app_m0 : Conv c t1 t2 -> Conv (.app_m0 c) (.app m0 t1 a) t2
+  | prod : Conv c1 A1 A2 -> Conv c2 B1 B2 ->
+    Conv (.prod c1 c2) (.prod A1 B1) (.prod A2 B2)
+  | pair : Conv c t1 t2 -> Conv (.pair c) (.pair T1 t1 s1 c1) t2
+  | fst : Conv c t1 t2 -> Conv (.fst c) (.fst t1) t2
+  | snd : Conv c t1 t2 -> Conv (.snd c) (.snd t1) t2
+  | eq : Conv c1 A1 A2 -> Conv c2 a1 a2 -> Conv c3 b1 b2 ->
+    Conv (.eq c1 c2 c3) (.eq A1 a1 b1) (.eq A2 a2 b2)
+  | refl : Conv c (.lam mf .none (.bound .type 0)) t2 ->
+    Conv (.refl c) (.refl A1 t1) t2
+  | subst : Conv c e1 t2 -> Conv (.subst c) (.subst A1 P1 a1 b1 e1) t2
+  | conv : Conv c t1 t2 -> Conv (.conv c) (.conv A1 t1 c1) t2
+
+  notation:100 c:101 " : " A:99 " === " B:98 => Conv c A B
+
+  inductive Proof : List Term -> Term -> Term -> Prop
+  | ax : Proof Γ ★ □
   | var :
-    Wf Γ ->
-    (x, A) ∈ Γ ->
-    Infer Γ (free x) A
-  -- Functions
+    List.getI Γ x = A ->
+    Proof (List.take x Γ) A (.const K) ->
+    Proof Γ (.bound K x) A
   | pi :
-    ConInfer Γ A (Mode.pi_domain m K) ->
-    ∀ S: FvSet!, (∀ x ∉ S, ConInfer (Γ ++ [x:A]) ({0 |-> x}B) (Mode.pi_codomain m)) ->
-    Infer Γ (pi m A B) (Mode.pi_codomain m)
+    Proof Γ A (Mode.dom m K) ->
+    Proof (A::Γ) B (Mode.codom m) ->
+    Proof Γ (.all m A B) (Mode.codom m)
   | lam :
-    ConInfer Γ A (Mode.pi_domain m K) ->
-    ∀ S: FvSet!, (∀ x ∉ S, Infer (Γ ++ [x:A]) ({0 |-> x}t) ({0 |-> x}B)) ->
-    ∀ S: FvSet!, (∀ x ∉ S, ConInfer (Γ ++ [x:A]) ({0 |-> x}B) (Mode.pi_codomain m)) ->
-    ∀ S: FvSet!, (m = m0 -> ∀ x ∉ S, x ∉ (fv ∘ erase) ({0 |-> x}t)) ->
-    Infer Γ (lam m A t) (pi m A B)
+    Proof Γ A (Mode.dom m K) ->
+    Proof (A::Γ) t B ->
+    Proof (A::Γ) B (Mode.codom m) ->
+    (m = m0 -> t β[.none] = t) ->
+    Proof Γ (.lam m A t) (.all m A B)
   | app :
-    ConInfer Γ f (pi m A B) ->
-    Check Γ a A ->
-    Infer Γ (app m f a) ([0 := a]B)
-  -- Intersections
-  | inter :
-    ConInfer Γ A typeu ->
-    ∀ S: FvSet!, (∀ x ∉ S, ConInfer (Γ ++ [x:A]) ({0 |-> x}B) typeu) ->
-    Infer Γ (inter A B) typeu
+    Proof Γ f (.all m A B) ->
+    Proof Γ a A ->
+    Proof Γ (.app m f a) (B β[a])
+  | prod :
+    Proof Γ A ★ ->
+    Proof (A::Γ) B ★ ->
+    Proof Γ (.prod A B) ★
   | pair :
-    ConInfer Γ T (pi mt A B) ->
-    ConInfer Γ A typeu ->
-    ∀ S: FvSet!, (∀ x ∉ S, ConInfer (Γ ++ [x:A]) ({0 |-> x}B) typeu) ->
-    Check Γ t A ->
-    ∀ S:FvSet!, (∀ x ∉ S, Check Γ s ([0 := t]B)) ->
-    t === s ->
-    Infer Γ (pair t s T) (inter A B)
+    Proof Γ (.prod A B) ★ ->
+    Proof Γ t A ->
+    Proof Γ s (B β[t]) ->
+    c : t === s ->
+    Proof Γ (.pair (.prod A B) t s c) (.prod A B)
   | fst :
-    ConInfer Γ t (inter A B) ->
-    Infer Γ (proj 1 t) A
+    Proof Γ t (.prod A B) ->
+    Proof Γ (.fst t) A
   | snd :
-    ConInfer Γ t (inter A B) ->
-    Infer Γ (proj 2 t) ([0 := proj 1 t]B)
-  -- Equality
+    Proof Γ t (.prod A B) ->
+    Proof Γ (.snd t) (B β[.fst t])
   | eq :
-    ConInfer Γ A typeu ->
-    Check Γ a A ->
-    Check Γ b A ->
-    Infer Γ (eq A a b) typeu
+    Proof Γ A ★ ->
+    Proof Γ a A ->
+    Proof Γ b A ->
+    Proof Γ (.eq A a b) ★
   | refl :
-    Infer Γ t A ->
-    ConInfer Γ A typeu ->
-    Infer Γ (refl t) (eq A t t)
+    Proof Γ A ★ ->
+    Proof Γ t A ->
+    Proof Γ (.refl A t) (.eq A t t)
   | subst :
-    ConInfer Γ e (eq A a b) ->
-    Check Γ P (pi mt A typeu) ->
-    Infer Γ (subst e P) (pi mf (P @τ a) (P @τ b))
-  | promote :
-    ConInfer Γ e (eq T (proj i a) (proj j b)) ->
-    ConInfer Γ a (inter A B) ->
-    Check Γ b (inter A B) ->
-    Infer Γ (promote e) (eq (inter A B) a b)
-  | phi :
-    ConInfer Γ f (pi mf A (inter A' B)) ->
-    A === A' ->
-    Check Γ e (pi mf A (eq A a (proj 1 (f @ω a)))) ->
-    fv (erase e) = [] ->
-    Infer Γ (phi f e) (pi mf A (inter A' B))
-  | delta :
-    Check Γ e (eq cbool ctt cff) ->
-    Infer Γ (delta e) (pi m0 typeu (bound 0))
+    Proof Γ A ★ ->
+    Proof Γ P (.all mt A ★) ->
+    Proof Γ a A ->
+    Proof Γ b A ->
+    Proof Γ e (.eq A a b) ->
+    Proof Γ (.subst A P a b e) (.all mf (.app mt P a) (.app mt P b))
+  | conv :
+    Proof Γ t A ->
+    Proof Γ B K ->
+    c : A === B ->
+    Proof Γ (.conv B t c) B
 
-  inductive ConInfer : (Map! Term) -> Term -> Term -> Prop where
-  | infer :
-    Infer Γ t A ->
-    A -β>* B ->
-    ConInfer Γ t B
+  notation:170 Γ:170 " ⊢ " t:170 " : " A:170 => Proof Γ t A
 
-  inductive Check : (Map! Term) -> Term -> Term -> Prop where
-  | check :
-    Infer Γ t A ->
-    ConInfer Γ B (const K) ->
-    A === B ->
-    Check Γ t B
+  namespace Term
+    def bot : Term := .all mf ★ (.bound .type 0)
+    def botv : Term := .bound .type 0
+  end Term
 
-  inductive Wf : (Map! Term) -> Prop where
-  | nil : Wf List.nil
-  | append : x ∉ (Map.fv Γ) -> Wf Γ -> ConInfer Γ A (const K) -> Wf (Γ ++ [x : A])
+  -- theorem false_conv_implies_eq : c : Term.bot === A -> Term.bot = A := by {
+  --   sorry
+  -- }
 
-  end
+  -- lemma test : (A -> ¬ B) -> ¬ (A ∧ B) := by {
+  --   intro h1 h2
+  --   apply h1 h2.1 h2.2
+  -- }
 
-  notation:170 Γ:170 " ⊢ " t:170 " : " A:170 => Infer Γ t A
-  notation:170 Γ:170 " ⊢ " t:170 " >: " A:170 => ConInfer Γ t A
-  notation:170 Γ:170 " ⊢ " t:170 " =: " A:170 => Check Γ t A
-  notation:170 "⊢ " Γ:170 => Wf Γ
+  -- lemma consistency_snd : Term.Neutral t -> ¬ ([] ⊢ .snd t : Term.bot) := by {
+  --   intro hn h
+  --   generalize Γdef : [] = Γ at h
+  --   generalize Adef : Term.bot = A at h
+  --   cases h; case _ C D j => {
+  --     sorry
+  --   }
+  -- }
 
-  -- namespace Infer
-  --   def simple_rec (P : ∀ n, Map! (Term) -> Term -> Term -> Prop) := @Infer.rec
-  --     (λ n Γ t a _ => @P n Γ t a)
-  --     (λ n Γ t a _ => @P n Γ t a)
-  --     (λ n Γ t a _ => @P n Γ t a)
-  --     (λ _ _ => True)
-  -- end Infer
+  theorem consistency_normal4 : Term.Normal t -> [★] ⊢ t : Term.botv -> False :=
+    λ hn => @Term.Normal.rec
+    (λ t hn => ∀ T, Term.Normal T -> T ≠ ★ -> [★] ⊢ t : T -> False)
+    (λ t hn => [★] ⊢ t : Term.botv -> False)
+    (by {
+      simp at *; intro c k T h
+      sorry
+    })
+    (by {
+      simp at *; intro f a m nh1 nh2 ih1 ih2 T h
+      cases h; case _ _ _ j _ =>
+      apply ih1 _ j
+    })
+    (by {
+      simp at *; intro t nh ih1 T h
+      cases h; case _ _ j =>
+      apply ih1 _ j
+    })
+    (by {
+      simp at *; intro t nh ih T h
+      cases h; case _ _ _ j =>
+      apply ih _ j
+    })
+    (by {
+      simp at *; intro A P a b e nhA nhP nha nhb nhe ihA ihP iha ihb ihe T h
+      cases h; case _ _ _ _ _ j =>
+      apply ihe _ j
+    })
+    (by {
+      simp at *; intro a b e nha nhb nhe ih1 ih2 ih3 T h
+      cases h
+    })
+    (by {
+      simp at *; intro B t c nh1 nh2 h1 h2 T h
+      cases h; case _ _ _ _ j _ =>
+      apply h2 _ j
+    })
+    (by {
+      simp at *; intro c k h
+      cases h; case _ j1 j2 =>
+      sorry
+    })
+    (by {
+      simp at *; intro K h
+      cases h
+    })
+    (by {
+      simp at *; intro A t m nh1 nh2 ih1 ih2 h
+      cases h
+    })
+    (by {
+      simp at *; intro f a m nh1 nh2 ih1 ih2 h
+      sorry
+    })
+    (by {
+      simp at *; intro A B m nh1 nh2 ih1 ih2 h
+      sorry
+    })
+    (by {
+      simp at *; intro T t s c nhT nht nhs ihT iht ihs h
+      cases h
+    })
+    (by {
+      simp at *; intro t hn ih h
+      cases h; case _ _ j =>
+      apply ih _ j
+    })
+    (by {
+      simp at *; intro t hn ih h
+      sorry
+    })
+    (by {
+      simp at *; intro A B nhA nhB ihA ihB h
+      cases h
+    })
+    (by {
+      simp at *; intro A t nhA nht ihA iht h
+      cases h
+    })
+    (by {
+      simp at *; intro A P a b e nhA nhP nha nhb nhe ihA ihP iha ihb ihe h
+      cases h
+    })
+    (by {
+      simp at *; intro a b e nha nhb nhe iha ihb ihe h
+      cases h
+    })
+    (by {
+      simp at *; intro A a b nhA nha nhb ihA ihb iha h
+      cases h
+    })
+    (by {
+      simp at *; intro B t c nhB nht ihB iht h
+      cases h; case _ A K j1 j2 j3 =>
+      sorry
+    })
+    t
+    hn
+
+  -- inductive FalseLike : Term -> Prop
+  -- | bot : FalseLike Term.bot
+  -- | fst : FalseLike t1 -> FalseLike (.prod t1 t2)
+  -- | snd : FalseLike t2 -> FalseLike (.prod t1 t2)
+  -- | app m : [] ⊢ t : A -> FalseLike (B β[t]) -> FalseLike (.all m A B)
+
+  -- theorem consistency_normal3
+  --   : Term.Neutral t ∨ Term.Normal t -> FalseLike T -> ¬ ([] ⊢ t : T)
+  -- := @Nat.rec
+  --   (λ s => ∀ t T, Term.size t ≤ s ->
+  --     Term.Neutral t ∨ Term.Normal t ->
+  --     FalseLike T ->
+  --     ¬ ([] ⊢ t : T))
+  --   (by {
+  --     simp; intro t sh h
+  --     cases t <;> simp at *
+  --     case bound c k => {
+  --       intro h
+  --       generalize Γdef : [] = Γ at h
+  --       generalize Adef : Term.bot = A at h
+  --       sorry
+  --     }
+  --     case none => sorry
+  --     case const => sorry
+  --   })
+  --   (by {
+  --     simp; intro s ih t T sh nh fh h
+  --     generalize Γdef : [] = Γ at h
+  --     cases t <;> simp at *
+  --     case bound c k => rw [<-Γdef] at *; apply ih (.bound c k) T (by simp) nh fh h
+  --     case none => rw [<-Γdef] at *; apply ih .none T (by simp) nh fh h
+  --     case const c => rw [<-Γdef] at *; apply ih (.const c) T (by simp) nh fh h
+  --     case app m t1 t2 => {
+  --       have sh1 : Term.size t1 ≤ s := by sorry
+  --       have sh2 : Term.size t2 ≤ s := by sorry
+  --       cases h; case _ A B j1 j2 => {
+  --         rw [<-Γdef] at *
+  --         replace fh := FalseLike.app m j2 fh
+  --         cases nh
+  --         case _ nh => cases nh; case _ n1 n2 => apply ih _ _ sh1 (.inl n1) fh j1
+  --         case _ nh => cases nh; case _ n1 n2 => apply ih _ _ sh1 (.inl n1) fh j1
+  --       }
+  --     }
+  --     case all => sorry
+  --     case lam m t1 t2 => {
+  --       have sh1 : Term.size t1 ≤ s := by sorry
+  --       have sh2 : Term.size t2 ≤ s := by sorry
+  --       cases h; case _ K B j1 j2 j3 j4 => {
+  --         sorry
+  --       }
+  --     }
+  --     case pair t1 t2 t3 c => {
+  --       have sh1 : Term.size t1 ≤ s := by sorry
+  --       have sh2 : Term.size t2 ≤ s := by sorry
+  --       have sh3 : Term.size t3 ≤ s := by sorry
+  --       cases h; case _ A B j1 j2 j3 j4 => {
+  --         sorry
+  --       }
+  --     }
+  --     case fst t => {
+  --       replace sh : Term.size t ≤ s := by sorry
+  --       cases h; case _ B j => {
+  --         have fh : FalseLike (.prod T B) := .fst fh
+  --         rw [<-Γdef] at j
+  --         cases nh
+  --         case _ nh => cases nh; case _ nh => apply ih _ _ sh (.inl nh) fh j
+  --         case _ nh => cases nh; case _ nh => apply ih _ _ sh (.inl nh) fh j
+  --       }
+  --     }
+  --     case snd t => {
+  --       sorry
+  --     }
+  --     case prod => sorry
+  --     case refl => sorry
+  --     case subst t1 t2 t3 t4 t5 => {
+  --       cases h; case _ j1 j2 j3 j4 j5 => {
+  --         sorry
+  --       }
+  --     }
+  --     case phi => sorry
+  --     case eq => sorry
+  --     case conv t1 t2 c => {
+  --       have sh1 : Term.size t1 ≤ s := by sorry
+  --       have sh2 : Term.size t2 ≤ s := by sorry
+  --       sorry
+  --     }
+  --   })
+  --   (Term.size t)
+  --   t
+  --   T
+  --   (by rfl)
+
+  -- theorem consistency_normal : ¬ ([] ⊢ t : Term.bot ∧ Term.Normal t) := by {
+  --   intro h
+  --   generalize Γdef : [] = Γ at h
+  --   generalize Adef : Term.bot = A at h
+  --   induction h.1
+  --   case ax => injection Adef
+  --   case var => sorry
+  --   case pi m _ _ _ _ _ _ => cases m <;> injection Adef
+  --   case lam => sorry
+  --   case app => sorry
+  --   case prod => injection Adef
+  --   case pair => injection Adef
+  --   case fst => sorry
+  --   case snd Γ t A B j ih => {
+  --     cases h.2; case _ hn => {
+  --       rw [<-Adef, <-Γdef] at h
+  --       sorry
+  --     }
+  --   }
+  --   case eq => injection Adef
+  --   case refl => injection Adef
+  --   case subst => injection Adef with _ h2; injection h2
+  --   case conv Γ t A B K c j1 j2 j3 ih1 ih2 => {
+  --     subst Γdef; subst Adef; simp at *
+  --     let j3 := false_conv_implies_eq (Conv.sym j3)
+  --     cases h.2; case _ _ nt =>
+  --     apply ih1 j3 j1 nt
+  --   }
+  -- }
 
 end Cedille

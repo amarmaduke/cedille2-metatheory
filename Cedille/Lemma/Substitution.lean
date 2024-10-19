@@ -7,6 +7,18 @@ import Cedille.Lemma.Syntax
 
 namespace Cedille
 
+  lemma subst_check {A : Term} :
+    Jud v (Γ ++ [x : A]) t A ->
+    Γ ⊢ a =: A -> Jud v Γ ([a =: x]t) ([a =: x]A)
+  := by {
+    intro j
+    generalize Δdef : (Γ ++ [x : A]) = Δ at *
+    induction j
+    case app md Γ' f m A' B a' j1 j2 => {
+      intro j3
+    }
+  }
+
   -- lemma subst_erase {n} (t1 : Term n) (t2 : Term (n + 1))
   --   : erase x ([_:= t1]t2) = [_:= erase x t1]erase x t2
   -- := @Nat.rec

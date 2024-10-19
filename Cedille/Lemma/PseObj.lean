@@ -7,7 +7,7 @@ import Cedille.Lemma.Syntax
 
 namespace Cedille
 
-  lemma lc_of_open (x : Name) : lc i ({i |-> x}t) -> lc (Nat.succ i) t := by {
+  lemma lc_from_open (x : Name) : lc i ({i |-> x}t) -> lc (Nat.succ i) t := by {
     intro h
     induction t generalizing i <;> simp
     case bound j => {
@@ -30,19 +30,48 @@ namespace Cedille
     }
   }
 
+  lemma lc_of_open (x : Name) : lc (Nat.succ i) t -> lc i ({i |-> x}t) := by {
+    intro h
+    induction t generalizing i <;> simp
+    case bound j => {
+      unfold lc at h; unfold Syntax.lc at h; simp at h
+      split <;> simp
+      case _ h2 => {
+        -- Annoying lemma about nats that is not conceptually hard
+        -- and that linarith fails on because of universal quantification
+        sorry
+      }
+    }
+    case bind k t1 t2 ih1 ih2 => {
+      simp at *; apply And.intro _ _
+      apply ih1 h.1; apply ih2 h.2
+    }
+    case ctor k t1 t2 t3 ih1 ih2 ih3 => {
+      simp at *; apply And.intro _ _
+      apply ih1 h.1; apply And.intro _ _
+      apply ih2 h.2.1; apply ih3 h.2.2
+    }
+  }
+
+  lemma lc_open (x : Name) : lc (Nat.succ i) t <-> lc i ({i |-> x}t) := by {
+    apply Iff.intro _ _
+    apply lc_of_open
+    apply lc_from_open
+  }
+
   theorem pseobj_is_lc0 : PseObj t -> lc 0 t := by {
     intro pseobj
     induction pseobj <;> simp [*]
     case bind k A B hn p1 S p2 ih1 ih2 => {
       have xfresh := @Name.fresh_is_fresh S
       generalize _xdef : @Name.fresh S = x at *
-      apply lc_of_open x
+      apply (lc_open x).2
       apply ih2 x xfresh
     }
     case lam A t p1 S1 p2 S2 p3 ih3 ih2 => {
       have xfresh := @Name.fresh_is_fresh S1
       generalize _xdef : @Name.fresh S1 = x at *
-      apply lc_of_open x
+      apply (lc_open x).2
       apply ih2 x xfresh
     }
   }

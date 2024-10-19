@@ -1,6 +1,5 @@
 
 import Common
-import SystemFOmega
-import Cedille
+import WCCC
 
 def main := IO.println "Hello, World!"
