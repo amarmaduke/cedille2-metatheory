@@ -11,7 +11,6 @@ namespace Term
     def size : SubstAction -> Nat
     | .rename _ => 0
     | .replace t => Term.size t
-
   end SubstAction
 
   def Subst : Type := Nat -> SubstAction
@@ -89,9 +88,12 @@ namespace Term
     | s, t => apply (cons (.replace t) (from_ren I)) s
   end Subst
 
-  notation:100 "r#" σ:110 => Subst.from_ren σ
-  notation:70 t:70 "::" σ:70 => Subst.cons t σ
-  notation:100 "^" σ:110 => Subst.lift σ
+  -- notation:100 "r#" σ:110 => Subst.from_ren σ
+  prefix:max "r#" => Subst.from_ren
+  -- notation:70 t:70 "::" σ:70 => Subst.cons t σ
+  infix:70 "::" => Subst.cons
+  --notation:100 "^" σ:110 => Subst.lift σ
+  prefix:max "^" => Subst.lift
   notation:90 "[" σ "]" t:89 => Subst.apply σ t
   notation:90 τ:90 " ⊙ " σ:91 => Subst.compose σ τ
   notation:90 s:90 "β[" t "]" => Subst.beta s t
