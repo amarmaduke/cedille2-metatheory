@@ -64,7 +64,7 @@ namespace Term
     all_goals simp [*]
   }
 
-  theorem size_of_subst_lift σ
+  theorem size_of_subst_lift (σ : Subst Term)
     : (∀ n, (σ n).size = 0) -> ∀ n, ((^σ) n).size = 0
   := by {
     intro h n; simp
@@ -83,7 +83,7 @@ namespace Term
         apply lem
   }
 
-  theorem size_of_subst {σ : Subst} {t : Term}
+  theorem size_of_subst {σ : Subst Term} {t : Term}
     : (∀ n, (σ n).size = 0) -> ([σ]t).size = t.size
   := by {
     intro h

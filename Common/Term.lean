@@ -18,6 +18,7 @@ deriving BEq
 
 inductive CvTerm : Type where
 | sym : CvTerm -> CvTerm
+| trans : CvTerm -> CvTerm -> CvTerm
 | none : CvTerm
 | const : CvTerm
 | bound : Nat -> CvTerm
@@ -43,7 +44,7 @@ inductive CvTerm : Type where
 | refl_erased : CvTerm -> CvTerm
 | subst_congr : CvTerm -> CvTerm -> CvTerm
 | subst_erased : CvTerm -> CvTerm
-| conv_congr : CvTerm -> CvTerm -> CvTerm -> CvTerm
+| conv_congr : CvTerm -> CvTerm -> CvTerm
 | conv_erased : CvTerm -> CvTerm
 deriving BEq
 
@@ -71,42 +72,61 @@ notation "□" => Term.const Const.kind
 instance instInhabitedTerm : Inhabited Term where
   default := Term.none
 
-namespace Term
-
-  -- templates
-  -- | i, bound c k => sorry
-  -- | i, none => sorry
-  -- | i, const k => sorry
-  -- | i, lam m t1 t2 => sorry
-  -- | i, app m t1 t2 => sorry
-  -- | i, all m t1 t2 => sorry
-  -- | i, pair t1 t2 t3 => sorry
-  -- | i, fst t => sorry
-  -- | i, snd t => sorry
-  -- | i, prod t1 t2 => sorry
-  -- | i, refl t => sorry
-  -- | i, subst t1 t2 => sorry
-  -- | i, phi t1 t2 t3 => sorry
-  -- | i, eq t1 t2 t3 => sorry
-  -- | i, conv t1 t2 c => sorry
+namespace CvTerm
 
   @[simp]
-  def cvrefl : Term -> CvTerm
-  | bound _ k => .bound k
-  | none => .none
-  | const _ => .const
-  | lam _ t1 t2 => .lam_congr (cvrefl t1) (cvrefl t2)
-  | app _ t1 t2 => .app_congr (cvrefl t1) (cvrefl t2)
-  | all _ t1 t2 => .all_congr (cvrefl t1) (cvrefl t2)
-  | pair t1 t2 t3 => .pair_congr (cvrefl t1) (cvrefl t2) (cvrefl t3)
-  | fst t => .fst_congr (cvrefl t)
-  | snd t => .snd_congr (cvrefl t)
-  | prod t1 t2 => .prod_congr (cvrefl t1) (cvrefl t2)
-  | refl t => .refl_congr (cvrefl t)
-  | subst t1 t2 => .subst_congr (cvrefl t1) (cvrefl t2)
-  | phi t1 t2 t3 => .phi_congr (cvrefl t1) (cvrefl t2) (cvrefl t3)
-  | eq t1 t2 t3 => .eq_congr (cvrefl t1) (cvrefl t2) (cvrefl t3)
-  | conv t1 t2 c => .conv_congr (cvrefl t1) (cvrefl t2) c
+  def refl : Term -> CvTerm
+  | .bound _ k => .bound k
+  | .none => .none
+  | .const _ => .const
+  | .lam _ t1 t2 => .lam_congr (refl t1) (refl t2)
+  | .app _ t1 t2 => .app_congr (refl t1) (refl t2)
+  | .all _ t1 t2 => .all_congr (refl t1) (refl t2)
+  | .pair t1 t2 t3 => .pair_congr (refl t1) (refl t2) (refl t3)
+  | .fst t => .fst_congr (refl t)
+  | .snd t => .snd_congr (refl t)
+  | .prod t1 t2 => .prod_congr (refl t1) (refl t2)
+  | .refl t => .refl_congr (refl t)
+  | .subst t1 t2 => .subst_congr (refl t1) (refl t2)
+  | .phi t1 t2 t3 => .phi_congr (refl t1) (refl t2) (refl t3)
+  | .eq t1 t2 t3 => .eq_congr (refl t1) (refl t2) (refl t3)
+  | .conv t1 t2 _ => .conv_congr (refl t1) (refl t2)
+
+  @[simp]
+  def size : CvTerm -> Nat
+  | .sym c => size c + 1
+  | .trans c1 c2 => size c1 + size c2 + 1
+  | .none => 0
+  | .const => 0
+  | .bound _ => 0
+  | .all_congr c1 c2 => size c1 + size c2 + 1
+  | .lam_congr c1 c2 => size c1 + size c2 + 1
+  | .lam_eta c => size c + 1
+  | .lam_mf_erased c => size c + 1
+  | .lam_m0_erased c => size c + 1
+  | .app_congr c1 c2 => size c1 + size c2 + 1
+  | .app_beta c => size c + 1
+  | .app_m0_erased c => size c + 1
+  | .prod_congr c1 c2 => size c1 + size c2 + 1
+  | .pair_congr c1 c2 c3 => size c1 + size c2 + size c3 + 1
+  | .pair_erased c => size c + 1
+  | .fst_congr c => size c + 1
+  | .fst_erased c => size c + 1
+  | .snd_congr c => size c + 1
+  | .snd_erased c => size c + 1
+  | .phi_congr c1 c2 c3 => size c1 + size c2 + size c3 + 1
+  | .phi_erased c => size c + 1
+  | .eq_congr c1 c2 c3 => size c1 + size c2 + size c3 + 1
+  | .refl_congr c => size c + 1
+  | .refl_erased c => size c + 1
+  | .subst_congr c1 c2 => size c1 + size c2 + 1
+  | .subst_erased c => size c + 1
+  | .conv_congr c1 c2 => size c1 + size c2 + 1
+  | .conv_erased c => size c + 1
+
+end CvTerm
+
+namespace Term
 
   @[simp]
   def size : Term -> Nat

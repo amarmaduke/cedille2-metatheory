@@ -4,41 +4,59 @@ import WCCC.Mode
 
 namespace WCCC
 
+  abbrev Ctx := List (Mode × Term)
+
   inductive Conv : CvTerm -> Term -> Term -> Prop
   | sym : Conv c t2 t1 -> Conv (.sym c) t1 t2
-  | ax : Conv .ax ★ ★
-  | var : Conv .var (.bound K x) (.bound K x)
-  | pi : Conv c1 A1 A2 -> Conv c2 B1 B2 ->
-    Conv (.pi c1 c2) (.all m A1 B1) (.all m A2 B2)
-  | lam_mt : Conv c1 A1 A2 -> Conv c2 t1 t2 ->
-    Conv (.lam_mt c1 c2) (.lam mt A1 t1) (.lam mt A2 t2)
-  | lam_mf : Conv c t1 t2 ->
-    Conv (.lam_mf c) (.lam mf A1 t1) (.lam mf A2 t2)
-  | lam_eta : m ≠ m0 ->
-    Conv c (t1 β[ #m ]) (.app m t2 (#m)) ->
+  | trans : Conv c1 t1 t2 -> Conv c2 t2 t3 -> Conv (.trans c1 c2) t1 t3
+  | none : Conv .none .none .none
+  | const : Conv .const (.const K) (.const K)
+  | bound x : Conv (.bound x) (.bound K x) (.bound K x)
+  | all_congr : Conv c1 A1 A2 -> Conv c2 B1 B2 ->
+    Conv (.all_congr c1 c2) (.all m A1 B1) (.all m A2 B2)
+  | lam_congr : Conv c1 A1 A2 -> Conv c2 t1 t2 ->
+    Conv (.lam_congr c1 c2) (.lam m A1 t1) (.lam m A2 t2)
+  | lam_eta : Conv c (.lam m A t1) (.lam m A (.app m t2 #m)) ->
     Conv (.lam_eta c) (.lam m A t1) t2
-  | lam_m0 : Conv c t1 t2 -> Conv (.lam_m0 c) (.lam m0 A t1) t2
-  | app : Conv c1 f1 f2 -> Conv c2 a1 a2 ->
-    Conv (.app c1 c2) (.app m f1 f2) (.app m a1 a2)
+  | lam_mf_erased : Conv c t1 t2 ->
+    Conv (.lam_mf_erased c) (.lam mf A1 t1) (.lam mf A2 t2)
+  | lam_m0_erased : Conv c t1 t2 ->
+    Conv (.lam_m0_erased c) (.lam m0 A t1) t2
+  | app_congr : Conv c1 f1 f2 -> Conv c2 a1 a2 ->
+    Conv (.app_congr c1 c2) (.app m f1 a1) (.app m f2 a2)
   | app_beta :
     Conv c (b β[t]) t2 ->
     Conv (.app_beta c) (.app m (.lam m A b) t) t2
-  | app_m0 : Conv c t1 t2 -> Conv (.app_m0 c) (.app m0 t1 a) t2
-  | prod : Conv c1 A1 A2 -> Conv c2 B1 B2 ->
-    Conv (.prod c1 c2) (.prod A1 B1) (.prod A2 B2)
-  | pair : Conv c t1 t2 -> Conv (.pair c) (.pair T1 t1 s1) t2
-  | fst : Conv c t1 t2 -> Conv (.fst c) (.fst t1) t2
-  | snd : Conv c t1 t2 -> Conv (.snd c) (.snd t1) t2
-  | eq : Conv c1 A1 A2 -> Conv c2 a1 a2 -> Conv c3 b1 b2 ->
-    Conv (.eq c1 c2 c3) (.eq A1 a1 b1) (.eq A2 a2 b2)
-  | refl : Conv c (.lam mf .none (.bound .type 0)) t2 ->
-    Conv (.refl c) (.refl t1) t2
-  | subst : Conv c e1 t2 -> Conv (.subst c) (.subst P1 e1) t2
-  | conv : Conv c t1 t2 -> Conv (.conv c) (.conv A1 t1 c1) t2
+  | app_m0_erased : Conv c t1 t2 ->
+    Conv (.app_m0_erased c) (.app m0 t1 a) t2
+  | prod_congr : Conv c1 A1 A2 -> Conv c2 B1 B2 ->
+    Conv (.prod_congr c1 c2) (.prod A1 B1) (.prod A2 B2)
+  | pair_congr : Conv c1 T1 T2 -> Conv c2 t1 t2 -> Conv c3 s1 s2 ->
+    Conv (.pair_congr c1 c2 c3) (.pair T1 t1 s1) (.pair T2 t2 s2)
+  | pair_erased : Conv c t1 t2 ->
+    Conv (.pair_erased c) (.pair T1 t1 s1) t2
+  | fst_congr : Conv c t1 t2 -> Conv (.fst_congr c) (.fst t1) (.fst t2)
+  | fst_erased : Conv c t1 t2 -> Conv (.fst_erased c) (.fst t1) t2
+  | snd_congr : Conv c t1 t2 -> Conv (.snd_congr c) (.snd t1) (.snd t2)
+  | snd_erased : Conv c t1 t2 -> Conv (.snd_erased c) (.snd t1) t2
+  | phi_erased : Conv c a1 t2 -> Conv (.phi_erased c) (.phi a1 b1 e1) t2
+  | phi_congr : Conv c1 a1 a2 -> Conv c2 b1 b2 -> Conv c3 e1 e2 ->
+    Conv (.phi_congr c1 c2 c3) (.phi a1 b1 e1) (.phi a2 b2 e2)
+  | eq_congr : Conv c1 A1 A2 -> Conv c2 a1 a2 -> Conv c3 b1 b2 ->
+    Conv (.eq_congr c1 c2 c3) (.eq A1 a1 b1) (.eq A2 a2 b2)
+  | refl_congr : Conv c t1 t2 -> Conv (.refl_congr c) (.refl t1) (.refl t2)
+  | refl_erased : Conv c (.lam mf .none (.bound .type 0)) t2 ->
+    Conv (.refl_erased c) (.refl t1) t2
+  | subst_congr : Conv c1 P1 P2 -> Conv c2 e1 e2 ->
+    Conv (.subst_congr c1 c2) (.subst P1 e1) (.subst P2 e2)
+  | subst_erased : Conv c e1 t2 -> Conv (.subst_erased c) (.subst P1 e1) t2
+  | conv_congr : Conv c1 x1 x2 -> Conv c2 y1 y2 ->
+    Conv (.conv_congr c1 c2) (.conv x1 y1 z1) (.conv x2 y2 z2)
+  | conv_erased : Conv c t1 t2 -> Conv (.conv_erased c) (.conv A1 t1 c1) t2
 
-  notation:100 c:101 " : " A:99 " === " B:98 => Conv c A B
+  notation:100 c:33 " : " A:32 " === " B:31 => Conv c A B
 
-  inductive Proof : List (Mode × Term) -> Mode -> Term -> Term -> Prop
+  inductive Proof : Ctx -> Mode -> Term -> Term -> Prop
   | ax : Proof Γ mt ★ □
   | var :
     List.getD Γ x (mf, .none) = (m1, [r#(Term.Pn (x + 1))]A) ->

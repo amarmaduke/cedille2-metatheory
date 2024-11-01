@@ -18,7 +18,7 @@ namespace Term
   def subst_term_to_subst_cvterm : Subst Term -> Subst CvTerm
   | σ, n => match σ n with
     | .rename k => .rename k
-    | .replace t => .replace (cvrefl t)
+    | .replace t => .replace (.refl t)
 
   prefix:max "▸" => subst_term_to_subst_cvterm
 
@@ -35,6 +35,7 @@ namespace Term
     @[simp]
     def cvapply : Ren -> CvTerm -> CvTerm
     | σ, .sym t => .sym (cvapply σ t)
+    | σ, .trans t1 t2 => .trans (cvapply σ t1) (cvapply σ t2)
     | _, .none => .none
     | _, .const => .const
     | σ, .bound k => .bound (σ k)
@@ -60,7 +61,7 @@ namespace Term
     | σ, .refl_erased t => .refl_erased (cvapply σ t)
     | σ, .subst_congr t1 t2 => .subst_congr (cvapply σ t1) (cvapply σ t2)
     | σ, .subst_erased t => .subst_erased (cvapply σ t)
-    | σ, .conv_congr t1 t2 t3 => .conv_congr (cvapply σ t1) (cvapply σ t2) (cvapply σ t3)
+    | σ, .conv_congr t1 t2 => .conv_congr (cvapply σ t1) (cvapply σ t2)
     | σ, .conv_erased t => .conv_erased (cvapply σ t)
 
     @[simp]
@@ -105,6 +106,7 @@ namespace Term
     @[simp]
     def cvapply : Subst CvTerm -> CvTerm -> CvTerm
     | σ, .sym t => .sym (cvapply σ t)
+    | σ, .trans t1 t2 => .trans (cvapply σ t1) (cvapply σ t2)
     | _, .none => .none
     | _, .const => .const
     | σ, .bound k =>
@@ -133,7 +135,7 @@ namespace Term
     | σ, .refl_erased t => .refl_erased (cvapply σ t)
     | σ, .subst_congr t1 t2 => .subst_congr (cvapply σ t1) (cvapply σ t2)
     | σ, .subst_erased t => .subst_erased (cvapply σ t)
-    | σ, .conv_congr t1 t2 t3 => .conv_congr (cvapply σ t1) (cvapply σ t2) (cvapply σ t3)
+    | σ, .conv_congr t1 t2 => .conv_congr (cvapply σ t1) (cvapply σ t2)
     | σ, .conv_erased t => .conv_erased (cvapply σ t)
 
     @[simp]
@@ -191,9 +193,9 @@ namespace Term
   @[simp] theorem subst_from_cvren_x : (cr#r) x = .rename (r x) :=
     by unfold Subst.from_ren; rfl
 
-  @[simp] theorem subst_cons_zero (σ : Subst T) : (s :: σ) 0 = s :=
+  @[simp] theorem subst_cons_zero {σ : Subst T} : (s :: σ) 0 = s :=
     by unfold Subst.cons; rfl
-  @[simp] theorem subst_cons_succ (σ : Subst T) : (s :: σ) (n + 1) = σ n :=
+  @[simp] theorem subst_cons_succ {σ : Subst T} : (s :: σ) (n + 1) = σ n :=
     by unfold Subst.cons; rfl
 
   @[simp]
@@ -280,7 +282,7 @@ namespace Term
     any_goals simp [*]
   }
 
-  theorem subst_transform_ren_apply_commutes : cvrefl ([r#r]t) = [cr#r] (cvrefl t) := by {
+  theorem subst_transform_ren_apply_commutes : .refl ([r#r]t) = [cr#r] (.refl t) := by {
     induction t generalizing r
     all_goals simp [*]
     case lam m t1 t2 ih1 ih2 => rw [<-subst_cvlift_is_ren_cvlift, <-subst_lift_is_ren_lift, ih2]
@@ -303,7 +305,7 @@ namespace Term
         simp; rw [subst_transform_ren_apply_commutes]
   }
 
-  theorem subst_transform_apply_commutes : cvrefl ([σ]t) = [▸σ](cvrefl t) := by {
+  theorem subst_transform_apply_commutes : .refl ([σ]t) = [▸σ](.refl t) := by {
     induction t generalizing σ
     all_goals simp [*]
     case bound k i =>
@@ -323,6 +325,22 @@ namespace Term
     case _ t =>
       simp; rw [subst_transform_apply_commutes]
       unfold subst_term_to_subst_cvterm; simp
+  }
+
+  @[simp]
+  theorem subst_transform_commutes_with_cons_rename : ▸(.rename k :: σ) = .rename k :: ▸σ := by {
+    funext
+    case _ x =>
+      unfold subst_term_to_subst_cvterm
+      cases x <;> simp [*]
+  }
+
+  @[simp]
+  theorem subst_transform_commutes_with_cons_replace : ▸(.replace t :: σ) = .replace (.refl t) :: ▸σ := by {
+    funext
+    case _ x =>
+      unfold subst_term_to_subst_cvterm
+      cases x <;> simp [*]
   }
 
   @[simp]
