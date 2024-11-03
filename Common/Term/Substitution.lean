@@ -739,25 +739,25 @@ namespace Term
   -- s[⇑σ ][t[σ ].I] = s[t.I][σ ]
   theorem cvsubst_rw_ex3 : [(.replace ([σ]t))::cr#I][^σ]s = [σ][.replace t::cr#I]s := by simp
 
+  @[simp]
   def mode_to_sort : Mode -> Const
   | mt => .kind
   | mf => .type
   | m0 => .type
 
-  @[simp] theorem mt_to_sort : mode_to_sort mt = .kind := rfl
-  @[simp] theorem mf_to_sort : mode_to_sort mf = .type := rfl
-  @[simp] theorem m0_to_sort : mode_to_sort m0 = .type := rfl
-
+  @[simp]
   def eta : Mode -> Term -> Term -> Term
   | m, A, t => lam m A (app m ([r#S]t) (bound (mode_to_sort m) 0))
 
-  @[simp] theorem S_after_Pn : (r#S ⊙ r#(Pn n)) (n + k) = .rename (k + 1) := by {
+  @[simp]
+  theorem S_after_Pn : (r#S ⊙ r#(Pn n)) (n + k) = .rename (k + 1) := by {
     cases n
     case _ => unfold Subst.compose; simp
     case _ n => unfold Subst.compose; simp; omega
   }
 
-  @[simp] theorem S_after_Pn_1 : (r#S ⊙ r#(Pn 1)) 1 = .rename 1 := by {
+  @[simp]
+  theorem S_after_Pn_1 : (r#S ⊙ r#(Pn 1)) 1 = .rename 1 := by {
     unfold Subst.compose; simp
   }
 

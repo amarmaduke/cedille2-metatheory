@@ -16,7 +16,7 @@ namespace WCCC
     Conv (.all_congr c1 c2) (.all m A1 B1) (.all m A2 B2)
   | lam_congr : Conv c1 A1 A2 -> Conv c2 t1 t2 ->
     Conv (.lam_congr c1 c2) (.lam m A1 t1) (.lam m A2 t2)
-  | lam_eta : Conv c (.lam m A t1) (.lam m A (.app m t2 #m)) ->
+  | lam_eta : Conv c (.lam m A t1) (Term.eta m A t2) ->
     Conv (.lam_eta c) (.lam m A t1) t2
   | lam_mf_erased : Conv c t1 t2 ->
     Conv (.lam_mf_erased c) (.lam mf A1 t1) (.lam mf A2 t2)
@@ -104,6 +104,11 @@ namespace WCCC
     Proof Γ m e (.eq A a b) ->
     Proof Γ mt P (.all mt A ★) ->
     Proof Γ m (.subst P e) (.all mf (.app mt P a) (.app mt P b))
+  | phi :
+    Proof Γ m a A ->
+    Proof Γ m0 b (.prod A B) ->
+    Proof Γ m0 e (.eq A a (.fst b)) ->
+    Proof Γ m (.phi a b e) (.prod A B)
   | conv :
     Proof Γ m t A ->
     Proof Γ mt B K ->

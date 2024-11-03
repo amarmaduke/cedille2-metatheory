@@ -25,8 +25,7 @@ namespace WCCC.Conv
       replace ih2 := @ih2 ^σ; simp at ih2
       constructor; apply ih1; apply ih2
     case lam_eta c m A t1 t2 h ih =>
-      constructor; simp at *
-
+      constructor; simp at *; apply ih
     case pair_erased c t1 t2 T1 s1 h ih =>
       constructor; apply ih
     repeat sorry

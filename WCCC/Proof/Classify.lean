@@ -61,6 +61,8 @@ namespace WCCC
       sorry
     case eq =>
       sorry
+    case phi =>
+      sorry
     case refl =>
       sorry
     case subst =>
