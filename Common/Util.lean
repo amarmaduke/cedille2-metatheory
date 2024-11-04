@@ -55,3 +55,8 @@ def pair_eq : (a, b) = (c, d) -> a = c ∧ b = d := by {
   intro h; injection h with e1 e2
   subst e1; subst e2; simp
 }
+
+@[simp]
+def rep : Nat -> (A -> A) -> A -> A
+| 0, _, a => a
+| n + 1, f, a => f (rep n f a)

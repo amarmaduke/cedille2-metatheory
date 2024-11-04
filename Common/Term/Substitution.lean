@@ -1,31 +1,34 @@
+import Common.Util
 import Common.Term
 
+
+def Ren : Type := Nat -> Nat
+
+inductive SubstAction (T : Type) : Type where
+| rename : Nat -> SubstAction T
+| replace : T -> SubstAction T
+
+namespace SubstAction
+  def size : SubstAction Term -> Nat
+  | .rename _ => 0
+  | .replace t => Term.size t
+end SubstAction
+
+def Subst (T : Type) : Type := Nat -> SubstAction T
+
+def subst_term_to_subst_cvterm : Subst Term -> Subst CvTerm
+| σ, n => match σ n with
+  | .rename k => .rename k
+  | .replace t => .replace (.refl t)
+
+prefix:max "▸" => subst_term_to_subst_cvterm
+
+@[simp] def I : Ren := λ n => n
+@[simp] def S : Ren := λ n => n + 1
+@[simp] def Sn (x : Nat) : Ren := λ n => n + x
+@[simp] def Pn (x : Nat) : Ren := λ n => n - x
+
 namespace Term
-  def Ren : Type := Nat -> Nat
-
-  inductive SubstAction (T : Type) : Type where
-  | rename : Nat -> SubstAction T
-  | replace : T -> SubstAction T
-
-  namespace SubstAction
-    def size : SubstAction Term -> Nat
-    | .rename _ => 0
-    | .replace t => Term.size t
-  end SubstAction
-
-  def Subst (T : Type) : Type := Nat -> SubstAction T
-
-  def subst_term_to_subst_cvterm : Subst Term -> Subst CvTerm
-  | σ, n => match σ n with
-    | .rename k => .rename k
-    | .replace t => .replace (.refl t)
-
-  prefix:max "▸" => subst_term_to_subst_cvterm
-
-  @[simp] def I : Ren := λ n => n
-  @[simp] def S : Ren := λ n => n + 1
-  @[simp] def Sn (x : Nat) : Ren := λ n => n + x
-  @[simp] def Pn (x : Nat) : Ren := λ n => n - x
 
   namespace Ren
     def lift : Ren -> Ren
@@ -169,23 +172,30 @@ namespace Term
       | .replace t => .replace (apply τ t)
       | .rename k => τ k
 
-    def beta : Term -> Term -> Term
-    | s, t => apply (cons (.replace t) (from_ren I)) s
   end Subst
 
-  -- notation:100 "r#" σ:110 => Subst.from_ren σ
-  prefix:max "r#" => @Subst.from_ren Term
-  prefix:max "cr#" => @Subst.from_ren CvTerm
-  -- notation:70 t:70 "::" σ:70 => Subst.cons t σ
-  infix:70 "::" => Subst.cons
-  --notation:100 "^" σ:110 => Subst.lift σ
-  prefix:max "^" => Subst.lift
-  prefix:max "^" => Subst.cvlift
-  notation:90 "[" σ "]" t:89 => Subst.apply σ t
-  notation:90 "[" σ "]" t:89 => Subst.cvapply σ t
-  notation:90 τ:90 " ⊙ " σ:91 => Subst.compose σ τ
-  notation:90 τ:90 " ⊙ " σ:91 => Subst.cvcompose σ τ
-  notation:90 s:90 "β[" t "]" => Subst.beta s t
+end Term
+
+@[simp]
+def beta : Term -> Subst Term
+| t => Term.Subst.cons (.replace t) (Term.Subst.from_ren I)
+
+-- notation:100 "r#" σ:110 => Subst.from_ren σ
+prefix:max "r#" => @Term.Subst.from_ren Term
+prefix:max "cr#" => @Term.Subst.from_ren CvTerm
+-- notation:70 t:70 "::" σ:70 => Subst.cons t σ
+infix:70 "::" => Term.Subst.cons
+--notation:100 "^" σ:110 => Subst.lift σ
+prefix:max "^" => Term.Subst.lift
+notation:1000 "^{" n "}" σ:90 => rep n Term.Subst.lift σ
+prefix:max "^" => Term.Subst.cvlift
+notation:90 "[" σ "]" t:89 => Term.Subst.apply σ t
+notation:90 "[" σ "]" t:89 => Term.Subst.cvapply σ t
+notation:90 τ:90 " ⊙ " σ:91 => Term.Subst.compose σ τ
+notation:90 τ:90 " ⊙ " σ:91 => Term.Subst.cvcompose σ τ
+notation:90 s:90 "β[" t "]" => Term.Subst.apply (beta t) s
+
+namespace Term
 
   @[simp] theorem subst_from_ren_x : (r#r) x = .rename (r x) :=
     by unfold Subst.from_ren; rfl
@@ -541,8 +551,9 @@ namespace Term
       cases σ k <;> simp
   }
 
-  @[simp] -- βst = s[t.I]
-  theorem subst_valid1 : s β[t] = [.replace t :: r#I]s := by unfold Subst.beta; simp
+
+  theorem subst_valid1 : s β[t] = [.replace t :: r#I]s
+  := by simp
 
   @[simp] -- 0[s.σ ] = s
   theorem subst_valid2_replace
@@ -760,6 +771,9 @@ namespace Term
   theorem S_after_Pn_1 : (r#S ⊙ r#(Pn 1)) 1 = .rename 1 := by {
     unfold Subst.compose; simp
   }
+
+
+
 
   -- theorem subst_S_classifies_free : [r#S]s = s -> ∀ σ, [σ]s = s := by {
   --   intro h σ
