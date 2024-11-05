@@ -8,9 +8,18 @@ namespace Fomega
   theorem weaken :
     Γ ⊢ t : A ->
     let (m, n) := (Δ1.length, Δ2.length)
-    (Δ1 ++ [r#(Sn m)]Γ ++ Δ2) ⊢ ([r#(Sn n)]t) : ([r#(Sn n)]A)
+    (Δ1 ++ [^{m}r#I]Γ ++ Δ2) ⊢ ([^{n}r#I]t) : ([^{n}r#I]A)
   := by {
-    sorry
+    intro j
+    induction j
+    case ax Δ => simp; constructor
+    case var Γ Γ1 A Γ2 K j1 j2 ih =>
+      simp at *
+    case pi => sorry
+    case tpi => sorry
+    case lam => sorry
+    case app => sorry
+    case conv => sorry
   }
 
   theorem proof_subst :
