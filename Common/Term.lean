@@ -146,4 +146,33 @@ namespace Term
   | eq t1 t2 t3 => size t1 + size t2 + size t3 + 1
   | conv t1 t2 _ => size t1 + size t2 + 1
 
+  inductive IsFreeVar : Nat -> Term -> Prop where
+  | bound : IsFreeVar n (.bound K n)
+  | lam1 : IsFreeVar n A -> IsFreeVar n (.lam m A t)
+  | lam2 : IsFreeVar (n + 1) t -> IsFreeVar n (.lam m A t)
+  | app1 : IsFreeVar n f -> IsFreeVar n (.app m f a)
+  | app2 : IsFreeVar n a -> IsFreeVar n (.app m f a)
+  | all1 : IsFreeVar n A -> IsFreeVar n (.all m A t)
+  | all2 : IsFreeVar (n + 1) t -> IsFreeVar n (.all m A t)
+  | pair1 : IsFreeVar n B -> IsFreeVar n (.pair B t s)
+  | pair2 : IsFreeVar n t -> IsFreeVar n (.pair B t s)
+  | pair3 : IsFreeVar n s -> IsFreeVar n (.pair B t s)
+  | fst : IsFreeVar n t -> IsFreeVar n (.fst t)
+  | snd : IsFreeVar n t -> IsFreeVar n (.snd t)
+  | prod1 : IsFreeVar n A -> IsFreeVar n (.prod A B)
+  | prod2 : IsFreeVar (n + 1) B -> IsFreeVar n (.prod A B)
+  | refl : IsFreeVar n t -> IsFreeVar n (.refl t)
+  | subst1 : IsFreeVar n P -> IsFreeVar n (.subst P e)
+  | subst2 : IsFreeVar n e -> IsFreeVar n (.subst P e)
+  | phi1 : IsFreeVar n a -> IsFreeVar n (.phi a b e)
+  | phi2 : IsFreeVar n b -> IsFreeVar n (.phi a b e)
+  | phi3 : IsFreeVar n e -> IsFreeVar n (.phi a b e)
+  | eq1 : IsFreeVar n A -> IsFreeVar n (.eq A a b)
+  | eq2 : IsFreeVar n a -> IsFreeVar n (.eq A a b)
+  | eq3 : IsFreeVar n b -> IsFreeVar n (.eq A a b)
+  | conv1 : IsFreeVar n B -> IsFreeVar n (.conv B t c)
+  | conv2 : IsFreeVar n t -> IsFreeVar n (.conv B t c)
+
 end Term
+
+infix:100 " ∈ " => Term.IsFreeVar

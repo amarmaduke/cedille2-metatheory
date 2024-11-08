@@ -25,6 +25,7 @@ def Subst (T : Type) : Type := Nat -> SubstAction T
 
 @[simp] def rI : Ren := λ n => n
 @[simp] def rS : Ren := λ n => n + 1
+@[simp] def rP : Ren := λ n => n - 1
 @[simp] def rSn (x : Nat) : Ren := λ n => n + x
 @[simp] def rPn (x : Nat) : Ren := λ n => n - x
 
@@ -180,6 +181,7 @@ end Term
 
 @[simp] def I : Subst Term := λ n => .rename n
 @[simp] def S : Subst Term := λ n => .rename (n + 1)
+@[simp] def P : Subst Term := λ n => .rename (n - 1)
 @[simp] def Sn (x : Nat) : Subst Term := λ n => .rename (n + x)
 @[simp] def Pn (x : Nat) : Subst Term := λ n => .rename (n - x)
 
@@ -200,6 +202,24 @@ notation:90 τ:90 " ⊙ " σ:91 => Term.Subst.compose σ τ
 notation:90 s:90 "β[" t "]" => Term.Subst.apply (beta t) s
 
 namespace Term
+
+  theorem I_to_rI : I = r#rI := by {
+    funext
+    case _ x =>
+      cases x <;> unfold Subst.from_ren <;> simp
+  }
+
+  theorem S_to_rS : S = r#rS := by {
+    funext
+    case _ x =>
+      cases x <;> unfold Subst.from_ren <;> simp
+  }
+
+  theorem P_to_rP : P = r#rP := by {
+    funext
+    case _ x =>
+      cases x <;> unfold Subst.from_ren <;> simp
+  }
 
   @[simp] theorem subst_from_ren_x : (r#r) x = .rename (r x) :=
     by unfold Subst.from_ren; rfl
@@ -462,7 +482,7 @@ namespace Term
   -- }
 
   @[simp]
-  theorem subst_apply_twice_is_apply_compose {s : Term} {σ τ} : [τ][σ]s = [τ ⊙ σ]s := by {
+  theorem subst_apply_compose_commute {s : Term} {σ τ} : [τ][σ]s = [τ ⊙ σ]s := by {
     have lem1 τ : ^τ ⊙ r#rS = r#rS ⊙ τ := by {
       funext
       unfold Subst.compose; unfold Subst.from_ren; unfold rS; simp
@@ -738,6 +758,126 @@ namespace Term
         simp; unfold S; unfold Subst.compose; simp
   }
 
+  @[simp]
+  theorem liftn_I : ^{n}I = I := by {
+    induction n <;> simp
+    case _ x ih =>
+      rw [ih]; simp
+  }
+
+  @[simp]
+  theorem liftn_unfold : ^{n+1}σ = ^(^{n}σ) := by {
+    simp
+  }
+
+  @[simp]
+  theorem liftn_compose : ^{n}(σ ⊙ τ) = (^{n}σ) ⊙ (^{n}τ) := by {
+    induction n
+    case _ => simp
+    case _ n ih => simp; rw [ih]; simp
+  }
+
+  @[simp]
+  theorem Sn_0_bound : [Sn 0]t = t := by {
+    have lem : .rename 0 :: (fun x => .rename (x + 1)) = I := by {
+      funext
+      case _ x =>
+        cases x <;> simp
+    }
+    induction t <;> simp [*] <;> unfold Subst.compose <;> simp [*]
+  }
+
+  @[simp]
+  theorem Sn_bound : [Sn n](bound K m) = bound K (m + n) := by {
+    simp
+  }
+
+  @[simp]
+  theorem Sn_succ : Sn (n + 1) = S ⊙ Sn n := by {
+    funext
+    case _ x =>
+      cases x
+      all_goals (simp; unfold Sn; unfold S; unfold Subst.compose; simp)
+      case _ => omega
+  }
+
+  @[simp]
+  theorem liftn_beta_eq a K : x = n -> [^{n}(beta a)](bound K x) = [Sn n]a := by
+    intro h
+    induction n generalizing x
+    case _ =>
+      simp; cases x <;> simp
+      case _ => exfalso; omega
+    case _ n h2 =>
+      subst h; simp
+      generalize σdef : rep n Subst.lift (SubstAction.replace a::I) = σ
+      unfold Subst.compose; simp
+      generalize bdef : σ n = b at *
+      cases b
+      case _ y =>
+        simp at *; rw [σdef, bdef] at h2; simp at h2
+        have h3 : [S](bound K y) = [S][Sn n]a := by rw [h2]
+        simp at h3; rw [h3]; unfold S; unfold Sn; unfold Subst.compose
+        simp
+      case _ t =>
+        simp at *; rw [σdef, bdef] at h2; simp at h2
+        rw [h2]; unfold S; unfold Sn; simp; unfold Subst.compose; simp
+
+  @[simp]
+  theorem liftn_beta_lt a K : x < n -> [^{n}(beta a)](bound K x) = bound K x := by
+    intro h
+    induction n generalizing x
+    case _ =>
+      simp; cases x <;> simp
+      all_goals exfalso; omega
+    case _ n ih =>
+      simp; generalize σdef : rep n Subst.lift (SubstAction.replace a::I) = σ
+      unfold Subst.compose; simp
+      cases x <;> simp
+      case _ x =>
+        generalize bdef : σ x = b at *
+        cases b <;> simp
+        case _ y =>
+          replace h : x < n := by omega
+          replace ih := ih h
+          simp at ih; rw [σdef, bdef] at ih; simp at ih
+          exact ih
+        case _ t =>
+          replace h : x < n := by omega
+          replace ih := ih h
+          simp at ih; rw [σdef, bdef] at ih; simp at ih
+          subst ih; simp
+
+  @[simp]
+  theorem liftn_beta_gt a K : x > n -> [^{n}(beta a)](bound K x) = bound K (x - 1) := by
+    intro h
+    induction n generalizing x
+    case _ =>
+      simp; cases x <;> simp
+      case _ => exfalso; omega
+    case _ n ih =>
+      simp; generalize σdef : rep n Subst.lift (SubstAction.replace a::I) = σ
+      unfold Subst.compose; simp
+      cases x <;> simp
+      case _ x =>
+        generalize bdef : σ x = b at *
+        cases b <;> simp
+        case _ y =>
+          replace h : x > n := by omega
+          replace ih := ih h
+          simp at ih; rw [σdef, bdef] at ih; simp at ih
+          cases x
+          case _ => exfalso; omega
+          case _ x => simp at ih; omega
+        case _ t =>
+          replace h : x > n := by omega
+          replace ih := ih h
+          simp at ih; rw [σdef, bdef] at ih; simp at ih
+          rw [ih]; simp
+          cases x
+          case _ => exfalso; omega
+          case _ => simp
+
   -- (βst)[σ ] = β(s[⇑σ ])(t[σ ])
   theorem subst_beta_distr : [σ](s β[t]) = ([^σ]s) β[ [σ]t ] := by simp
 
@@ -766,6 +906,30 @@ namespace Term
   | m, A, t => lam m A (app m ([S]t) (bound (mode_to_sort m) 0))
 
   @[simp]
+  theorem P_after_S : (P ⊙ S) n = .rename n := by {
+    cases n
+    case _ => unfold Subst.compose; simp
+    case _ x => unfold Subst.compose; simp
+  }
+
+  @[simp]
+  theorem P_after_S_subst : [P ⊙ S]t = t := by {
+    induction t <;> simp [*]
+    case lam t1 t2 ih1 _ih2 =>
+      unfold Subst.compose; simp
+      have lem : [.rename 0 :: S]t2 = t2 := by simp
+      unfold S at lem; rw [lem]
+    case all t1 t2 ih1 _ih2 =>
+      unfold Subst.compose; simp
+      have lem : [.rename 0 :: S]t2 = t2 := by simp
+      unfold S at lem; rw [lem]
+    case prod t1 t2 ih1 _ih2 =>
+      unfold Subst.compose; simp
+      have lem : [.rename 0 :: S]t2 = t2 := by simp
+      unfold S at lem; rw [lem]
+  }
+
+  @[simp]
   theorem S_after_Pn : (S ⊙ (Pn n)) (n + k) = .rename (k + 1) := by {
     cases n
     case _ => unfold Subst.compose; simp
@@ -777,7 +941,111 @@ namespace Term
     unfold Subst.compose; simp
   }
 
+  theorem rep_n_S_le : n ≤ x -> rep n Subst.lift S x = .rename (x + 1) := by
+  intro h
+  induction n generalizing x <;> simp
+  case _ n ih =>
+    cases x <;> simp
+    case _ => omega
+    case _ x =>
+      unfold Subst.compose; simp
+      have nh : n ≤ x := by omega
+      rw [ih nh]
 
+  theorem rep_n_S_gt : n > x -> rep n Subst.lift S x = .rename x := by
+  intro h
+  induction n generalizing x <;> simp
+  case _ => omega
+  case _ n ih =>
+    cases x <;> simp
+    case _ x =>
+      have nh : n > x := by omega
+      unfold Subst.compose; simp
+      rw [ih nh]
+
+  theorem rep_n_S_exists : ∃ y, rep n Subst.lift S x = .rename y := by
+  cases (Nat.decLe n x)
+  case _ h =>
+    cases (Nat.decLt x n)
+    case _ h2 => omega
+    case _ h2 => exists x; apply rep_n_S_gt h2
+  case _ h => exists (x + 1); apply rep_n_S_le h
+
+  theorem n_not_in_lift_S (t : Term) : ¬ (n ∈ ([^{n}S]t)) := by
+  intro h
+  induction t generalizing n <;> simp at h
+  case bound K x =>
+    cases (Nat.decLe n x)
+    case _ h2 =>
+      cases (Nat.decLt x n)
+      case _ h3 => omega
+      case _ h3 =>
+        rw [rep_n_S_gt h3] at h; simp at h
+        cases h; omega
+    case _ h2 =>
+      rw [rep_n_S_le h2] at h; simp at h
+      cases h; omega
+  case none => cases h
+  case const => cases h
+  case lam t1 t2 ih1 ih2 =>
+    cases h
+    case _ h => apply ih1 h
+    case _ h =>
+      have lem : (n + 1) ∈ ([^{n + 1}S]t2) := by simp; exact h
+      apply ih2 lem
+  case app t1 t2 ih1 ih2 =>
+    cases h
+    case _ h => apply ih1 h
+    case _ h => apply ih2 h
+  case all t1 t2 ih1 ih2 =>
+    cases h
+    case _ h => apply ih1 h
+    case _ h =>
+      have lem : (n + 1) ∈ ([^{n + 1}S]t2) := by simp; exact h
+      apply ih2 lem
+  case pair t1 t2 t3 ih1 ih2 ih3 =>
+    cases h
+    case _ h => apply ih1 h
+    case _ h => apply ih2 h
+    case _ h => apply ih3 h
+  case fst t ih =>
+    cases h
+    case _ h => apply ih h
+  case snd t ih =>
+    cases h
+    case _ h => apply ih h
+  case prod t1 t2 ih1 ih2 =>
+    cases h
+    case _ h => apply ih1 h
+    case _ h =>
+      have lem : (n + 1) ∈ ([^{n + 1}S]t2) := by simp; exact h
+      apply ih2 lem
+  case refl t ih =>
+    cases h
+    case _ h => apply ih h
+  case subst t1 t2 ih1 ih2 =>
+    cases h
+    case _ h => apply ih1 h
+    case _ h => apply ih2 h
+  case phi t1 t2 t3 ih1 ih2 ih3 =>
+    cases h
+    case _ h => apply ih1 h
+    case _ h => apply ih2 h
+    case _ h => apply ih3 h
+  case eq t1 t2 t3 ih1 ih2 ih3 =>
+    cases h
+    case _ h => apply ih1 h
+    case _ h => apply ih2 h
+    case _ h => apply ih3 h
+  case conv t1 t2 _ ih1 ih2 =>
+    cases h
+    case _ h => apply ih1 h
+    case _ h => apply ih2 h
+
+  @[simp]
+  theorem zero_not_in_S {t : Term} : ¬ (0 ∈ ([S]t)) := by
+  have lem := @n_not_in_lift_S 0 t
+  simp at lem; exact lem
 
 
   -- theorem subst_S_classifies_free : [r#S]s = s -> ∀ σ, [σ]s = s := by {

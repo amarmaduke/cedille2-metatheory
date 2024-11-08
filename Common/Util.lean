@@ -60,3 +60,21 @@ def pair_eq : (a, b) = (c, d) -> a = c ∧ b = d := by {
 def rep : Nat -> (A -> A) -> A -> A
 | 0, _, a => a
 | n + 1, f, a => f (rep n f a)
+
+namespace Nat
+  inductive DecOrd (n m : Nat) : Prop where
+  | eq : n = m -> DecOrd n m
+  | lt : n < m -> DecOrd n m
+  | gt : n > m -> DecOrd n m
+
+  def decOrd n m : DecOrd n m := by
+    cases Nat.decLt n m
+    case _ h =>
+      cases Nat.decEq n m
+      case _ h2 =>
+        cases Nat.decLt m n
+        case _ h3 => exfalso; omega
+        case _ h => exact DecOrd.gt h
+      case _ h => exact DecOrd.eq h
+    case _ h => exact DecOrd.lt h
+end Nat

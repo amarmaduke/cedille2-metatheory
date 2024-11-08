@@ -22,28 +22,29 @@ namespace Fomega
   inductive Proof : Ctx -> Term -> Term -> Prop
   | ax : Proof Γ ★ □
   | var :
-    Γ = Γ1 ++ [A] ++ Γ2 ->
-    Proof Γ1 A (.const K) ->
-    Proof Γ (.bound K Γ1.length) A
+    A = Γ d@ x ->
+    Proof Γ A (.const K) ->
+    Proof Γ (.bound K x) A
   | pi :
-    Proof Γ A K ->
-    Proof (Γ ++ [A]) B ★ ->
+    Proof Γ A (.const K) ->
+    Proof (A::Γ) B ★ ->
     Proof Γ (.all mf A B) ★
   | tpi :
     Proof Γ A □ ->
-    Proof (Γ ++ [A]) B □ ->
+    Proof (A::Γ) B □ ->
     Proof Γ (.all mf A B) □
   | lam :
-    Proof Γ (.all mf A B) K ->
-    Proof (Γ ++ [A]) t B ->
+    Proof Γ (.all mf A B) (.const K) ->
+    Proof (A::Γ) t B ->
     Proof Γ (.lam mf A t) (.all mf A B)
   | app :
     Proof Γ f (.all mf A B) ->
     Proof Γ a A ->
-    Proof Γ (.app mf f a) (B β[a])
+    B' = (B β[a]) ->
+    Proof Γ (.app mf f a) B'
   | conv :
     Proof Γ t A ->
-    Proof Γ B K ->
+    Proof Γ B (.const K) ->
     A === B ->
     Proof Γ t B
 end Fomega

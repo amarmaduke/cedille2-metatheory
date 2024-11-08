@@ -48,13 +48,13 @@ namespace Term
 
   def size_of_subst_rename_renamer : Ren -> Ren
   | _, 0 => 0
-  | r, n + 1 => S (r n)
+  | r, n + 1 => rS (r n)
 
   @[simp]
   theorem size_of_subst_rename
     : Term.size ([r#r]t) = Term.size t
   := by {
-    have lem r : .rename 0::r#S ⊙ r#r = r#(size_of_subst_rename_renamer r) := by {
+    have lem r : .rename 0::S ⊙ r#r = r#(size_of_subst_rename_renamer r) := by {
       funext
       case _ x =>
         cases x <;> simp [size_of_subst_rename_renamer]
@@ -80,6 +80,7 @@ namespace Term
         simp [SubstAction.size]
         rw [ψdef] at lem
         simp [SubstAction.size] at lem
+        rw [Term.S_to_rS, size_of_subst_rename]
         apply lem
   }
 
@@ -108,9 +109,9 @@ namespace Term
 
   @[simp]
   theorem size_of_witness
-    : Term.size ([.replace (witness c) :: r#I ]t) = Term.size t
+    : Term.size ([.replace (witness c) :: I ]t) = Term.size t
   := by {
-    have lem : ∀ n : Nat, ((.replace (witness c) :: r#I) n).size = 0 := by {
+    have lem : ∀ n : Nat, ((.replace (witness c) :: I) n).size = 0 := by {
       intro n; cases n
       case _ => cases c <;> simp [SubstAction.size, witness]
       case _ => simp [SubstAction.size]
