@@ -1,5 +1,6 @@
 import Common
 import Fomega.Proof
+import Fomega.Ctx
 
 namespace Fomega
 
@@ -58,11 +59,60 @@ namespace Fomega
     IsFreeVar n Γ t B (.conv p1 p2 p3)
 
 
+  theorem test :
+    Γ ⊢ t : A ->
+    [^{n}S]s = t ->
+    ∃ T, [^{n}S]T = A
+  := by
+  intro j h
+  induction j generalizing s n
+  case ax => exists □
+  case var A Γ x _ ih _ _ =>
+    have h2 := @dnth_as_nth Γ x
+    rw [h2] at ih; subst ih
+    cases s <;> simp at h
+    case _ _ y =>
+      generalize σdef : (^{n}S) y = σ at *
+      cases σ <;> simp at h
+      case _ z =>
+        sorry
+      case _ => sorry
+      -- cases Nat.decLe n y
+      -- case _ h3 =>
+      --   cases Nat.decLt y n
+      --   case _ h4 => omega
+      --   case _ h4 =>
+      --     have h5 := Term.rep_n_S_gt h4
+      --     rw [h5] at h; simp at h
+      --     cases h
+      --     case _ _ h =>
+      --       subst h
+      --       exists [Sn y]Γ @ y
+      --       simp
+      --       sorry
+      -- case _ h3 =>
+      --   have h4 := Term.rep_n_S_le h3
+      --   rw [h4] at h; simp at h
+      --   exists [Sn (x + 1)]Γ @ x
+      --   simp; have h5 : n < x := by omega
+      --   -- TODO: highly confident this checks out
+      --   -- but requires a technical lemma about ^{n}
+      --   sorry
+  case pi => exists ★
+  case tpi => exists □
+  case lam Γ A B K t j1 j2 ih1 ih2 =>
+    sorry
+  case app Γ f A B a B' j1 j2 j3 ih1 ih2 =>
+    sorry
+  case conv => sorry
+
+  theorem conv_subst_lemma : A === B -> [σ]U = A -> ∃ V, [σ]V = B := by sorry
+
   -- n ∈ ([^{n}S]t)
   theorem fv_missing : (p : Γ ⊢ ([^{n}S]t) : ([^{n}S]T)) -> ¬ (IsFreeVar n Γ ([^{n}S]t) ([^{n}S]T) p) := by
   intro j h
   generalize sdef : [^{n}S]t = s at j
-  generalize Adef : [^{n}S]T = A at j
+  generalize Udef : [^{n}S]T = U at j
   induction h generalizing t T
   case var1 => sorry
   case var2 => sorry
@@ -71,7 +121,7 @@ namespace Fomega
     case _ K' x =>
       have lem := @Term.rep_n_S_exists n x
       cases lem; case _ z h => rw [h] at sdef; simp at sdef
-    case _ m r1 r2 => apply @ih r1 (.const K) sdef.2.1 (by simp)
+    case _ m r1 r2 => sorry
   case pi2 => sorry
   case tpi1 => sorry
   case tpi2 => sorry
@@ -83,19 +133,16 @@ namespace Fomega
       have lem := @Term.rep_n_S_exists n x
       cases lem; case _ z h => rw [h] at sdef; simp at sdef
     case _ m r1 r2 =>
-      cases p1
-      case _ x K' j1 j2 =>
-        sorry
-      case _ K' t j1 j2 =>
-        have rdef := sdef.2.1
-        cases r1 <;> simp at rdef
-        case _ => sorry
-        case _ => sorry
-      case _ => sorry
-      case _ => sorry
-  case app2 => sorry
-  case conv1 => sorry
-  case conv2 => sorry
+      sorry
+  case app2 Γ' f A' B n a p2 B' p1 fv p3 ih =>
+    cases t <;> simp at sdef
+    case _ => sorry
+    case _ m r1 r2 =>
+      sorry
+  case conv1 n Γ' t' A p1 B K a p2 p3 ih =>
+    sorry
+  case conv2 Γ' t' A' n B K p2 p1 fv p3 ih =>
+    sorry
 
 
 

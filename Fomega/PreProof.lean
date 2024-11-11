@@ -24,7 +24,7 @@ namespace Fomega
     case _ ih1 ih2 j1 j2 =>
       constructor; apply ih1 j1; apply ih2 j2
 
-  theorem ren : IsPreProof t -> IsPreProof ([r#r]t) := by
+    theorem ren : IsPreProof t -> IsPreProof ([r#r]t) := by
     intro j
     induction j generalizing r <;> simp
     case ax => constructor
@@ -90,32 +90,6 @@ namespace Fomega
     case lam j1 _j2 ih1 ih2 => constructor; cases ih1; all_goals simp [*]
     case app => constructor <;> simp [*]
     case conv => simp [*]
-
-    theorem conv : IsPreProof A -> A === B -> IsPreProof B := by
-    intro j h
-    induction h
-    case ax => constructor
-    case bound => constructor
-    case all_congr _j1 _j2 ih1 ih2 =>
-      cases j; constructor <;> simp [*]
-    case lam_congr _j1 _j2 ih1 ih2 =>
-      cases j; constructor <;> simp [*]
-    case lam_eta _j ih =>
-      replace ih := ih j
-      cases ih
-      case _ j1 j2 =>
-        cases j2
-        case _ j2 j3 =>
-          apply IsPreProof.from_subst j2
-    case app_congr _j1 _j2 ih1 ih2 =>
-      cases j; constructor <;> simp [*]
-    case app_beta _j ih =>
-      cases j
-      case _ j1 j2 =>
-        cases j1
-        case _ j1 j3 =>
-          apply ih (IsPreProof.beta j3 j2)
-
   end IsPreProof
 
 end Fomega

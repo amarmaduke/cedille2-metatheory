@@ -9,9 +9,19 @@ namespace Fomega
   | bound x : Conv (.bound K x) (.bound K x)
   | all_congr : Conv A1 A2 -> Conv B1 B2 -> Conv (.all mf A1 B1) (.all mf A2 B2)
   | lam_congr : Conv A1 A2 -> Conv t1 t2 -> Conv (.lam mf A1 t1) (.lam mf A2 t2)
-  | lam_eta : Conv (.lam mf A t1) (Term.eta mf A t2) -> Conv (.lam mf A t1) t2
+  | lam_eta1 :
+    Conv (.lam mf A t1) (Term.eta mf A t2) ->
+    Conv (.lam mf A t1) t2
+  | lam_eta2 :
+    Conv (Term.eta mf A t1) (.lam mf A t2) ->
+    Conv t1 (.lam mf A t2)
   | app_congr : Conv f1 f2 -> Conv a1 a2 -> Conv (.app m f1 a1) (.app m f2 a2)
-  | app_beta : Conv (b β[t]) t2 -> Conv (.app mf (.lam mf A b) t) t2
+  | app_beta1 :
+    Conv (b β[t]) t2 ->
+    Conv (.app mf (.lam mf A b) t) t2
+  | app_beta2 :
+      Conv t1 (b β[t]) ->
+      Conv t1 (.app mf (.lam mf A b) t)
 
 end Fomega
 

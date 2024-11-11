@@ -3,58 +3,10 @@ import Common
 import Fomega.Ctx
 import Fomega.Proof
 import Fomega.PreProof
+import Fomega.Conv
 import Fomega.FreeVars
 
 namespace Fomega
-
-  namespace Conv
-
-    theorem refl : IsPreProof A -> A === A := by
-    intro j
-    induction j <;> (constructor <;> simp [*])
-
-    theorem rename : A === B -> ([r#r]A) === ([r#r]B) := by
-    intro j; induction j generalizing r <;> simp
-    case ax => constructor
-    case bound K x => constructor
-    case all_congr A1 A2 B1 B2 _j1 _j2 ih1 ih2 =>
-      constructor; apply ih1
-      replace ih2 := @ih2 (Term.Ren.lift r); simp at ih2
-      apply ih2
-    case lam_congr A1 A2 t1 t2 _j1 _j2 ih1 ih2 =>
-      constructor; apply ih1
-      replace ih2 := @ih2 (Term.Ren.lift r); simp at ih2
-      apply ih2
-    case lam_eta A' t1 t2 _j ih =>
-      apply Conv.lam_eta; simp at *; apply ih
-    case app_congr f1 f2 a1 a2 m _j1 _j2 ih1 ih2 =>
-      constructor; apply ih1; apply ih2
-    case app_beta t b t2 A' _j ih =>
-      apply Conv.app_beta; simp at *; apply ih
-
-    theorem subst : (∀ n s, σ n = .replace s -> IsPreProof s) -> A === B -> ([σ]A) === ([σ]B) := by
-    intro h j
-    induction j generalizing σ <;> simp
-    case ax => constructor
-    case bound _ x =>
-      generalize ydef : σ x = y at *
-      cases y <;> simp at *
-      case _ => constructor
-      case _ => apply refl; apply h x _ ydef
-    case all_congr _j1 _j2 ih1 ih2 =>
-      constructor; apply ih1 h
-      replace ih2 := @ih2 (^σ) (IsPreProof.lift h); simp at ih2; exact ih2
-    case lam_congr _j1 _j2 ih1 ih2 =>
-      constructor; apply ih1 h
-      replace ih2 := @ih2 (^σ) (IsPreProof.lift h); simp at ih2; exact ih2
-    case lam_eta _j ih =>
-      constructor; simp at ih; unfold Term.eta; simp
-      apply ih h
-    case app_congr _j1 _j2 ih1 ih2 =>
-      constructor; apply ih1 h; apply ih2 h
-    case app_beta _j ih =>
-      simp at *; constructor; simp; apply ih h
-  end Conv
 
   namespace Proof
 
@@ -160,6 +112,100 @@ namespace Fomega
     theorem weaken B : Γ ⊢ t : A -> (B::Γ) ⊢ ([S]t) : ([S]A) := by
     intro j; apply rename; exact j
     case _ => intro x; simp; rw [Term.S_to_rS]; unfold rS; simp
+
+    theorem contract_strong_lift n :
+      --[^{n}S]V = U ->
+      (∀ x y A, (^{n}S) x = .rename y -> [^{n}S]A = Γ d@ y -> A = Δ d@ x) ->
+      ∀ x y A, (^{n + 1}S) x = .rename y -> [^{n + 1}S]A = (U::Γ) d@ y -> A = (V::Δ) d@ x
+    := by
+    intro h1 x y A h2 h3
+    cases x
+    case _ => sorry
+    case _ x =>
+      simp at *; cases y
+      case _ => sorry
+      case _ y =>
+        simp at *
+        have h4 : (^{n}S) x = .rename y := by sorry
+        replace h1 := h1 x y A h4
+        sorry
+
+    theorem contract_strong n :
+      Γ ⊢ ([^{n}S]t) : ([^{n}S]T) ->
+      (∀ x y A, (^{n}S) x = .rename y -> [^{n}S]A = Γ d@ y -> A = Δ d@ x) ->
+      Δ ⊢ t : T
+    := by
+    intro j h
+    generalize sdef : [^{n}S]t = s at j
+    generalize Udef : [^{n}S]T = U at j
+    induction j generalizing t T n Δ
+    case ax =>
+      cases t <;> simp at sdef
+      case _ _ x =>
+        have lem := @Term.rep_n_S_exists n x
+        cases lem; case _ z h => rw [h] at sdef; simp at sdef
+      case _ K =>
+        subst sdef; cases T <;> simp at Udef
+        case _ _ x =>
+          have lem := @Term.rep_n_S_exists n x
+          cases lem; case _ z h => rw [h] at Udef; simp at Udef
+        case _ K => subst Udef; constructor
+    case var A Γ x K j1 j2 ih =>
+      cases t <;> simp at sdef
+      case _ K' y =>
+        generalize σdef : (^{n}S) y = σ at sdef
+        cases σ
+        case _ z =>
+          simp at sdef
+          cases sdef
+          case _ e1 e2 =>
+            subst e1; subst e2
+            constructor
+            case _ =>
+              subst j1
+              apply h y z T σdef Udef
+            case _ => apply ih n h Udef (by simp)
+        case _ => sorry
+    case pi Γ A K B j1 j2 ih1 ih2 =>
+      sorry
+    case tpi => sorry
+    case lam Γ A B K t' j1 j2 ih1 ih2 =>
+      cases t <;> simp at sdef
+      case _ _ x =>
+        have lem := @Term.rep_n_S_exists n x
+        cases lem; case _ z h => rw [h] at sdef; simp at sdef
+      case _ m r1 r2 =>
+        cases T <;> simp at Udef
+        case _ _ x =>
+          have lem := @Term.rep_n_S_exists n x
+          cases lem; case _ z h => rw [h] at Udef; simp at Udef
+        case _ m' R1 R2 =>
+          rw [sdef.1, Udef.1]
+          have lem : R1 = r1 := by sorry
+          subst lem; constructor
+          case _ =>
+            apply @ih1 (.all mf R1 R2) (.const K) Δ n h
+            simp [*]; simp
+          case _ =>
+            apply @ih2 r2 R2 (R1::Δ) (n + 1) _
+            simp [*]; simp [*]
+            apply contract_strong_lift
+            exact h
+    case app => sorry
+    case conv => sorry
+
+    theorem contract2 :
+      (A :: Δ) ⊢ ([S]t) : ([S]T) -> Δ ⊢ t : T
+    := by
+    intro j
+    apply contract_strong 0 j
+    case _ =>
+      intro x y T h1 h2
+      simp at *
+      cases y <;> simp at *
+      case _ y =>
+        subst h1
+        exact Term.rename_injective rS Term.rS_injective h2
 
     theorem contract :
       (A :: Δ) ⊢ ([S]t) : ([S]T) -> Δ ⊢ t : T

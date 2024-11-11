@@ -778,14 +778,10 @@ namespace Term
   }
 
   @[simp]
-  theorem Sn_0_bound : [Sn 0]t = t := by {
-    have lem : .rename 0 :: (fun x => .rename (x + 1)) = I := by {
-      funext
-      case _ x =>
-        cases x <;> simp
-    }
-    induction t <;> simp [*] <;> unfold Subst.compose <;> simp [*]
-  }
+  theorem Sn_0_is_I : Sn 0 = I := by
+  funext
+  case _ x =>
+    cases x <;> simp
 
   @[simp]
   theorem Sn_bound : [Sn n](bound K m) = bound K (m + n) := by {
@@ -1047,6 +1043,109 @@ namespace Term
   have lem := @n_not_in_lift_S 0 t
   simp at lem; exact lem
 
+  @[simp]
+  theorem S_on_bound : [S](.bound K n) = .bound K (n + 1) := by
+  unfold S; unfold Subst.apply; simp
+
+  theorem rS_injective : ∀ x y, rS x = rS y -> x = y := by
+  intro x y h
+  induction x
+  case _ =>
+    cases y <;> simp at h; simp
+  case _ x ih =>
+    cases y <;> simp at h
+    case _ y =>
+      subst h; simp
+
+  theorem rename_injective_lift r :
+    (∀ x y, r x = r y -> x = y) ->
+    ∀ x y, Ren.lift r x = Ren.lift r y -> x = y
+  := by
+  intro h1 x y h2
+  induction x generalizing r y
+  case _ =>
+    cases y <;> simp at *
+    case _ y => unfold Ren.lift at h2; simp at h2
+  case _ x ih =>
+    cases y <;> simp at *
+    case _ => unfold Ren.lift at h2; simp at h2
+    case _ y =>
+      unfold Ren.lift at h2; simp at h2
+      apply ih r h1
+      replace h2 := h1 x y h2
+      subst h2; rfl
+
+  theorem rename_injective r :
+    (∀ x y, r x = r y -> x = y) ->
+    [r#r]t = [r#r]s ->
+    t = s
+  := by
+  intro rinj h
+  induction t generalizing s r
+  case bound K x =>
+    simp at h
+    cases s <;> simp at h
+    case _ K' x' =>
+      rw [h.1, rinj x x' h.2]
+  case none => cases s <;> simp at h; simp
+  case const => cases s <;> simp at h; simp [*]
+  case lam m t1 t2 ih1 ih2 =>
+    cases s <;> simp at h
+    case _ m' r1 r2 =>
+      rw [h.1, ih1 r rinj h.2.1]
+      have rlinj := rename_injective_lift r rinj
+      replace ih2 := @ih2 r2 (Ren.lift r) rlinj
+      simp at ih2; rw [ih2 h.2.2]
+  case app m t1 t2 ih1 ih2 =>
+    cases s <;> simp at h
+    case _ m' r1 r2 =>
+      rw [h.1, ih1 r rinj h.2.1, ih2 r rinj h.2.2]
+  case all m t1 t2 ih1 ih2 =>
+    cases s <;> simp at h
+    case _ m' r1 r2 =>
+      rw [h.1, ih1 r rinj h.2.1]
+      have rlinj := rename_injective_lift r rinj
+      replace ih2 := @ih2 r2 (Ren.lift r) rlinj
+      simp at ih2; rw [ih2 h.2.2]
+  case pair t1 t2 t3 ih1 ih2 ih3 =>
+    cases s <;> simp at h
+    case _ r1 r2 r3 =>
+      rw [ih1 r rinj h.1, ih2 r rinj h.2.1, ih3 r rinj h.2.2]
+  case fst t ih =>
+    cases s <;> simp at h
+    case _ r1 =>
+      rw [ih r rinj h]
+  case snd t ih =>
+    cases s <;> simp at h
+    case _ r1 =>
+      rw [ih r rinj h]
+  case prod t1 t2 ih1 ih2 =>
+    cases s <;> simp at h
+    case _ r1 r2 =>
+      rw [ih1 r rinj h.1]
+      have rlinj := rename_injective_lift r rinj
+      replace ih2 := @ih2 r2 (Ren.lift r) rlinj
+      simp at ih2; rw [ih2 h.2]
+  case refl t ih =>
+    cases s <;> simp at h
+    case _ r1 =>
+      rw [ih r rinj h]
+  case subst t1 t2 ih1 ih2 =>
+    cases s <;> simp at h
+    case _ r1 r2 =>
+      rw [ih1 r rinj h.1, ih2 r rinj h.2]
+  case phi t1 t2 t3 ih1 ih2 ih3 =>
+    cases s <;> simp at h
+    case _ r1 r2 r3 =>
+      rw [ih1 r rinj h.1, ih2 r rinj h.2.1, ih3 r rinj h.2.2]
+  case eq t1 t2 t3 ih1 ih2 ih3 =>
+    cases s <;> simp at h
+    case _ r1 r2 r3 =>
+      rw [ih1 r rinj h.1, ih2 r rinj h.2.1, ih3 r rinj h.2.2]
+  case conv t1 t2 t3 ih1 ih2 =>
+    cases s <;> simp at h
+    case _ r1 r2 r3 =>
+      rw [ih1 r rinj h.1, ih2 r rinj h.2.1, h.2.2]
 
   -- theorem subst_S_classifies_free : [r#S]s = s -> ∀ σ, [σ]s = s := by {
   --   intro h σ
