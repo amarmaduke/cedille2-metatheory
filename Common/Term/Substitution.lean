@@ -901,14 +901,14 @@ namespace Term
   def eta : Mode -> Term -> Term -> Term
   | m, A, t => lam m A (app m ([S]t) (bound (mode_to_sort m) 0))
 
-  @[simp]
+  @[simp high]
   theorem P_after_S : (P ⊙ S) n = .rename n := by {
     cases n
     case _ => unfold Subst.compose; simp
     case _ x => unfold Subst.compose; simp
   }
 
-  @[simp]
+  @[simp high]
   theorem P_after_S_subst : [P ⊙ S]t = t := by {
     induction t <;> simp [*]
     case lam t1 t2 ih1 _ih2 =>
@@ -925,6 +925,29 @@ namespace Term
       unfold S at lem; rw [lem]
   }
 
+  @[simp high]
+  theorem P_lift_n_after_S_lift_n : ((^{n}P) ⊙ ^{n}S) x = .rename x := by
+  induction n generalizing x <;> simp
+  case _ n ih =>
+    generalize σdef : rep n Subst.lift P ⊙ rep n Subst.lift S = σ at *
+    rw [<-subst_valid7, σdef]
+    cases x <;> simp
+    case _ x =>
+      unfold Subst.compose; simp; rw [ih]
+
+  @[simp high]
+  theorem P_lift_n_after_S_lift_n_subst : [(^{n}P) ⊙ ^{n}S]t = t := by
+  induction t generalizing n <;> simp [*]
+  case lam t1 t2 ih1 ih2 =>
+    have ih2' := @ih2 (n + 1)
+    simp at ih2'; rw [ih2']
+  case all t1 t2 ih1 ih2 =>
+    have ih2' := @ih2 (n + 1)
+    simp at ih2'; rw [ih2']
+  case prod t1 t2 ih1 ih2 =>
+    have ih2' := @ih2 (n + 1)
+    simp at ih2'; rw [ih2']
+
   @[simp]
   theorem S_after_Pn : (S ⊙ (Pn n)) (n + k) = .rename (k + 1) := by {
     cases n
@@ -936,6 +959,28 @@ namespace Term
   theorem S_after_Pn_1 : (S ⊙ (Pn 1)) 1 = .rename 1 := by {
     unfold Subst.compose; simp
   }
+
+  theorem rep_n_P_lt : n < x -> rep n Subst.lift P x = .rename (x - 1) := by
+  intro h
+  induction n generalizing x <;> simp
+  case _ n ih =>
+    cases x <;> simp
+    case _ x =>
+      unfold Subst.compose; simp
+      have nh : n < x := by omega
+      rw [ih nh]; simp
+      cases x <;> simp at *
+
+  theorem rep_n_P_ge : n ≥ x -> rep n Subst.lift P x = .rename x := by
+  intro h
+  induction n generalizing x <;> simp
+  case _ => omega
+  case _ n ih =>
+    cases x <;> simp
+    case _ x =>
+      have nh : n ≥ x := by omega
+      unfold Subst.compose; simp
+      rw [ih nh]
 
   theorem rep_n_S_le : n ≤ x -> rep n Subst.lift S x = .rename (x + 1) := by
   intro h
@@ -1146,6 +1191,12 @@ namespace Term
     cases s <;> simp at h
     case _ r1 r2 r3 =>
       rw [ih1 r rinj h.1, ih2 r rinj h.2.1, h.2.2]
+
+  -- theorem rename_injective_liftn n r :
+  --   (∀ x y, r x = r y -> x = y) ->
+  --   [^{n}r#r]t = [^{n}r#r]s ->
+  --   t = s
+  -- := by sorry
 
   -- theorem subst_S_classifies_free : [r#S]s = s -> ∀ σ, [σ]s = s := by {
   --   intro h σ

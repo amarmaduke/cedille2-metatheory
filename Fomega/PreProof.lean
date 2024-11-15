@@ -5,7 +5,7 @@ import Fomega.Proof
 namespace Fomega
 
   inductive IsPreProof : Term -> Prop where
-  | ax : IsPreProof ★
+  | ax : IsPreProof (.const K)
   | bound : IsPreProof (.bound K x)
   | all : IsPreProof A -> IsPreProof B -> IsPreProof (.all mf A B)
   | lam : IsPreProof A -> IsPreProof t -> IsPreProof (.lam mf A t)
@@ -90,6 +90,24 @@ namespace Fomega
     case lam j1 _j2 ih1 ih2 => constructor; cases ih1; all_goals simp [*]
     case app => constructor <;> simp [*]
     case conv => simp [*]
+
+    theorem from_proof_type : t ⊢ Γ -> Γ ⊢ t : A -> IsPreProof A := by
+    intro h j; induction j
+    case ax => constructor
+    case var =>
+      cases h
+      case _ h => apply (from_proof h)
+    case pi => constructor
+    case tpi => constructor
+    case lam j _ _ _ => apply from_proof j
+    case app _j1 j2 j3 ih1 _ih2 =>
+      cases h
+      case _ h1 h2 =>
+        cases (ih1 h1)
+        case _ p1 p2 =>
+        subst j3; apply beta p2 (from_proof j2)
+    case conv j _ _ _ => apply from_proof j
+
   end IsPreProof
 
 end Fomega
