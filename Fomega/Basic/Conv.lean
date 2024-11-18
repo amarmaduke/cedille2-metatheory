@@ -156,10 +156,20 @@ namespace Fomega.Conv
   induction h1 generalizing C
   case _ => simp [*]
   case _ => simp [*]
-  case all_congr => sorry
-  case lam_congr => sorry
-  case app_congr => sorry
-  case app_beta1 => sorry
+  case all_congr =>
+    cases h2
+    case _ => sorry
+    case _ => sorry
+  case lam_congr =>
+    cases h2
+    case _ => sorry
+    case _ => sorry
+  case app_congr r1 r2 ih1 ih2 =>
+    cases h2
+    case _ => sorry
+    case _ => sorry
+    case _ => sorry
+  case app_beta1 h ih => sorry
   case app_beta2 => sorry
 
 
