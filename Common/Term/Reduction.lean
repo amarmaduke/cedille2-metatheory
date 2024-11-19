@@ -315,13 +315,144 @@ namespace Term.ParRed
   case _ => apply Red.refl
   case _ h _ ih => apply Red.trans (to_red h) ih
 
+  theorem subst_same σ : s =β> t -> [σ]s =β> [σ]t := by
+  intro h
+  induction h generalizing σ
+  case bound _ n => simp
+  case none => simp
+  case const => simp
+  case beta A A' b b' t t' m _ _ _ ih1 ih2 ih3 =>
+    have h3 := @ParRed.beta ([σ]A) ([σ]A') ([^σ]b) ([^σ]b') ([σ]t) ([σ]t') m
+    simp at *; apply h3
+    apply ih1 σ
+    replace ih2 := ih2 (^σ)
+    simp at ih2; apply ih2
+    apply ih3 σ
+  case proj1 B B' t t' s s' _ _ _ ih1 ih2 ih3 =>
+    have h3 := @ParRed.proj1 ([σ]B) ([σ]B') ([σ]t) ([σ]t') ([σ]s) ([σ]s')
+    simp at *; apply h3
+    apply ih1 σ; apply ih2 σ; apply ih3 σ
+  case proj2 B B' t t' s s' _ _ _ ih1 ih2 ih3 =>
+    have h3 := @ParRed.proj2 ([σ]B) ([σ]B') ([σ]t) ([σ]t') ([σ]s) ([σ]s')
+    simp at *; apply h3
+    apply ih1 σ; apply ih2 σ; apply ih3 σ
+  case substelim B B' t t' _ _ ih1 ih2 =>
+    have h3 := @ParRed.substelim ([σ]B) ([σ]B') ([σ]t) ([σ]t')
+    simp at *; apply h3
+    apply ih1 σ; apply ih2 σ
+  case lam_congr ih1 ih2 =>
+    simp; constructor; apply ih1 σ
+    replace ih2 := ih2 (^σ)
+    simp at ih2; exact ih2
+  case all_congr ih1 ih2 =>
+    simp; constructor; apply ih1 σ
+    replace ih2 := ih2 (^σ)
+    simp at ih2; exact ih2
+  case prod_congr ih1 ih2 =>
+    simp; constructor; apply ih1 σ
+    replace ih2 := ih2 (^σ)
+    simp at ih2; exact ih2
+  all_goals try (
+    case _ ih1 => simp at *; constructor; apply ih1 σ
+  )
+  all_goals try (
+    case _ ih1 ih2 => simp at *; constructor; apply ih1 σ; apply ih2 σ
+  )
+  all_goals try (
+    case _ ih1 ih2 ih3 => simp at *; constructor; apply ih1 σ; apply ih2 σ; apply ih3 σ
+  )
+
+  theorem subst_lift_replace σ τ :
+    (∀ n t, σ n = .replace t -> ∃ t', τ n = .replace t' ∧ t =β> t') ->
+    ∀ n t, ^σ n = .replace t -> ∃ t', ^τ n = .replace t' ∧ t =β> t'
+  := by
+  intro h1 n t h2
+  cases n <;> simp at *
+  case _ n =>
+    unfold Subst.compose at *; simp at *
+    generalize ydef : σ n = y at *
+    cases y <;> simp at *
+    case _ q =>
+      replace h1 := h1 n q ydef
+      cases h1
+      case _ w h1 =>
+        rw [h1.1]; simp
+        subst h2; apply subst_same; apply h1.2
+
+  theorem subst_lift_rename σ τ :
+    (∀ n k, σ n = .rename k -> τ n = .rename k) ->
+    ∀ n k, ^σ n = .rename k -> ^τ n = .rename k
+  := by
+  intro h1 n k h2
+  cases n <;> simp at *
+  case _ => exact h2
+  case _ n =>
+    unfold Subst.compose at *; simp at *
+    generalize ydef : σ n = y at *
+    cases y <;> simp at *
+    case _ i => rw [h1 n i ydef]; simp [*]
+
   theorem subst (σ τ : Subst Term) :
-    (∀ n t t', σ n = .replace t -> τ n = .replace t' -> t =β> t') ->
+    (∀ n t, σ n = .replace t -> ∃ t', τ n = .replace t' ∧ t =β> t') ->
     (∀ n k, σ n = .rename k -> τ n = .rename k) ->
     s =β> t -> [σ]s =β> [τ]t
   := by
   intro h1 h2 r
-  sorry
+  induction r generalizing σ τ
+  case bound _ n =>
+    simp; generalize ydef : σ n = y at *
+    cases y <;> simp
+    case _ i => rw [h2 n i]; simp; rw [ydef]
+    case _ t =>
+      replace h1 := h1 n t ydef
+      cases h1
+      case _ t' h1 =>
+        rw [h1.1]; simp; apply h1.2
+  case none => simp
+  case const => simp
+  case beta A A' b b' t t' m _ _ _ ih1 ih2 ih3 =>
+    have h3 := @ParRed.beta ([σ]A) ([τ]A') ([^σ]b) ([^τ]b') ([σ]t) ([τ]t') m
+    simp at *; apply h3
+    apply ih1 _ _ h1 h2
+    replace ih2 := ih2 (^σ) (^τ) (subst_lift_replace _ _ h1) (subst_lift_rename _ _ h2)
+    simp at ih2; apply ih2
+    apply ih3 _ _ h1 h2
+  case proj1 B B' t t' s s' _ _ _ ih1 ih2 ih3 =>
+    have h3 := @ParRed.proj1 ([σ]B) ([τ]B') ([σ]t) ([τ]t') ([σ]s) ([τ]s')
+    simp at *; apply h3
+    apply ih1 _ _ h1 h2; apply ih2 _ _ h1 h2; apply ih3 _ _ h1 h2
+  case proj2 B B' t t' s s' _ _ _ ih1 ih2 ih3 =>
+    have h3 := @ParRed.proj2 ([σ]B) ([τ]B') ([σ]t) ([τ]t') ([σ]s) ([τ]s')
+    simp at *; apply h3
+    apply ih1 _ _ h1 h2; apply ih2 _ _ h1 h2; apply ih3 _ _ h1 h2
+  case substelim B B' t t' _ _ ih1 ih2 =>
+    have h3 := @ParRed.substelim ([σ]B) ([τ]B') ([σ]t) ([τ]t')
+    simp at *; apply h3
+    apply ih1 _ _ h1 h2; apply ih2 _ _ h1 h2
+  case lam_congr ih1 ih2 =>
+    simp; constructor; apply ih1 _ _ h1 h2
+    replace ih2 := ih2 (^σ) (^τ) (subst_lift_replace _ _ h1) (subst_lift_rename _ _ h2)
+    simp at ih2; exact ih2
+  case all_congr ih1 ih2 =>
+    simp; constructor; apply ih1 _ _ h1 h2
+    replace ih2 := ih2 (^σ) (^τ) (subst_lift_replace _ _ h1) (subst_lift_rename _ _ h2)
+    simp at ih2; exact ih2
+  case prod_congr ih1 ih2 =>
+    simp; constructor; apply ih1 _ _ h1 h2
+    replace ih2 := ih2 (^σ) (^τ) (subst_lift_replace _ _ h1) (subst_lift_rename _ _ h2)
+    simp at ih2; exact ih2
+  all_goals try (
+    case _ ih1 =>
+    simp; constructor; apply ih1 _ _ h1 h2
+  )
+  all_goals try (
+    case _ ih1 ih2 =>
+    simp; constructor; apply ih1 _ _ h1 h2; apply ih2 _ _ h1 h2
+  )
+  all_goals try (
+    case _ ih1 ih2 ih3 =>
+    simp; constructor; apply ih1 _ _ h1 h2; apply ih2 _ _ h1 h2; apply ih3 _ _ h1 h2
+  )
 
   theorem complete : s =β> t -> t =β> pcompl s := by
   intro h
@@ -331,9 +462,9 @@ namespace Term.ParRed
     all_goals (
       apply subst
       case _ =>
-        intro n t t' h1 h2; simp at *
+        intro n t h; simp at *
         cases n <;> simp at *
-        subst h1; subst h2; simp [*]
+        subst h; simp [*]
       case _ =>
         intro n k h; simp at *
         cases n <;> simp at * <;> simp [*]
@@ -417,4 +548,50 @@ namespace Term.ParRed
   all_goals (try simp; constructor <;> simp [*])
   all_goals (try simp)
 
+  theorem strip : s =β> t1 -> s =β>* t2 -> ∃ t, t1 =β>* t ∧ t2 =β> t := by
+  intro h1 h2
+  induction h2 generalizing t1
+  case _ t' => exists t1; apply And.intro; apply refl; apply h1
+  case _ x y z r1 _r2 ih =>
+    have r3 := complete r1
+    replace ih := ih r3
+    cases ih
+    case _ w ih =>
+      replace _r3 := ParRedStar.step r3 ih.1
+      replace h1 := complete h1
+      replace r3 := ParRedStar.step h1 ih.1
+      exists w; apply And.intro; apply r3; apply ih.2
+
+  theorem par_confluence : s =β>* t1 -> s =β>* t2 -> ∃ t, t1 =β>* t ∧ t2 =β>* t := by
+  intro h1 h2
+  induction h1 generalizing t2
+  case _ z =>
+    exists t2; apply And.intro
+    apply h2; apply refl
+  case _ s y t1 r1 _r2 ih =>
+    have h3 := strip r1 h2
+    cases h3
+    case _ w h3 =>
+      replace ih := ih h3.1
+      cases ih
+      case _ q ih =>
+        exists q; apply And.intro
+        apply ih.1; apply ParRedStar.step
+        apply h3.2; apply ih.2
+
 end Term.ParRed
+
+namespace Term.Red
+
+  theorem confluence : s -β>* t1 -> s -β>* t2 -> ∃ t, t1 -β>* t ∧ t2 -β>* t := by
+  intro h1 h2
+  replace h1 := ParRed.from_redstar h1
+  replace h2 := ParRed.from_redstar h2
+  have conf := ParRed.par_confluence h1 h2
+  cases conf
+  case _ t conf =>
+    exists t; apply And.intro
+    apply ParRed.to_redstar conf.1
+    apply ParRed.to_redstar conf.2
+
+end Term.Red
