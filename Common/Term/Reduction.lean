@@ -37,6 +37,8 @@ namespace Term
   | refl : RedStar t t
   | step : Red x y -> RedStar y z -> RedStar x z
 
+  abbrev RedConv (A : Term) (B : Term) : Prop := ∃ C, RedStar A C ∧ RedStar B C
+
   inductive ParRed : Term -> Term -> Prop where
   | bound : ParRed (.bound K n) (.bound K n)
   | none : ParRed .none .none
@@ -86,14 +88,20 @@ namespace Term
   | refl : ParRedStar t t
   | step : ParRed x y -> ParRedStar y z -> ParRedStar x z
 
+  abbrev ParRedConv (A : Term) (B : Term) : Prop := ∃ C, ParRedStar A C ∧ ParRedStar B C
+
 end Term
 
 infix:40 " -β> " => Term.Red
 infix:39 " -β>* " => Term.RedStar
+infix:38 " =β= " => Term.RedConv
 infix:40 " =β> " => Term.ParRed
 infix:39 " =β>* " => Term.ParRedStar
+infix:38 " ≡β≡ " => Term.ParRedConv
 
-namespace Term.Red
+namespace Term
+
+namespace Red
 
   theorem refl : t -β>* t := by apply RedStar.refl
 
@@ -222,15 +230,27 @@ namespace Term.Red
   intro t1 _t2 t1' h; apply fh h
   exact h
 
-namespace Term.Red
+end Red
 
-namespace Term.ParRed
+namespace ParRed
 
   @[simp]
   theorem refl1 t : t =β> t := by
   induction t; all_goals constructor <;> simp [*]
 
   theorem refl t : t =β>* t := by constructor
+
+  theorem trans_flip : x =β>* y -> y =β> z -> x =β>* z := by
+  intro h1 h2
+  induction h1
+  case _ => apply ParRedStar.step h2; apply refl
+  case _ h3 _h4 ih =>  apply ParRedStar.step h3 (ih h2)
+
+  theorem trans : x =β>* y -> y =β>* z -> x =β>* z := by
+  intro h1 h2
+  induction h2; simp [*]
+  case _ r1 _r2 ih =>
+    apply ih; apply trans_flip h1 r1
 
   theorem from_red : s -β> t -> s =β> t := by
   intro h
@@ -253,7 +273,7 @@ namespace Term.ParRed
   case none => apply Term.Red.refl
   case const => apply Term.Red.refl
   case beta A _A' b b' t t' m _ _ _ _ih1 ih2 ih3 =>
-    have r1 := congr2 (λ b t => .app m (.lam m A b) t)
+    have r1 := Red.congr2 (λ b t => .app m (.lam m A b) t)
       (by {
         intro t1 t2 t1' h; simp
         apply Red.app_congr1; apply Red.lam_congr2; apply h
@@ -264,27 +284,27 @@ namespace Term.ParRed
       })
       ih2 ih3
     simp at r1
-    apply trans_flip; apply r1; constructor
+    apply Red.trans_flip; apply r1; constructor
   case proj1 B _B' t t' s _s' _ _ _ _ih1 ih2 _ih3 =>
-    have r1 := congr1 (λ t => .fst (.pair B t s))
+    have r1 := Red.congr1 (λ t => .fst (.pair B t s))
       (by {
         intro t t' h; simp
         apply Red.fst_congr; apply Red.pair_congr2; apply h
       })
       ih2
     simp at r1
-    apply trans_flip; apply r1; constructor
+    apply Red.trans_flip; apply r1; constructor
   case proj2 B _B' t _t' s s' _ _ _ _ih1 _ih2 ih3 =>
-    have r1 := congr1 (λ s => .snd (.pair B t s))
+    have r1 := Red.congr1 (λ s => .snd (.pair B t s))
       (by {
         intro t t' h; simp
         apply Red.snd_congr; apply Red.pair_congr3; apply h
       })
       ih3
     simp at r1
-    apply trans_flip; apply r1; constructor
+    apply Red.trans_flip; apply r1; constructor
   case substelim B B' t t' _ _ ih1 ih2 =>
-    have r1 := congr2 (λ B t => .subst B (.refl t))
+    have r1 := Red.congr2 (λ B t => .subst B (.refl t))
       (by {
         intro t1 t2 t1' h; simp
         apply Red.subst_congr1; apply h
@@ -295,19 +315,19 @@ namespace Term.ParRed
       })
       ih1 ih2
     simp at r1
-    apply trans_flip; apply r1; constructor
-  case lam_congr ih1 ih2 => apply congr2 (.lam _) .lam_congr1 .lam_congr2 ih1 ih2
-  case app_congr ih1 ih2 => apply congr2 (.app _) .app_congr1 .app_congr2 ih1 ih2
-  case all_congr ih1 ih2 => apply congr2 (.all _) .all_congr1 .all_congr2 ih1 ih2
-  case pair_congr ih1 ih2 ih3 => apply congr3 .pair .pair_congr1 .pair_congr2 .pair_congr3 ih1 ih2 ih3
-  case fst_congr ih => apply congr1 .fst .fst_congr ih
-  case snd_congr ih => apply congr1 .snd .snd_congr ih
-  case prod_congr ih1 ih2 => apply congr2 .prod .prod_congr1 .prod_congr2 ih1 ih2
-  case refl_congr ih => apply congr1 .refl .refl_congr ih
-  case subst_congr ih1 ih2 => apply congr2 .subst .subst_congr1 .subst_congr2 ih1 ih2
-  case phi_congr ih1 ih2 ih3 => apply congr3 .phi .phi_congr1 .phi_congr2 .phi_congr3 ih1 ih2 ih3
-  case eq_congr ih1 ih2 ih3 => apply congr3 .eq .eq_congr1 .eq_congr2 .eq_congr3 ih1 ih2 ih3
-  case conv_congr ih1 ih2 => apply congr2 (λ t1 t2 => .conv t1 t2 _) .conv_congr1 .conv_congr2 ih1 ih2
+    apply Red.trans_flip; apply r1; constructor
+  case lam_congr ih1 ih2 => apply Red.congr2 (.lam _) .lam_congr1 .lam_congr2 ih1 ih2
+  case app_congr ih1 ih2 => apply Red.congr2 (.app _) .app_congr1 .app_congr2 ih1 ih2
+  case all_congr ih1 ih2 => apply Red.congr2 (.all _) .all_congr1 .all_congr2 ih1 ih2
+  case pair_congr ih1 ih2 ih3 => apply Red.congr3 .pair .pair_congr1 .pair_congr2 .pair_congr3 ih1 ih2 ih3
+  case fst_congr ih => apply Red.congr1 .fst .fst_congr ih
+  case snd_congr ih => apply Red.congr1 .snd .snd_congr ih
+  case prod_congr ih1 ih2 => apply Red.congr2 .prod .prod_congr1 .prod_congr2 ih1 ih2
+  case refl_congr ih => apply Red.congr1 .refl .refl_congr ih
+  case subst_congr ih1 ih2 => apply Red.congr2 .subst .subst_congr1 .subst_congr2 ih1 ih2
+  case phi_congr ih1 ih2 ih3 => apply Red.congr3 .phi .phi_congr1 .phi_congr2 .phi_congr3 ih1 ih2 ih3
+  case eq_congr ih1 ih2 ih3 => apply Red.congr3 .eq .eq_congr1 .eq_congr2 .eq_congr3 ih1 ih2 ih3
+  case conv_congr ih1 ih2 => apply Red.congr2 (λ t1 t2 => .conv t1 t2 _) .conv_congr1 .conv_congr2 ih1 ih2
 
   theorem to_redstar : s =β>* t -> s -β>* t := by
   intro h
@@ -454,6 +474,18 @@ namespace Term.ParRed
     simp; constructor; apply ih1 _ _ h1 h2; apply ih2 _ _ h1 h2; apply ih3 _ _ h1 h2
   )
 
+  theorem subst_beta : b =β> b' -> t =β> t' -> b β[t] =β> b' β[t'] := by
+  intro h1 h2
+  apply subst <;> simp [*]
+  case _ =>
+    intro n x h
+    cases n <;> simp at *
+    case _ => subst h; apply h2
+  case _ =>
+    intro n x h
+    cases n <;> simp at *
+    case _ => exact h
+
   theorem complete : s =β> t -> t =β> pcompl s := by
   intro h
   induction h
@@ -562,7 +594,7 @@ namespace Term.ParRed
       replace r3 := ParRedStar.step h1 ih.1
       exists w; apply And.intro; apply r3; apply ih.2
 
-  theorem par_confluence : s =β>* t1 -> s =β>* t2 -> ∃ t, t1 =β>* t ∧ t2 =β>* t := by
+  theorem confluence : s =β>* t1 -> s =β>* t2 -> t1 ≡β≡ t2 := by
   intro h1 h2
   induction h1 generalizing t2
   case _ z =>
@@ -579,19 +611,80 @@ namespace Term.ParRed
         apply ih.1; apply ParRedStar.step
         apply h3.2; apply ih.2
 
-end Term.ParRed
+end ParRed
 
-namespace Term.Red
+namespace ParRedConv
 
-  theorem confluence : s -β>* t1 -> s -β>* t2 -> ∃ t, t1 -β>* t ∧ t2 -β>* t := by
+  theorem refl : A ≡β≡ A := by
+  induction A
+  all_goals (
+    apply Exists.intro; apply And.intro
+    apply ParRedStar.refl; apply ParRedStar.refl
+  )
+
+  theorem sym : A ≡β≡ B -> B ≡β≡ A := by
+  intro h
+  cases h
+  case _ C ih => exists C; simp [*]
+
+  theorem trans : A ≡β≡ B -> B ≡β≡ C -> A ≡β≡ C := by
+  intro h1 h2
+  cases h1
+  case _ C1 ih1 =>
+    cases h2
+    case _ C2 ih2 =>
+      have conf := ParRed.confluence ih1.2 ih2.1
+      cases conf
+      case _ Z ih =>
+        exists Z; apply And.intro
+        apply ParRed.trans ih1.1 ih.1
+        apply ParRed.trans ih2.2 ih.2
+
+end ParRedConv
+
+namespace Red
+
+  theorem confluence : s -β>* t1 -> s -β>* t2 -> t1 =β= t2 := by
   intro h1 h2
   replace h1 := ParRed.from_redstar h1
   replace h2 := ParRed.from_redstar h2
-  have conf := ParRed.par_confluence h1 h2
+  have conf := ParRed.confluence h1 h2
   cases conf
   case _ t conf =>
     exists t; apply And.intro
     apply ParRed.to_redstar conf.1
     apply ParRed.to_redstar conf.2
 
-end Term.Red
+end Red
+
+namespace RedConv
+
+  theorem refl : A =β= A := by
+  induction A
+  all_goals (
+    unfold RedConv; apply Exists.intro
+    apply And.intro; apply RedStar.refl; apply RedStar.refl
+  )
+
+  theorem sym : A =β= B -> B =β= A := by
+  intro h
+  cases h
+  case _ C ih => exists C; simp [*]
+
+  theorem trans : A =β= B -> B =β= C -> A =β= C := by
+  intro h1 h2
+  unfold RedConv at *
+  cases h1
+  case _ C1 ih1 =>
+    cases h2
+    case _ C2 ih2 =>
+      have conf := Red.confluence ih1.2 ih2.1
+      cases conf
+      case _ Z ih =>
+        exists Z; apply And.intro
+        apply Red.trans ih1.1 ih.1
+        apply Red.trans ih2.2 ih.2
+
+end RedConv
+
+end Term
