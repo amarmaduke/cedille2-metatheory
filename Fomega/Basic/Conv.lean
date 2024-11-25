@@ -18,7 +18,11 @@ namespace Fomega.Conv
   induction h
   case ax => constructor
   case bound => constructor
-  all_goals (constructor <;> simp at * <;> simp [*])
+  all_goals (constructor <;> simp at * <;> try simp [*])
+  case _ ih1 ih2 => apply ih1
+  case _ ih1 ih2 => apply ih2
+  case _ ih1 ih2 => apply ih1
+  case _ ih1 ih2 => apply ih2
 
   -- theorem sym :
   --   IsPreProof A ->
@@ -104,8 +108,14 @@ namespace Fomega.Conv
   --   apply Conv.lam_eta2; simp at *; apply ih
   case app_congr f1 f2 a1 a2 _j1 _j2 ih1 ih2 =>
     constructor; apply ih1; apply ih2
-  case app_beta1 ih => apply Conv.app_beta1; simp at *; apply ih
-  case app_beta2 ih => apply Conv.app_beta2; simp at *; apply ih
+  case app_beta1 ih1 ih2 =>
+    apply Conv.app_beta1
+    case _ => simp at ih1; apply ih1
+    case _ => simp; simp at ih2; apply ih2
+  case app_beta2 ih1 ih2 =>
+    apply Conv.app_beta2
+    case _ => simp at ih1; apply ih1
+    case _ => simp; simp at ih2; apply ih2
 
   theorem subst : (∀ n s, σ n = .replace s -> IsPreProof s) -> A === B -> ([σ]A) === ([σ]B) := by
   intro h j
@@ -130,8 +140,14 @@ namespace Fomega.Conv
   --   apply ih h
   case app_congr _j1 _j2 ih1 ih2 =>
     constructor; apply ih1 h; apply ih2 h
-  case app_beta1 ih => apply Conv.app_beta1; simp at *; apply ih h
-  case app_beta2 ih => apply Conv.app_beta2; simp at *; apply ih h
+  case app_beta1 ih1 ih2 =>
+    apply Conv.app_beta1
+    case _ => simp at ih1; apply ih1 h
+    case _ => simp; simp at ih2; apply ih2 h
+  case app_beta2 ih1 ih2 =>
+    apply Conv.app_beta2
+    case _ => simp at ih1; apply ih1 h
+    case _ => simp; simp at ih2; apply ih2 h
 
   theorem beta : IsPreProof t -> A === B -> (A β[t]) === (B β[t]) := by
   intro p h; simp; apply subst
@@ -141,50 +157,51 @@ namespace Fomega.Conv
     subst h2; exact p
   case _ => exact h
 
-  theorem to_beta_conv : A === B -> A =β= B := by
-  intro h
-  induction h
-  case ax => apply Term.RedConv.refl
-  case bound => apply Term.RedConv.refl
-  case lam_congr ih1 ih2 =>
-    unfold Term.RedConv at *
-    cases ih1
-    case _ C1 ih1 =>
-      cases ih2
-      case _ C2 ih2 =>
-        exists .lam mf C1 C2; apply And.intro
-        apply Term.Red.congr2 (.lam mf) .lam_congr1 .lam_congr2 ih1.1 ih2.1
-        apply Term.Red.congr2 (.lam mf) .lam_congr1 .lam_congr2 ih1.2 ih2.2
-  case all_congr ih1 ih2 =>
-    cases ih1
-    case _ C1 ih1 =>
-      cases ih2
-      case _ C2 ih2 =>
-        exists .all mf C1 C2; apply And.intro
-        apply Term.Red.congr2 (.all mf) .all_congr1 .all_congr2 ih1.1 ih2.1
-        apply Term.Red.congr2 (.all mf) .all_congr1 .all_congr2 ih1.2 ih2.2
-  case app_congr ih1 ih2 =>
-    cases ih1
-    case _ C1 ih1 =>
-      cases ih2
-      case _ C2 ih2 =>
-        exists .app mf C1 C2; apply And.intro
-        apply Term.Red.congr2 (.app mf) .app_congr1 .app_congr2 ih1.1 ih2.1
-        apply Term.Red.congr2 (.app mf) .app_congr1 .app_congr2 ih1.2 ih2.2
-  case app_beta1 t b z A _ ih =>
-    unfold Term.RedConv at *
-    cases ih
-    case _ C ih =>
-      have r1 := @Term.Red.beta mf A b t
-      replace r1 := Term.RedStar.step r1 ih.1
-      exists C; simp [*]
-  case app_beta2 z t b A _ ih =>
-    unfold Term.RedConv at *
-    cases ih
-    case _ C ih =>
-      have r1 := @Term.Red.beta mf A b t
-      replace r1 := Term.RedStar.step r1 ih.2
-      exists C; simp [*]
+  -- theorem to_beta_conv : A === B -> A =β= B := by
+  -- intro h
+  -- induction h
+  -- case ax => apply Term.RedConv.refl
+  -- case bound => apply Term.RedConv.refl
+  -- case lam_congr ih1 ih2 =>
+  --   unfold Term.RedConv at *
+  --   cases ih1
+  --   case _ C1 ih1 =>
+  --     cases ih2
+  --     case _ C2 ih2 =>
+  --       exists .lam mf C1 C2; apply And.intro
+  --       apply Term.Red.congr2 (.lam mf) .lam_congr1 .lam_congr2 ih1.1 ih2.1
+  --       apply Term.Red.congr2 (.lam mf) .lam_congr1 .lam_congr2 ih1.2 ih2.2
+  -- case all_congr ih1 ih2 =>
+  --   cases ih1
+  --   case _ C1 ih1 =>
+  --     cases ih2
+  --     case _ C2 ih2 =>
+  --       exists .all mf C1 C2; apply And.intro
+  --       apply Term.Red.congr2 (.all mf) .all_congr1 .all_congr2 ih1.1 ih2.1
+  --       apply Term.Red.congr2 (.all mf) .all_congr1 .all_congr2 ih1.2 ih2.2
+  -- case app_congr ih1 ih2 =>
+  --   cases ih1
+  --   case _ C1 ih1 =>
+  --     cases ih2
+  --     case _ C2 ih2 =>
+  --       exists .app mf C1 C2; apply And.intro
+  --       apply Term.Red.congr2 (.app mf) .app_congr1 .app_congr2 ih1.1 ih2.1
+  --       apply Term.Red.congr2 (.app mf) .app_congr1 .app_congr2 ih1.2 ih2.2
+  -- case app_beta1 t b z A _ ih =>
+  --   unfold Term.RedConv at *
+  --   cases ih
+  --   case _ C ih =>
+  --     have r1 := @Term.Red.beta mf A b t
+  --     replace r1 := Term.RedStar.step r1 ih.1
+  --     exists C; simp [*]
+  -- case app_beta2 z t b A _ ih =>
+  --   unfold Term.RedConv at *
+  --   cases ih
+  --   case _ C ih =>
+  --     have r1 := @Term.Red.beta mf A b t
+  --     replace r1 := Term.RedStar.step r1 ih.2
+  --     exists C; simp [*]
+
 
   theorem from_beta_conv : A =β= B -> A === B := by
   intro h
@@ -255,7 +272,6 @@ namespace Fomega.Conv
   case all_congr1 => sorry
   case all_congr2 => sorry
 
-
   theorem par_red_forward : A === B -> A =β> A' -> A' === B := by
   intro h1 h2
   induction h1 generalizing A'
@@ -269,19 +285,19 @@ namespace Fomega.Conv
     case _ r1 r2 => constructor; apply ih1 r1; apply ih2 r2
   case app_congr f1 f2 a1 a2 _ _ ih1 ih2 =>
     cases h2
-    case _ A A' b b' t' r3 r2 _ r1 =>
+    case _ A A' b b' t' r3 r2 h r1 =>
+      apply Conv.app_beta2; apply Conv.sym h
       sorry
-
-    case _ r1 r2 => constructor; apply ih1 r1; apply ih2 r2
-  case app_beta1 t b z A h ih =>
-    cases h2
-    case _ A' b' t' r1 r2 r3 =>
-      apply ih; simp; apply Term.ParRed.subst_beta <;> simp [*]
-    case _ f' t' r1 r2 =>
-      cases r1
-      case _ A' b' r1 r3 =>
-        constructor; apply ih; apply Term.ParRed.subst_beta <;> simp [*]
-  case app_beta2 h ih => constructor; apply ih h2
+    case _ => sorry
+  case app_beta1 t b z A h ih => sorry
+    -- cases h2
+    -- case _ A' b' t' r1 r2 r3 =>
+    --   apply ih; simp; apply Term.ParRed.subst_beta <;> simp [*]
+    -- case _ f' t' r1 r2 =>
+    --   cases r1
+    --   case _ A' b' r1 r3 =>
+    --     constructor; apply ih; apply Term.ParRed.subst_beta <;> simp [*]
+  case app_beta2 h ih => sorry
 
 
   theorem red2 : IsPreProof A' -> A === B -> A' -β>* A -> A' === B := by
@@ -293,7 +309,7 @@ namespace Fomega.Conv
   case lam_congr => sorry
   case app_congr => sorry
   case app_beta1 h ih => sorry
-  case app_beta2 h ih => constructor; apply ih p1 h2
+  case app_beta2 h ih => sorry
 
   theorem red : IsPreProof A' -> A === B -> A' -β> A -> A' === B := by
   intro p1 h1 h2

@@ -16,8 +16,14 @@ namespace Fomega
   --   Conv (Term.eta mf A t1) (.lam mf A t2) ->
   --   Conv t1 (.lam mf A t2)
   | app_congr : Conv f1 f2 -> Conv a1 a2 -> Conv (.app mf f1 a1) (.app mf f2 a2)
-  | app_beta1 : Conv (b β[t]) z -> Conv (.app mf (.lam mf A b) t) z
-  | app_beta2 : Conv z (b β[t]) -> Conv z (.app mf (.lam mf A b) t)
+  | app_beta1 :
+    Conv (.lam mf A b) t1 ->
+    Conv (b β[t2]) z ->
+    Conv (.app mf t1 t2) z
+  | app_beta2 :
+    Conv t1 (.lam mf A b) ->
+    Conv z (b β[t2]) ->
+    Conv z (.app mf t1 t2)
 
 end Fomega
 
