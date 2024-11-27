@@ -3,7 +3,6 @@ import Common
 import Fomega.Ctx
 import Fomega.Proof
 import Fomega.PreProof
-import Fomega.Basic.Conv
 
 namespace Fomega.Proof
 
@@ -50,7 +49,7 @@ namespace Fomega.Proof
     constructor
     case _ => apply ih1 r h
     case _ => apply ih2 r h
-    case _ => apply Conv.rename; apply j3
+    case _ => apply Term.RedConv.subst; apply j3
 
   theorem weaken B : Γ ⊢ t : A -> (B::Γ) ⊢ ([S]t) : ([S]A) := by
   intro j; apply rename; exact j

@@ -2,7 +2,6 @@ import Common
 import Fomega.Ctx
 import Fomega.Proof
 import Fomega.PreProof
-import Fomega.Basic.Conv
 import Fomega.Basic.Weaken
 import Fomega.Basic.Substitution
 import Fomega.Basic.Inversion
@@ -41,11 +40,10 @@ namespace Fomega.Proof
             subst h3; exact h
           case _ T K' q1 q2 q3 =>
             replace q1 := all_destruct q1 q2
-            replace q1 := beta q1 h2
-            replace q2 := Conv.beta (IsPreProof.from_proof h2) q2
+            replace q1 := beta q1.2.2 h2
             apply Or.inr; exists K
             apply Proof.conv; subst h3; simp at *
-            apply q1; apply q3; apply q2
+            apply q1; apply q3; apply Term.RedConv.refl
   case conv K _h1 h2 _h3 _ih1 _ih2 =>
     apply Or.inr; exists K
 

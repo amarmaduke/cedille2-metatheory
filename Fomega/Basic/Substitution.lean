@@ -3,7 +3,6 @@ import Common
 import Fomega.Ctx
 import Fomega.Proof
 import Fomega.PreProof
-import Fomega.Basic.Conv
 import Fomega.Basic.Weaken
 
 namespace Fomega.Proof
@@ -71,11 +70,7 @@ namespace Fomega.Proof
     simp at *; subst j3; simp
   case conv Γ' t' A' B K _j1 _j2 j3 ih1 ih2 =>
     constructor; apply ih1 h1 h2 h3; apply ih2 h1 h2 h3
-    apply Conv.subst
-    case _ =>
-      intro n s eq
-      apply h1 n s eq
-    case _ => exact j3
+    apply Term.RedConv.subst _ j3
 
   theorem beta : (A::Γ) ⊢ b : B -> Γ ⊢ t : A -> Γ ⊢ (b β[t]) : (B β[t]) := by
   simp; intro j1 j2

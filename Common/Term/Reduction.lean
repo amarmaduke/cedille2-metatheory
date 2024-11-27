@@ -117,7 +117,7 @@ namespace Red
   case _ => simp [*]
   case _ h2 _h3 ih =>  apply ih (trans_flip h1 h2)
 
-  theorem subst1 σ : t -β> s -> [σ]t -β> [σ]s := by
+  theorem subst1_same σ : t -β> s -> [σ]t -β> [σ]s := by
   intro h
   induction h generalizing σ
   all_goals try (case _ ih => simp; constructor; apply ih)
@@ -134,11 +134,44 @@ namespace Red
     have h := @Red.substelim ([σ]B) ([σ]t)
     simp at *; exact h
 
-  theorem subst σ : t -β>* s -> [σ]t -β>* [σ]s := by
+  theorem subst_same σ : t -β>* s -> [σ]t -β>* [σ]s := by
   intro h
   induction h
   case _ => apply refl
-  case _ h1 _h2 ih => apply RedStar.step (subst1 σ h1) ih
+  case _ h1 _h2 ih => apply RedStar.step (subst1_same σ h1) ih
+
+  theorem subst_lift_rename σ τ :
+    (∀ n k, σ n = .rename k -> τ n = .rename k) ->
+    ∀ n k, ^σ n = .rename k -> ^τ n = .rename k
+  := by
+  intro h1 n k h2
+  cases n <;> simp at *
+  case _ => exact h2
+  case _ n =>
+    unfold Subst.compose at *; simp at *
+    generalize ydef : σ n = y at *
+    cases y <;> simp at *
+    case _ i => rw [h1 n i ydef]; simp [*]
+
+  -- theorem subst_lift_replace σ τ :
+  --   (∀ n t, σ n = .replace t -> ∃ t', τ n = .replace t' ∧ t =β> t') ->
+  --   ∀ n t, ^σ n = .replace t -> ∃ t', ^τ n = .replace t' ∧ t =β> t'
+  -- := by
+  -- sorry
+
+  -- theorem subst1 σ τ :
+  --   (∀ n k, σ n = .rename k -> τ n = .rename k) ->
+  --   (∀ n t, σ n = .replace t -> ∃ t', τ n = .replace t' ∧ t -β> t') ->
+  --   t -β> s -> [σ]t -β> [τ]s
+  -- := by
+  -- intro h1 h2 j
+  -- induction j
+  -- case beta => sorry
+  -- case proj1 => sorry
+  -- case proj2 => sorry
+  -- case substelim => sorry
+  -- case lam_congr1 ih =>
+  --   simp; apply Red.lam_congr1
 
   theorem congr3_1 t2 t3 (f : Term -> Term -> Term -> Term) :
     (∀ {t1 t2 t3 t1'}, t1 -β> t1' -> f t1 t2 t3 -β> f t1' t2 t3) ->
@@ -399,19 +432,6 @@ namespace ParRed
         rw [h1.1]; simp
         subst h2; apply subst_same; apply h1.2
 
-  theorem subst_lift_rename σ τ :
-    (∀ n k, σ n = .rename k -> τ n = .rename k) ->
-    ∀ n k, ^σ n = .rename k -> ^τ n = .rename k
-  := by
-  intro h1 n k h2
-  cases n <;> simp at *
-  case _ => exact h2
-  case _ n =>
-    unfold Subst.compose at *; simp at *
-    generalize ydef : σ n = y at *
-    cases y <;> simp at *
-    case _ i => rw [h1 n i ydef]; simp [*]
-
   theorem subst (σ τ : Subst Term) :
     (∀ n t, σ n = .replace t -> ∃ t', τ n = .replace t' ∧ t =β> t') ->
     (∀ n k, σ n = .rename k -> τ n = .rename k) ->
@@ -434,7 +454,7 @@ namespace ParRed
     have h3 := @ParRed.beta ([σ]A) ([τ]A') ([^σ]b) ([^τ]b') ([σ]t) ([τ]t') m
     simp at *; apply h3
     apply ih1 _ _ h1 h2
-    replace ih2 := ih2 (^σ) (^τ) (subst_lift_replace _ _ h1) (subst_lift_rename _ _ h2)
+    replace ih2 := ih2 (^σ) (^τ) (subst_lift_replace _ _ h1) (Red.subst_lift_rename _ _ h2)
     simp at ih2; apply ih2
     apply ih3 _ _ h1 h2
   case proj1 B B' t t' s s' _ _ _ ih1 ih2 ih3 =>
@@ -451,15 +471,15 @@ namespace ParRed
     apply ih1 _ _ h1 h2; apply ih2 _ _ h1 h2
   case lam_congr ih1 ih2 =>
     simp; constructor; apply ih1 _ _ h1 h2
-    replace ih2 := ih2 (^σ) (^τ) (subst_lift_replace _ _ h1) (subst_lift_rename _ _ h2)
+    replace ih2 := ih2 (^σ) (^τ) (subst_lift_replace _ _ h1) (Red.subst_lift_rename _ _ h2)
     simp at ih2; exact ih2
   case all_congr ih1 ih2 =>
     simp; constructor; apply ih1 _ _ h1 h2
-    replace ih2 := ih2 (^σ) (^τ) (subst_lift_replace _ _ h1) (subst_lift_rename _ _ h2)
+    replace ih2 := ih2 (^σ) (^τ) (subst_lift_replace _ _ h1) (Red.subst_lift_rename _ _ h2)
     simp at ih2; exact ih2
   case prod_congr ih1 ih2 =>
     simp; constructor; apply ih1 _ _ h1 h2
-    replace ih2 := ih2 (^σ) (^τ) (subst_lift_replace _ _ h1) (subst_lift_rename _ _ h2)
+    replace ih2 := ih2 (^σ) (^τ) (subst_lift_replace _ _ h1) (Red.subst_lift_rename _ _ h2)
     simp at ih2; exact ih2
   all_goals try (
     case _ ih1 =>
@@ -684,6 +704,24 @@ namespace RedConv
         exists Z; apply And.intro
         apply Red.trans ih1.1 ih.1
         apply Red.trans ih2.2 ih.2
+
+  theorem subst σ : A =β= B -> [σ]A =β= [σ]B := by
+  intro h
+  cases h
+  case _ C h =>
+    have h1 := Red.subst_same σ h.1
+    have h2 := Red.subst_same σ h.2
+    exists [σ]C
+
+  theorem type_not_conv_to_kind : ¬ (★ =β= □) := by
+  intro h
+  cases h
+  case _ w h =>
+  cases h.1
+  case _ =>
+    cases h.2
+    case _ r _ => cases r
+  case _ r _ => cases r
 
 end RedConv
 

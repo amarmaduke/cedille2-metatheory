@@ -4,33 +4,6 @@ import Fomega.Ctx
 
 namespace Fomega
 
-  inductive Conv : Term -> Term -> Prop
-  | ax : Conv (.const K) (.const K)
-  | bound x : Conv (.bound K x) (.bound K x)
-  | all_congr : Conv A1 A2 -> Conv B1 B2 -> Conv (.all mf A1 B1) (.all mf A2 B2)
-  | lam_congr : Conv A1 A2 -> Conv t1 t2 -> Conv (.lam mf A1 t1) (.lam mf A2 t2)
-  -- | lam_eta1 :
-  --   Conv (.lam mf A t1) (Term.eta mf A t2) ->
-  --   Conv (.lam mf A t1) t2
-  -- | lam_eta2 :
-  --   Conv (Term.eta mf A t1) (.lam mf A t2) ->
-  --   Conv t1 (.lam mf A t2)
-  | app_congr : Conv f1 f2 -> Conv a1 a2 -> Conv (.app mf f1 a1) (.app mf f2 a2)
-  | app_beta1 :
-    Conv (.lam mf A b) t1 ->
-    Conv (b β[t2]) z ->
-    Conv (.app mf t1 t2) z
-  | app_beta2 :
-    Conv t1 (.lam mf A b) ->
-    Conv z (b β[t2]) ->
-    Conv z (.app mf t1 t2)
-
-end Fomega
-
-notation:100 A:32 " === " B:31 => Fomega.Conv A B
-
-namespace Fomega
-
   inductive Proof : Ctx -> Term -> Term -> Prop
   | ax : Proof Γ ★ □
   | var :
@@ -56,7 +29,7 @@ namespace Fomega
   | conv :
     Proof Γ t A ->
     Proof Γ B (.const K) ->
-    A === B ->
+    A =β= B ->
     Proof Γ t B
 
   inductive Wf : Term -> Ctx -> Prop
