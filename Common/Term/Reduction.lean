@@ -263,6 +263,68 @@ namespace Red
   intro t1 _t2 t1' h; apply fh h
   exact h
 
+  theorem lam_congr : .lam m A t -β>* w -> ∃ A', ∃ t', w = .lam m A' t' ∧ A -β>* A' ∧ t -β>* t' := by
+  intro h
+  generalize udef : Term.lam m A t = u at *
+  induction h generalizing m A t
+  case _ =>
+    subst udef; exists A; exists t
+    apply And.intro; rfl
+    apply And.intro; apply refl; apply refl
+  case _ r1 r2 ih =>
+    subst udef; cases r1
+    case _ A' r =>
+      replace ih := @ih m A' t rfl
+      cases ih
+      case _ q1 ih =>
+      cases ih
+      case _ q2 ih =>
+        rw [ih.1]; exists q1; exists q2
+        apply And.intro; rfl
+        apply And.intro; apply RedStar.step r ih.2.1
+        apply ih.2.2
+    case _ t' r =>
+      replace ih := @ih m A t' rfl
+      cases ih
+      case _ q1 ih =>
+      cases ih
+      case _ q2 ih =>
+        rw [ih.1]; exists q1; exists q2
+        apply And.intro; rfl
+        apply And.intro; apply ih.2.1
+        apply RedStar.step r ih.2.2
+
+  theorem all_congr : .all m A B -β>* w -> ∃ A', ∃ B', w = .all m A' B' ∧ A -β>* A' ∧ B -β>* B' := by
+  intro h
+  generalize udef : Term.all m A B = u at *
+  induction h generalizing m A B
+  case _ =>
+    subst udef; exists A; exists B
+    apply And.intro; rfl
+    apply And.intro; apply refl; apply refl
+  case _ r1 r2 ih =>
+    subst udef; cases r1
+    case _ A' r =>
+      replace ih := @ih m A' B rfl
+      cases ih
+      case _ q1 ih =>
+      cases ih
+      case _ q2 ih =>
+        rw [ih.1]; exists q1; exists q2
+        apply And.intro; rfl
+        apply And.intro; apply RedStar.step r ih.2.1
+        apply ih.2.2
+    case _ t' r =>
+      replace ih := @ih m A t' rfl
+      cases ih
+      case _ q1 ih =>
+      cases ih
+      case _ q2 ih =>
+        rw [ih.1]; exists q1; exists q2
+        apply And.intro; rfl
+        apply And.intro; apply ih.2.1
+        apply RedStar.step r ih.2.2
+
 end Red
 
 namespace ParRed
@@ -722,6 +784,54 @@ namespace RedConv
     cases h.2
     case _ r _ => cases r
   case _ r _ => cases r
+
+  theorem lam_congr : .lam m1 A1 B1 =β= .lam m2 A2 B2 -> m1 = m2 ∧ A1 =β= A2 ∧ B1 =β= B2 := by
+  intro h
+  cases h
+  case _ w h =>
+    have h1 := Red.lam_congr h.1
+    cases h1
+    case _ A h1 =>
+    cases h1
+    case _ B h1 =>
+    cases h1
+    case _ e h1 =>
+      subst e
+      have h2 := Red.lam_congr h.2
+      cases h2
+      case _ A h2 =>
+      cases h2
+      case _ B h2 =>
+      cases h2
+      case _ e h2 =>
+        injection e with e1 e2 e3; subst e1; subst e2; subst e3
+        apply And.intro; rfl
+        apply And.intro; exists A; apply And.intro; apply h1.1; apply h2.1
+        exists B; apply And.intro; apply h1.2; apply h2.2
+
+  theorem all_congr : .all m1 A1 B1 =β= .all m2 A2 B2 -> m1 = m2 ∧ A1 =β= A2 ∧ B1 =β= B2 := by
+  intro h
+  cases h
+  case _ w h =>
+    have h1 := Red.all_congr h.1
+    cases h1
+    case _ A h1 =>
+    cases h1
+    case _ B h1 =>
+    cases h1
+    case _ e h1 =>
+      subst e
+      have h2 := Red.all_congr h.2
+      cases h2
+      case _ A h2 =>
+      cases h2
+      case _ B h2 =>
+      cases h2
+      case _ e h2 =>
+        injection e with e1 e2 e3; subst e1; subst e2; subst e3
+        apply And.intro; rfl
+        apply And.intro; exists A; apply And.intro; apply h1.1; apply h2.1
+        exists B; apply And.intro; apply h1.2; apply h2.2
 
 end RedConv
 
