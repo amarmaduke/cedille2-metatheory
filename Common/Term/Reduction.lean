@@ -8,6 +8,12 @@ namespace Term
   | proj1 : Red (.fst (.pair B t s)) t
   | proj2 : Red (.snd (.pair B t s)) s
   | substelim : Red (.subst B (.refl t)) (.lam mf (.app mt B t) (.bound .type 0))
+  | conv_lam : Red (.conv (.all m A B) (.lam m A t) n) (.lam m A (.conv B t n))
+  | conv_pair : Red (.conv T (.pair T t s) n) (.pair T t s)
+  | conv_refl : Red (.conv (.eq A t t) (.refl t) n) (.refl (conv A t n))
+  | conv_all : Red (.conv (.const K) (.all m A B) n) (.all m A B)
+  | conv_prod : Red (.conv ★ (.prod A B) n) (.prod A B)
+  | conv_eq : Red (.conv ★ (.eq A a b) n) (.eq A a b)
   | lam_congr1 : Red A A' -> Red (.lam m A t) (.lam m A' t)
   | lam_congr2 : Red t t' -> Red (.lam m A t) (.lam m A t')
   | app_congr1 : Red f f' -> Red (.app m f t) (.app m f' t)
@@ -30,8 +36,8 @@ namespace Term
   | eq_congr1 : Red A A' -> Red (.eq A a b) (.eq A' a b)
   | eq_congr2 : Red a a' -> Red (.eq A a b) (.eq A a' b)
   | eq_congr3 : Red b b' -> Red (.eq A a b) (.eq A a b')
-  | conv_congr1 : Red A A' -> Red (.conv A t c) (.conv A' t c)
-  | conv_congr2 : Red t t' -> Red (.conv A t c) (.conv A t' c)
+  | conv_congr1 : Red A A' -> Red (.conv A t n) (.conv A' t n)
+  | conv_congr2 : Red t t' -> Red (.conv A t n) (.conv A t' n)
 
   inductive RedStar : Term -> Term -> Prop where
   | refl : RedStar t t
@@ -47,6 +53,18 @@ namespace Term
   | proj1 : ParRed B B' -> ParRed t t' -> ParRed s s' -> ParRed (.fst (.pair B t s)) t'
   | proj2 : ParRed B B' -> ParRed t t' -> ParRed s s' -> ParRed (.snd (.pair B t s)) s'
   | substelim : ParRed B B' -> ParRed t t' -> ParRed (.subst B (.refl t)) (.lam mf (.app mt B' t') (.bound .type 0))
+  | conv_lam : ParRed A1 A' -> ParRed A2 A' -> ParRed B B' -> ParRed t t' ->
+    ParRed (.conv (.all m A1 B) (.lam m A2 t) n) (.lam m A' (.conv B' t' n))
+  | conv_pair : ParRed T T' -> ParRed t t' -> ParRed s s' ->
+    ParRed (.conv T (.pair T t s) n) (.pair T' t' s')
+  | conv_refl : ParRed A A' -> ParRed t t' ->
+    ParRed (.conv (.eq A t t) (.refl t) n) (.refl (conv A' t' n))
+  | conv_all : ParRed A A' -> ParRed B B' ->
+    ParRed (.conv (.const K) (.all m A B) n) (.all m A' B')
+  | conv_prod : ParRed A A' -> ParRed B B' ->
+    ParRed (.conv ★ (.prod A B) n) (.prod A' B')
+  | conv_eq : ParRed A A' -> ParRed a a' -> ParRed b b' ->
+    ParRed (.conv ★ (.eq A a b) n) (.eq A' a' b')
   | lam_congr : ParRed A A' -> ParRed t t' -> ParRed (.lam m A t) (.lam m A' t')
   | app_congr : ParRed f f' -> ParRed a a' -> ParRed (.app m f a) (.app m f' a')
   | all_congr : ParRed A A' -> ParRed B B' -> ParRed (.all m A B) (.all m A' B')
@@ -68,6 +86,18 @@ namespace Term
   | .fst (.pair _ t _) => pcompl t
   | .snd (.pair _ _ s) => pcompl s
   | .subst B (.refl t) => .lam mf (.app mt (pcompl B) (pcompl t)) (.bound .type 0)
+  | .conv (.all m1 A1 B) (.lam m2 A2 t) n =>
+    if pcompl A1 == pcompl A2 && m1 == m2 then .lam m1 (pcompl A1) (.conv (pcompl B) (pcompl t) n)
+    else .conv (pcompl (.all m1 A1 B)) (pcompl (.lam m2 A2 t)) n
+  | .conv T1 (.pair T2 t s) n =>
+    if T1 == T2 then .pair (pcompl T1) (pcompl t) (pcompl s)
+    else .conv (pcompl T1) (pcompl (.pair T2 t s)) n
+  | .conv (.eq A t1 t2) (.refl t3) n =>
+    if t1 == t2 && t2 == t3 then .refl (conv (pcompl A) (pcompl t1) n)
+    else .conv (pcompl (.eq A t1 t2)) (pcompl (.refl t3)) n
+  | .conv (.const _) (.all m A B) _ => .all m (pcompl A) (pcompl B)
+  | .conv ★ (.prod A B) _ => .prod (pcompl A) (pcompl B)
+  | .conv ★ (.eq A a b) _ => .eq (pcompl A) (pcompl a) (pcompl b)
   | .lam m A t => .lam m (pcompl A) (pcompl t)
   | .app m f a => .app m (pcompl f) (pcompl a)
   | .all m A B => .all m (pcompl A) (pcompl B)
@@ -132,6 +162,24 @@ namespace Red
     simp at *; exact h
   case substelim B t =>
     have h := @Red.substelim ([σ]B) ([σ]t)
+    simp at *; exact h
+  case conv_lam m A B t n =>
+    have h := @Red.conv_lam m ([σ]A) ([^σ]B) ([^σ]t) n
+    simp at *; exact h
+  case conv_pair T t s n =>
+    have h := @Red.conv_pair ([σ]T) ([σ]t) ([σ]s) n
+    simp at *; exact h
+  case conv_refl A t n =>
+    have h := @Red.conv_refl ([σ]A) ([σ]t) n
+    simp at *; exact h
+  case conv_all K m A B n =>
+    have h := @Red.conv_all K m ([σ]A) ([^σ]B) n
+    simp at *; exact h
+  case conv_prod A B n =>
+    have h := @Red.conv_prod ([σ]A) ([^σ]B) n
+    simp at *; exact h
+  case conv_eq A a b n =>
+    have h := @Red.conv_eq ([σ]A) ([σ]a) ([σ]b) n
     simp at *; exact h
 
   theorem subst_same σ : t -β>* s -> [σ]t -β>* [σ]s := by
@@ -411,6 +459,48 @@ namespace ParRed
       ih1 ih2
     simp at r1
     apply Red.trans_flip; apply r1; constructor
+  case conv_lam A1 A' A2 B B' t t' m n _ _ _ _ ih1 ih2 ih3 ih4 =>
+    apply Red.trans; apply Red.congr2 (λ A1 A2 => (all m A1 B).conv (lam m A2 t) n)
+    intro t1 t2 t1' h; apply Red.conv_congr1; apply Red.all_congr1; apply h
+    intro t1 t2 t2' h; apply Red.conv_congr2; apply Red.lam_congr1; apply h
+    apply ih1; apply ih2
+    apply RedStar.step; apply Red.conv_lam
+    apply Red.congr2 (λ B t => lam m A' (conv B t n))
+    intro t1 t2 t1' h; apply Red.lam_congr2; apply Red.conv_congr1; apply h
+    intro t1 t2 t2' h; apply Red.lam_congr2; apply Red.conv_congr2; apply h
+    apply ih3; apply ih4
+  case conv_pair T T' t t' s s' n _ _ _ ih1 ih2 ih3 =>
+    apply RedStar.step; constructor
+    apply Red.congr3 (λ T t s => pair T t s)
+    intro t1 t2 t3 t1' h; apply Red.pair_congr1; apply h
+    intro t1 t2 t3 t2' h; apply Red.pair_congr2; apply h
+    intro t1 t2 t3 t3' h; apply Red.pair_congr3; apply h
+    apply ih1; apply ih2; apply ih3
+  case conv_refl A A' t t' n _ _ ih1 ih2 =>
+    apply RedStar.step; constructor
+    apply Red.congr2 (λ A t => Term.refl (conv A t n))
+    intro t1 t2 t1' h; apply Red.refl_congr; apply Red.conv_congr1; apply h
+    intro t1 t2 t2' h; apply Red.refl_congr; apply Red.conv_congr2; apply h
+    apply ih1; apply ih2
+  case conv_all A A' B B' K m n _ _ ih1 ih2 =>
+    apply RedStar.step; constructor
+    apply Red.congr2 (λ A B => all m A B)
+    intro t1 t2 t1' h; apply Red.all_congr1; apply h
+    intro t1 t2 t2' h; apply Red.all_congr2; apply h
+    apply ih1; apply ih2
+  case conv_prod A A' B B' n _ _ ih1 ih2 =>
+    apply RedStar.step; constructor
+    apply Red.congr2 (λ A B => prod A B)
+    intro t1 t2 t1' h; apply Red.prod_congr1; apply h
+    intro t1 t2 t2' h; apply Red.prod_congr2; apply h
+    apply ih1; apply ih2
+  case conv_eq A A' a a' b b' n _ _ _ ih1 ih2 ih3 =>
+    apply RedStar.step; constructor
+    apply Red.congr3 (λ A a b => eq A a b)
+    intro t1 t2 t3 t1' h; apply Red.eq_congr1; apply h
+    intro t1 t2 t3 t2' h; apply Red.eq_congr2; apply h
+    intro t1 t2 t3 t3' h; apply Red.eq_congr3; apply h
+    apply ih1; apply ih2; apply ih3
   case lam_congr ih1 ih2 => apply Red.congr2 (.lam _) .lam_congr1 .lam_congr2 ih1 ih2
   case app_congr ih1 ih2 => apply Red.congr2 (.app _) .app_congr1 .app_congr2 ih1 ih2
   case all_congr ih1 ih2 => apply Red.congr2 (.all _) .all_congr1 .all_congr2 ih1 ih2
@@ -464,6 +554,22 @@ namespace ParRed
     replace ih2 := ih2 (^σ)
     simp at ih2; exact ih2
   case prod_congr ih1 ih2 =>
+    simp; constructor; apply ih1 σ
+    replace ih2 := ih2 (^σ)
+    simp at ih2; exact ih2
+  case conv_lam ih1 ih2 ih3 ih4 =>
+    simp; constructor; apply ih1 σ; apply ih2 σ
+    replace ih3 := ih3 (^σ)
+    simp at ih3; exact ih3
+    replace ih4 := ih4 (^σ)
+    simp at ih4; exact ih4
+  case conv_pair ih1 ih2 ih3 =>
+    simp; constructor; apply ih1 _; apply ih2 _; apply ih3 _
+  case conv_all ih1 ih2 =>
+    simp; constructor; apply ih1 σ
+    replace ih2 := ih2 (^σ)
+    simp at ih2; exact ih2
+  case conv_prod ih1 ih2 =>
     simp; constructor; apply ih1 σ
     replace ih2 := ih2 (^σ)
     simp at ih2; exact ih2
@@ -531,6 +637,30 @@ namespace ParRed
     have h3 := @ParRed.substelim ([σ]B) ([τ]B') ([σ]t) ([τ]t')
     simp at *; apply h3
     apply ih1 _ _ h1 h2; apply ih2 _ _ h1 h2
+  case conv_lam A1 A' A2 B B' t t' m n _ _ _ _ ih1 ih2 ih3 ih4 =>
+    have h3 := @ParRed.conv_lam ([σ]A1) ([τ]A') ([σ]A2) ([^σ]B) ([^τ]B') ([^σ]t) ([^τ]t') m n
+    simp at *; apply h3
+    apply ih1 _ _ h1 h2; apply ih2 _ _ h1 h2
+    replace ih3 := ih3 (^σ) (^τ) (subst_lift_replace _ _ h1) (Red.subst_lift_rename _ _ h2)
+    simp at ih3; apply ih3
+    replace ih4 := ih4 (^σ) (^τ) (subst_lift_replace _ _ h1) (Red.subst_lift_rename _ _ h2)
+    simp at ih4; apply ih4
+  case conv_pair T T' t t' s s' n _ _ _ ih1 ih2 ih3 =>
+    have h3 := @ParRed.conv_pair ([σ]T) ([τ]T') ([σ]t) ([τ]t') ([σ]s) ([τ]s') n
+    simp at *; apply h3
+    apply ih1 _ _ h1 h2; apply ih2 _ _ h1 h2; apply ih3 _ _ h1 h2
+  case conv_all A A' B B' K m n _ _ ih1 ih2 =>
+    have h3 := @ParRed.conv_all ([σ]A) ([τ]A') ([^σ]B) ([^τ]B') K m
+    simp at *; apply h3
+    apply ih1 _ _ h1 h2
+    replace ih2 := ih2 (^σ) (^τ) (subst_lift_replace _ _ h1) (Red.subst_lift_rename _ _ h2)
+    simp at ih2; apply ih2
+  case conv_prod A A' B B' n _ _ ih1 ih2 =>
+    have h3 := @ParRed.conv_prod ([σ]A) ([τ]A') ([^σ]B) ([^τ]B')
+    simp at *; apply h3
+    apply ih1 _ _ h1 h2
+    replace ih2 := ih2 (^σ) (^τ) (subst_lift_replace _ _ h1) (Red.subst_lift_rename _ _ h2)
+    simp at ih2; apply ih2
   case lam_congr ih1 ih2 =>
     simp; constructor; apply ih1 _ _ h1 h2
     replace ih2 := ih2 (^σ) (^τ) (subst_lift_replace _ _ h1) (Red.subst_lift_rename _ _ h2)
@@ -568,6 +698,15 @@ namespace ParRed
     cases n <;> simp at *
     case _ => exact h
 
+  theorem complete_head : t =β> pcompl s1 -> t =β> pcompl s2 -> pcompl s1 = pcompl s2 := by
+  intro r1 r2
+  generalize sdef : pcompl s1 = s at *
+  induction r1 generalizing s2
+  repeat sorry
+
+
+
+
   theorem complete : s =β> t -> t =β> pcompl s := by
   intro h
   induction h
@@ -589,6 +728,13 @@ namespace ParRed
   case substelim =>
     simp; constructor; constructor;
     all_goals simp [*]
+  case conv_lam ih1 ih2 ih3 ih4 =>
+    simp; rw [complete_head ih1 ih2, Term.beq_rfl]; simp
+    constructor; apply ih2; constructor; apply ih3; apply ih4
+  case conv_pair ih1 ih2 ih3 =>
+    simp; constructor; apply ih1; apply ih2; apply ih3
+  case conv_refl ih1 ih2 =>
+    simp; constructor; constructor; apply ih1; apply ih2
   case app_congr f f' a a' m h1 _h2 ih1 ih2 =>
     cases m
     case _ =>
@@ -659,6 +805,32 @@ namespace ParRed
         cases ih2
         case _ r =>
           apply ParRed.substelim; apply ih1; apply r
+  case conv_congr A A' t t' n h1 h2 ih1 ih2 =>
+    cases t <;> simp at *
+    all_goals (try constructor; apply ih1; apply ih2)
+    case lam m1 u1 u2 =>
+      cases t' <;> try cases h2
+      case _ t1 t2 r1 h =>
+        cases ih2
+        case _ r2 r3 =>
+          cases A <;> simp [*]
+          all_goals (try constructor; apply ih1; constructor <;> simp [*])
+          case _ m2 v1 v2 =>
+            cases h1; cases ih1
+            case _  A' B' r4 r5 r6 r7 =>
+              split
+              case _ h2 =>
+                rw [@LawfulBEq.eq_of_beq Mode _ _ _ _ h2.2]
+                have lem1 : v1.pcompl = u1.pcompl := Term.eq_of_beq h2.1
+                apply ParRed.conv_lam; apply r6
+                rw [lem1]; apply r2; apply r7; apply r3
+              case _ h2 => constructor <;> constructor <;> simp [*]
+    case all => sorry
+    case prod => sorry
+    case pair => sorry
+    case refl => sorry
+    case eq => sorry
+
   all_goals (try simp; constructor <;> simp [*])
   all_goals (try simp)
 

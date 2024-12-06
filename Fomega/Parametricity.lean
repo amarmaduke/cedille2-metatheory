@@ -42,8 +42,11 @@ namespace Fomega.Proof
   def TypeMap (n:Nat) Γ (k : KindMap n Γ) : Type := Nat -> RelType n Γ (k n)
   def TermMap (n:Nat) Γ (k : KindMap n Γ) (φ : TypeMap n Γ k) : Type := Nat -> RelTerm n Γ (k n) (φ n)
 
-  theorem parametricity : ∀ (n : Nat) (Γ : RelCtx n), (Fam : ∀ {n Γ k φ}, Rel n Γ k φ) (ζ : KindMap n Γ) (ξ : TypeMap n Γ ζ) (φ : TermMap n Γ ζ ξ)
-    (∀ i, Fam (φ i)) -> True
+
+
+  theorem parametricity : ∀ (n : Nat) (Γ : RelCtx n) (Fam : ∀ {n Γ k φ}, Rel n Γ k φ)
+    (ζ : KindMap n Γ) (ξ : TypeMap n Γ ζ) (φ : TermMap n Γ ζ ξ),
+    (∀ i, Fam (φ i)) -> Δ ⊢ t : A -> True
   := by sorry
 
 

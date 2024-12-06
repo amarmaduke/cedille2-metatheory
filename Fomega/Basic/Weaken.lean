@@ -51,8 +51,34 @@ namespace Fomega.Proof
     case _ => apply ih2 r h
     case _ => apply Term.RedConv.subst; apply j3
 
+  theorem rename_wf (r : Ren) : t ⊢ Γ ->
+    (∀ x, [r#r](Γ d@ x) = Δ d@ (r x)) ->
+    ([r#r]t) ⊢ Δ
+  := by
+  intro j h
+  induction j generalizing Δ r
+  case ax => simp; constructor
+  case var j1 _j2 ih =>
+    have j2 := rename r j1 h
+    simp at *; constructor; rw [h] at j2; exact j2
+    replace ih := ih r h; rw [h _] at ih; exact ih
+  case pi A Γ B _ _ ih1 ih2 =>
+    simp; constructor; apply ih1 r h
+    replace ih2 := @ih2 ([r#r]A :: Δ) (Term.Ren.lift r) (rename_lift r A h); simp at ih2
+    exact ih2
+  case lam A Γ B _ _ ih1 ih2 =>
+    simp; constructor; apply ih1 r h
+    replace ih2 := @ih2 ([r#r]A :: Δ) (Term.Ren.lift r) (rename_lift r A h); simp at ih2
+    exact ih2
+  case app _ _ ih1 ih2 =>
+    simp; constructor; apply ih1 r h; apply ih2 r h
+
   theorem weaken B : Γ ⊢ t : A -> (B::Γ) ⊢ ([S]t) : ([S]A) := by
   intro j; apply rename; exact j
+  case _ => intro x; simp; rw [Term.S_to_rS]; unfold rS; simp
+
+  theorem weaken_wf A : t ⊢ Γ -> ([S]t) ⊢ (A::Γ) := by
+  intro j; apply rename_wf; exact j
   case _ => intro x; simp; rw [Term.S_to_rS]; unfold rS; simp
 
 

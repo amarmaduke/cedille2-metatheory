@@ -33,9 +33,10 @@ namespace Fomega
     Proof Γ t B
 
   inductive Wf : Term -> Ctx -> Prop
-  | ax : Wf ★ Γ
+  | ax : Wf (.const K) Γ
   | var :
     Proof Γ (Γ d@ x) (.const K) ->
+    Wf (Γ d@ x) Γ ->
     Wf (.bound K x) Γ
   | pi : Wf A Γ -> Wf B (A::Γ) -> Wf (.all mf A B) Γ
   | lam : Wf A Γ -> Wf B (A::Γ) -> Wf (.lam mf A B) Γ
