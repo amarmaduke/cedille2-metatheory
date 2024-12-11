@@ -1,11 +1,11 @@
 
 import Common
-import Fomega.Ctx
-import Fomega.Proof
-import Fomega.PreProof
-import Fomega.Basic.Weaken
+import FomegaMut.Ctx
+import FomegaMut.Proof
+import FomegaMut.PreProof
+import FomegaMut.Basic.Weaken
 
-namespace Fomega.Proof
+namespace FomegaMut.Proof
 
   theorem all_destruct :
     Γ ⊢ .all mf A B : T ->
@@ -14,7 +14,8 @@ namespace Fomega.Proof
   := by
   intro j hc
   generalize tdef : Term.all mf A B = t at *
-  induction j generalizing A B K
+  generalize tydef : JudKind.prf = ty at j
+  induction j generalizing A B K <;> cases tydef
   case ax => simp at tdef
   case var => simp at tdef
   case pi Γ' A' K' B' j1 j2 ih1 ih2 =>
@@ -43,31 +44,31 @@ namespace Fomega.Proof
     cases t' <;> simp at tdef
     case all m C D =>
       apply ih1 (Term.RedConv.trans h3 hc)
-      rw [tdef.1, tdef.2.1, tdef.2.2]
+      rw [tdef.1, tdef.2.1, tdef.2.2]; apply rfl
 
-  theorem lam_destruct_conv :
-    Γ ⊢ .lam mf A t : T ->
-    T =β= .all mf C D ->
-    ∃ B, A =β= C ∧ B =β= D ∧ Γ ⊢ .lam mf A t : .all mf A B
-  := by
-  intro j hc
-  generalize sdef : Term.lam mf A t = s at *
-  induction j generalizing A C D t
-  case ax => simp at sdef
-  case var => simp at sdef
-  case pi => simp at sdef
-  case tpi => simp at sdef
-  case lam A' B' K' t' j3 j4 ih1 ih2 => sorry
-    -- replace hc := Term.RedConv.all_congr hc
-    -- injection sdef with e1 e2 e3
-    -- subst e2; subst e3; exists B'
-    -- apply And.intro hc.2.1
-    -- apply And.intro hc.2.2
-    -- constructor; apply j3; apply j4
-  case app => simp at sdef
-  case econv Γ t' A' B' _K' h1 _h2 h3 ih1 _ih2 =>
-    cases t' <;> simp at sdef
-  case iconv Γ t' A' B' _K' h1 _h2 h3 ih1 _ih2 => sorry
+  -- theorem lam_destruct_conv :
+  --   Γ ⊢ .lam mf A t : T ->
+  --   T =β= .all mf C D ->
+  --   ∃ B, A =β= C ∧ B =β= D ∧ Γ ⊢ .lam mf A t : .all mf A B
+  -- := by
+  -- intro j hc
+  -- generalize sdef : Term.lam mf A t = s at *
+  -- induction j generalizing A C D t
+  -- case ax => simp at sdef
+  -- case var => simp at sdef
+  -- case pi => simp at sdef
+  -- case tpi => simp at sdef
+  -- case lam A' B' K' t' j3 j4 ih1 ih2 => sorry
+  --   -- replace hc := Term.RedConv.all_congr hc
+  --   -- injection sdef with e1 e2 e3
+  --   -- subst e2; subst e3; exists B'
+  --   -- apply And.intro hc.2.1
+  --   -- apply And.intro hc.2.2
+  --   -- constructor; apply j3; apply j4
+  -- case app => simp at sdef
+  -- case econv Γ t' A' B' _K' h1 _h2 h3 ih1 _ih2 =>
+  --   cases t' <;> simp at sdef
+  -- case iconv Γ t' A' B' _K' h1 _h2 h3 ih1 _ih2 => sorry
 
   -- theorem lam_destruct_body :
   --   Γ ⊢ .lam mf A t : T ->
@@ -100,4 +101,4 @@ namespace Fomega.Proof
   --       subst e1; subst e2; subst e3
   --       apply @ih1 A t B K j2 (Term.RedConv.trans h3 hc) rfl
 
-end Fomega.Proof
+end FomegaMut.Proof

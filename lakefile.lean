@@ -13,6 +13,9 @@ lean_lib Common where
 lean_lib Fomega where
   roots := #[`Fomega]
 
+lean_lib FomegaMut where
+  roots := #[`FomegaMut]
+
 lean_lib Cedille where
   roots := #[`Cedille]
 

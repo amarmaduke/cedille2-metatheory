@@ -19,9 +19,8 @@ namespace Fomega.Proof
     apply Or.inr
     exists .kind; constructor
   case tpi => apply Or.inl; rfl
-  case lam Γ A B K t h1 _h2 _ih1 _ih2 =>
-    apply Or.inr; exists K
-  case app Γ f A B a B' _h1 h2 h3 ih1 _ih2 =>
+  case lam h1 _h2 _ih1 _ih2 => apply Or.inr; apply Exists.intro; apply h1
+  case app _h1 h2 h3 ih1 _ih2 =>
     cases j1
     case _ j1 j2 =>
       replace ih1 := ih1 j1
@@ -38,13 +37,14 @@ namespace Fomega.Proof
             have h := Proof.beta q2 h2; simp at h
             apply Or.inr; exists .kind
             subst h3; exact h
-          case _ T K' q1 q2 q3 =>
+          case _ C K' q1 q2 q3 =>
             replace q1 := all_destruct q1 q2
-            replace q1 := beta q1.2.2 h2
-            apply Or.inr; exists K
-            apply Proof.conv; subst h3; simp at *
-            apply q1; apply q3; apply Term.RedConv.refl
-  case conv K _h1 h2 _h3 _ih1 _ih2 =>
+            have h := Proof.beta (q1.2.2) h2
+            simp at h; apply Or.inr; exists K
+            subst h3; apply h
+  case iconv K _h1 h2 _h3 _ih1 _ih2 =>
+    apply Or.inr; exists K
+  case econv K _h1 h2 _h3 _ih1 _ih2 =>
     apply Or.inr; exists K
 
 end Fomega.Proof

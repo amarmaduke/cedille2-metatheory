@@ -1,10 +1,10 @@
 
 import Common
-import Fomega.Ctx
-import Fomega.Proof
-import Fomega.PreProof
+import FomegaMut.Ctx
+import FomegaMut.Proof
+import FomegaMut.PreProof
 
-namespace Fomega.Proof
+namespace FomegaMut.Proof
 
   theorem rename_lift r A :
     (∀ x, [r#r](Γ d@ x) = Δ d@ (r x)) ->
@@ -14,14 +14,42 @@ namespace Fomega.Proof
   cases x <;> simp at *
   case _ x => rw [<-h x]; simp
 
-  theorem rename (r : Ren) : Γ ⊢ t : A ->
+  theorem rename (r : Ren) : Jud jk Γ t A ->
     (∀ x, [r#r](Γ d@ x) = Δ d@ (r x)) ->
-    Δ ⊢ ([r#r]t) : ([r#r]A)
+    Jud jk Δ ([r#r]t) ([r#r]A)
   := by
   intro j h
   induction j generalizing Δ r
-  case ax => constructor
-  case var Γ K x => simp; rw [h x]; constructor
+  case wf_ax f _ ih =>
+    replace ih := ih 0 r h
+    rw [h 0] at ih; simp at ih
+    have lem := ctx_wf ih
+    cases lem
+    case _ f lem =>
+      constructor; apply lem
+  case wf_var x _ _ _ ih =>
+    replace ih := ih r h
+    rw [h x] at ih
+    simp at *; constructor
+    apply ih
+  case wf_pi Γ A B _ _ _ ih1 ih2 =>
+    simp; constructor; apply ih1 r h
+    replace ih2 := @ih2 ([r#r]A :: Δ) (Term.Ren.lift r) (rename_lift r A h); simp at ih2
+    exact wf_switch_dummy ih2
+  case wf_lam Γ A B _ _ _ ih1 ih2 =>
+    simp; constructor; apply ih1 r h
+    replace ih2 := @ih2 ([r#r]A :: Δ) (Term.Ren.lift r) (rename_lift r A h); simp at ih2
+    exact wf_switch_dummy ih2
+  case wf_app ih1 ih2 =>
+    simp; constructor; apply ih1 r h; apply ih2 r h
+  case wf_conv ih1 ih2 =>
+    simp; constructor; apply ih1 r h; apply ih2 r h
+  case ax ih =>
+    constructor
+    apply wf_switch_dummy; apply ih r h; apply Term.none
+  case var x _ _ ih =>
+    simp at *; rw [h x]; constructor
+    apply ih r h
   case pi Γ' A' K B _j1 _j2 ih1 ih2 =>
     simp; constructor
     case _ => apply ih1 r h
@@ -56,37 +84,14 @@ namespace Fomega.Proof
     case _ => apply ih2 r h
     case _ => apply Term.RedConv.subst; apply j3
 
-  theorem rename_wf (r : Ren) : t ⊢ Γ ->
-    (∀ x, [r#r](Γ d@ x) = Δ d@ (r x)) ->
-    ([r#r]t) ⊢ Δ
-  := by
-  intro j h
-  induction j generalizing Δ r
-  case ax => simp; constructor
-  case var j1 _j2 ih =>
-    have j2 := rename r j1 h
-    simp at *; constructor; rw [h] at j2; exact j2
-    replace ih := ih r h; rw [h _] at ih; exact ih
-  case pi A Γ B _ _ ih1 ih2 =>
-    simp; constructor; apply ih1 r h
-    replace ih2 := @ih2 ([r#r]A :: Δ) (Term.Ren.lift r) (rename_lift r A h); simp at ih2
-    exact ih2
-  case lam A Γ B _ _ ih1 ih2 =>
-    simp; constructor; apply ih1 r h
-    replace ih2 := @ih2 ([r#r]A :: Δ) (Term.Ren.lift r) (rename_lift r A h); simp at ih2
-    exact ih2
-  case app _ _ ih1 ih2 =>
-    simp; constructor; apply ih1 r h; apply ih2 r h
-  case conv _ _ ih1 ih2 =>
-    simp; constructor; apply ih1 r h; apply ih2 r h
-
   theorem weaken B : Γ ⊢ t : A -> (B::Γ) ⊢ ([S]t) : ([S]A) := by
   intro j; apply rename; exact j
   case _ => intro x; simp; rw [Term.S_to_rS]; unfold rS; simp
 
   theorem weaken_wf A : t ⊢ Γ -> ([S]t) ⊢ (A::Γ) := by
-  intro j; apply rename_wf; exact j
+  intro j;
+  have lem : [S].none = .none := by simp
+  rw [<-lem]; apply rename; exact j
   case _ => intro x; simp; rw [Term.S_to_rS]; unfold rS; simp
 
-
-namespace Fomega.Proof
+namespace FomegaMut.Proof
