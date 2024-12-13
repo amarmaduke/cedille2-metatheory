@@ -20,8 +20,16 @@ namespace Fomega.Proof
   := by
   intro j h
   induction j generalizing Δ r
-  case ax => constructor
-  case var Γ K x => simp; rw [h x]; constructor
+  case ax ih =>
+    replace ih := ih 0 r h
+    rw [h 0] at ih; simp at ih
+    have lem := ctx_wf ih
+    cases lem
+    case _ f lem =>
+      constructor; apply lem
+  case var x _ _ ih =>
+    simp at *; rw [h x]; constructor
+    rw [<-(h x)]; apply ih r h
   case pi Γ' A' K B _j1 _j2 ih1 ih2 =>
     simp; constructor
     case _ => apply ih1 r h

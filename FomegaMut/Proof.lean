@@ -10,22 +10,24 @@ namespace FomegaMut
 
   inductive Jud : JudKind -> Ctx -> Term -> Term -> Prop
   -- Well-formed context Judgement
-  | wf_ax ξ :
-    ∀ (f : Nat -> Const), (∀ x, Jud .prf Γ (Γ d@ x) (.const (f x))) ->
-    Jud .wf Γ ★ ξ
-  | wf_var ξ :
-    Jud .prf Γ (Γ d@ x) (.const K) ->
-    Jud .wf Γ (.bound K x) ξ
-  | wf_pi ξ : Jud .wf Γ A ξ -> Jud .wf (A::Γ) B ξ -> Jud .wf Γ (.all mf A B) ξ
-  | wf_lam ξ : Jud .wf Γ A ξ -> Jud .wf (A::Γ) B ξ -> Jud .wf Γ (.lam mf A B) ξ
-  | wf_app ξ : Jud .wf Γ f ξ -> Jud .wf Γ a ξ -> Jud .wf Γ (.app mf f a) ξ
-  | wf_conv ξ : Jud .wf Γ B ξ -> Jud .wf Γ t ξ -> Jud .wf Γ (.conv B t 0) ξ
+  -- | wf_ax ξ :
+  --   ∀ (f : Nat -> Const), (∀ x, Jud .prf Γ (Γ d@ x) (.const (f x))) ->
+  --   Jud .wf Γ ★ ξ
+  -- | wf_var ξ :
+  --   Jud .prf Γ (Γ d@ x) (.const K) ->
+  --   Jud .wf Γ (.bound K x) ξ
+  -- | wf_pi ξ : Jud .wf Γ A ξ -> Jud .wf (A::Γ) B ξ -> Jud .wf Γ (.all mf A B) ξ
+  -- | wf_lam ξ : Jud .wf Γ A ξ -> Jud .wf (A::Γ) B ξ -> Jud .wf Γ (.lam mf A B) ξ
+  -- | wf_app ξ : Jud .wf Γ f ξ -> Jud .wf Γ a ξ -> Jud .wf Γ (.app mf f a) ξ
+  -- | wf_conv ξ : Jud .wf Γ B ξ -> Jud .wf Γ t ξ -> Jud .wf Γ (.conv B t 0) ξ
   -- Proof Judgement
-  | ax ξ :
-    Jud .wf Γ ★ ξ ->
+  | ax :
+    ∀ (f : Nat -> Const), (∀ x, Jud .prf Γ (Γ d@ x) (.const (f x))) ->
+    -- Jud .wf Γ ★ ξ ->
     Jud .prf Γ ★ □
-  | var ξ :
-    Jud .wf Γ (.bound K x) ξ ->
+  | var :
+    Jud .prf Γ (Γ d@ x) (.const K) ->
+    -- Jud .wf Γ (.bound K x) ξ ->
     Jud .prf Γ (.bound K x) (Γ d@ x)
   | pi :
     Jud .prf Γ A (.const K) ->

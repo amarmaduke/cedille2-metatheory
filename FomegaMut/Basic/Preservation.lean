@@ -85,9 +85,9 @@ namespace FomegaMut.Proof
   theorem ctx_red_lift : ctx_red Γ Γ' -> ctx_red (A::Γ) (A::Γ') := by sorry
 
   theorem preservation_jud : Jud jk Γ t A ->
-    (∀ t', t -β> t' -> Jud jk Γ t' A)
-    ∧ (∀ Γ', ctx_red Γ Γ' -> Jud jk Γ' t A)
-    ∧ (∀ A', A -β> A' -> Jud jk Γ t A')
+    (∀ jk t', t -β> t' -> Jud jk Γ t' A)
+    ∧ (∀ jk Γ', ctx_red Γ Γ' -> Jud jk Γ' t A)
+    -- ∧ (∀ A', A -β> A' -> Jud jk Γ t A')
   := by
   intro j
   induction j
@@ -108,18 +108,20 @@ namespace FomegaMut.Proof
   case ax => sorry
   case var Γ K x ξ h ih =>
     apply And.intro
-    intro t' r; cases r
-    apply And.intro
-    intro Γ' r
+    intro jk t' r; cases r
+    intro jk Γ' r
     have r' := r
     cases r
     case _ y r =>
       cases Nat.decEq x y
       case _ hd =>
-        rw [(r x).2 hd]; constructor
-        apply ih.2.1 Γ' r'
+        rw [(r x).2 hd];
+        cases jk
+        constructor; apply ih.2 _ _ r'
+        constructor; sorry
       case _ hd =>
-        subst hd;
+        subst hd
+        cases jk
   case pi => sorry
   case tpi => sorry
   case lam Γ A B K t j1 j2 ih1 ih2 =>

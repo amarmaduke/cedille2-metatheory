@@ -4,6 +4,13 @@ import Fomega.Proof
 
 namespace Fomega
 
+  theorem ctx_wf : Γ ⊢ t : A -> ∃ (f:Nat -> Const), ∀ x, Γ ⊢ (Γ d@ x) : (.const (f x)) := by
+  intro j
+  induction j
+  all_goals (try (case _ ih => apply ih))
+  all_goals (try (case _ ih _ => apply ih))
+  case ax f h _ => exists f
+
   inductive IsPreProof : Term -> Prop where
   | ax : IsPreProof (.const K)
   | bound : IsPreProof (.bound K x)

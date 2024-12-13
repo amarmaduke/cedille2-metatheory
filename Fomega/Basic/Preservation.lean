@@ -9,69 +9,49 @@ import Fomega.Basic.Classification
 
 namespace Fomega.Proof
 
-  theorem wf_type : t ⊢ Γ -> Γ ⊢ t : A -> A ⊢ Γ := by
-  intro j1 j2
-  induction j2
-  case ax => constructor
-  case var => cases j1; simp [*]
-  case pi => constructor
-  case tpi => constructor
-  case lam _ih1 ih2 =>
-    cases j1
-    case _ j1 j2 =>
-      constructor; apply j1; apply ih2 j2
-  case app _j1 j2' sh ih1 _ih2 =>
-    cases j1
-    case _ j1 j2 =>
-      replace ih1 := ih1 j1
-      cases ih1
-      case _ j3 j4 =>
-        subst sh; apply beta_wf;
-        apply j4; apply j2'; apply j2
-  case econv => cases j1; simp [*]
-  case iconv =>  sorry
+  abbrev ctx_red x Γ Γ' := ∀ n, Γ d@ x -β> Γ' d@ x ∧ (n ≠ x -> Γ d@ n = Γ' d@ n)
 
-  theorem preservation1 : t ⊢ Γ -> Γ ⊢ t : A -> t -β> t' -> Γ ⊢ t' : A := by
-  intro cj j r
-  induction j generalizing t'
-  case ax => cases r
-  case var => cases r
-  case pi => sorry
-  case tpi => sorry
-  case lam Γ A B K t j1 j2 ih1 ih2 =>
-    cases r
-    case lam_congr1 A' r =>
-      constructor; apply Proof.lam
-    case lam_congr2 => sorry
-  case app Γ f A' B a B' j1 j2 j3 ih1 ih2 =>
-    cases r
-    case beta C d => sorry
-    case app_congr1 f' r => sorry
-    case app_congr2 => sorry
-  case econv j1 j2 j3 ih1 ih2 => sorry
-  case iconv => sorry
+  theorem ctx_red_lift : ctx_red x Γ Γ' -> ctx_red (x + 1) (A::Γ) (A::Γ') := by sorry
 
-  theorem preservation_wf1 : t ⊢ Γ -> Γ ⊢ t : A -> t -β> t' -> t' ⊢ Γ := by
-  intro j1 j2 r
-  induction j2 generalizing t'
-  case ax => cases r
-  case var => cases r
+  theorem preservation_jud : Γ ⊢ t : A ->
+    (∀ t', t -β> t' -> Γ ⊢ t' : A)
+    ∧ (∀ x Γ', ctx_red x Γ Γ' -> Γ' ⊢ t : A)
+    ∧ (∀ x Γ', ctx_red x Γ Γ' -> t = Γ d@ x -> Γ' ⊢ Γ' d@ x : A)
+  := by
+  intro j
+  induction j
+  case ax Γ f h ih =>
+    apply And.intro
+    intro t' r; cases r
+    sorry
+  case var Γ i K h ih =>
+    have ih1 := ih.1; have ih2 := ih.2.1; have ih3 := ih.2.2; clear ih
+    apply And.intro
+    case _ => intro t' r; cases r
+    apply And.intro
+    case _ =>
+      intro x Γ' r
+      cases Nat.decEq i x
+      case _ hv =>
+        rw [(r i).2 hv] at *; constructor
+        apply ih2 _ _ r
+      case _ hv =>
+        subst hv
+        constructor; constructor
+        apply ih3 i _ r; rfl
+        apply ih2 _ _ r
+        exists (Γ' d@ i); apply And.intro; apply Term.RedStar.refl
+        apply Term.RedStar.step; apply (r i).1; apply Term.RedStar.refl
+    case _ =>
+      intro x Γ' r ht
+      replace r := (r x).1; rw [<-ht] at r
+      cases r
   case pi => sorry
   case tpi => sorry
   case lam => sorry
-  case app j2 j3 j4 ih1 ih2 =>
-    cases j1
-    case _ cj1 cj2 =>
-    cases r
-    case beta =>
-      cases cj1
-      case _ cj1 cj3 =>
-        sorry
-    case app_congr1 => sorry
-    case app_congr2 => sorry
-  case econv ih1 ih2 => sorry
+  case app => sorry
+  case econv => sorry
   case iconv => sorry
-
 
   -- theorem preservation : Γ ⊢ t : A -> t -β>* t' -> Γ ⊢ t' : A := by
   -- intro j r

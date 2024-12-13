@@ -60,11 +60,19 @@ namespace Fomega.Proof
   := by
   intro h1 h2 h3 j
   induction j generalizing Δ σ
-  case _ => constructor
-  case var Γ K x =>
+  case ax ih =>
+    replace ih := ih 0 h1 h2 h3
+    have lem := ctx_wf ih
+    cases lem
+    case _ f lem =>
+      constructor; apply lem
+  case var Γ x K _ ih =>
     simp; generalize ydef : σ x = y at *
     cases y <;> simp
-    case _ y => rw [h2 x y ydef]; constructor
+    case _ y =>
+      rw [h2 x y ydef]; constructor
+      replace ih := ih h1 h2 h3; simp at ih; rw [h2 _ _ ydef] at ih
+      apply ih
     case _ t' => apply h3 x t' ydef
   case pi Γ' A' K B _j1 _j2 ih1 ih2 =>
     simp; constructor; apply ih1 h1 h2 h3

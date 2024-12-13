@@ -20,36 +20,42 @@ namespace FomegaMut.Proof
   := by
   intro j h
   induction j generalizing Δ r
-  case wf_ax f _ ih =>
+  -- case wf_ax f _ ih =>
+  --   replace ih := ih 0 r h
+  --   rw [h 0] at ih; simp at ih
+  --   have lem := ctx_wf ih
+  --   cases lem
+  --   case _ f lem =>
+  --     constructor; apply lem
+  -- case wf_var x _ _ _ ih =>
+  --   replace ih := ih r h
+  --   rw [h x] at ih
+  --   simp at *; constructor
+  --   apply ih
+  -- case wf_pi Γ A B _ _ _ ih1 ih2 =>
+  --   simp; constructor; apply ih1 r h
+  --   replace ih2 := @ih2 ([r#r]A :: Δ) (Term.Ren.lift r) (rename_lift r A h); simp at ih2
+  --   exact wf_switch_dummy ih2
+  -- case wf_lam Γ A B _ _ _ ih1 ih2 =>
+  --   simp; constructor; apply ih1 r h
+  --   replace ih2 := @ih2 ([r#r]A :: Δ) (Term.Ren.lift r) (rename_lift r A h); simp at ih2
+  --   exact wf_switch_dummy ih2
+  -- case wf_app ih1 ih2 =>
+  --   simp; constructor; apply ih1 r h; apply ih2 r h
+  -- case wf_conv ih1 ih2 =>
+  --   simp; constructor; apply ih1 r h; apply ih2 r h
+  case ax ih =>
     replace ih := ih 0 r h
     rw [h 0] at ih; simp at ih
     have lem := ctx_wf ih
     cases lem
     case _ f lem =>
       constructor; apply lem
-  case wf_var x _ _ _ ih =>
-    replace ih := ih r h
-    rw [h x] at ih
-    simp at *; constructor
-    apply ih
-  case wf_pi Γ A B _ _ _ ih1 ih2 =>
-    simp; constructor; apply ih1 r h
-    replace ih2 := @ih2 ([r#r]A :: Δ) (Term.Ren.lift r) (rename_lift r A h); simp at ih2
-    exact wf_switch_dummy ih2
-  case wf_lam Γ A B _ _ _ ih1 ih2 =>
-    simp; constructor; apply ih1 r h
-    replace ih2 := @ih2 ([r#r]A :: Δ) (Term.Ren.lift r) (rename_lift r A h); simp at ih2
-    exact wf_switch_dummy ih2
-  case wf_app ih1 ih2 =>
-    simp; constructor; apply ih1 r h; apply ih2 r h
-  case wf_conv ih1 ih2 =>
-    simp; constructor; apply ih1 r h; apply ih2 r h
-  case ax ih =>
-    constructor
-    apply wf_switch_dummy; apply ih r h; apply Term.none
+    -- constructor
+    -- apply wf_switch_dummy; apply ih r h; apply Term.none
   case var x _ _ ih =>
     simp at *; rw [h x]; constructor
-    apply ih r h
+    rw [<-(h x)]; apply ih r h
   case pi Γ' A' K B _j1 _j2 ih1 ih2 =>
     simp; constructor
     case _ => apply ih1 r h

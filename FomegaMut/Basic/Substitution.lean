@@ -47,40 +47,45 @@ namespace FomegaMut.Proof
   := by
   intro h1 h2 h3 j
   induction j generalizing Δ σ
-  case wf_ax ih =>
+  -- case wf_ax ih =>
+  --   replace ih := ih 0 h1 h2 h3
+  --   have lem := ctx_wf ih
+  --   cases lem
+  --   case _ f lem =>
+  --     constructor; apply lem
+  -- case wf_var Γ x K _ _j ih =>
+  --   simp; generalize ydef : σ x = y at *
+  --   cases y <;> simp
+  --   case _ y =>
+  --     constructor
+  --     replace ih := ih h1 h2 h3; simp at ih
+  --     rw [h2 _ _ ydef] at ih; exact ih
+  --   case _ t' => apply wf_switch_dummy; apply proof_is_wf; apply h3 x t' ydef
+  -- case wf_pi Γ A B _ _ _ ih1 ih2 =>
+  --   simp; constructor; apply ih1 h1 h2 h3
+  --   replace ih2 := @ih2 (^σ) ([σ]A::Δ) (IsPreProof.lift h1) (lift_subst_rename h2) (lift_subst_replace h3)
+  --   simp at ih2; exact wf_switch_dummy ih2
+  -- case wf_lam Γ A B _ _ _ ih1 ih2 =>
+  --   simp; constructor; apply ih1 h1 h2 h3
+  --   replace ih2 := @ih2 (^σ) ([σ]A::Δ) (IsPreProof.lift h1) (lift_subst_rename h2) (lift_subst_replace h3)
+  --   simp at ih2; exact wf_switch_dummy ih2
+  -- case wf_app ih1 ih2 =>
+  --   simp; constructor; apply ih1 h1 h2 h3; apply ih2 h1 h2 h3
+  -- case wf_conv ih1 ih2 =>
+  --   simp; constructor; apply ih1 h1 h2 h3; apply ih2 h1 h2 h3
+  case ax ih =>
     replace ih := ih 0 h1 h2 h3
     have lem := ctx_wf ih
     cases lem
     case _ f lem =>
       constructor; apply lem
-  case wf_var Γ x K _ _j ih =>
-    simp; generalize ydef : σ x = y at *
-    cases y <;> simp
-    case _ y =>
-      constructor
-      replace ih := ih h1 h2 h3; simp at ih
-      rw [h2 _ _ ydef] at ih; exact ih
-    case _ t' => apply wf_switch_dummy; apply proof_is_wf; apply h3 x t' ydef
-  case wf_pi Γ A B _ _ _ ih1 ih2 =>
-    simp; constructor; apply ih1 h1 h2 h3
-    replace ih2 := @ih2 (^σ) ([σ]A::Δ) (IsPreProof.lift h1) (lift_subst_rename h2) (lift_subst_replace h3)
-    simp at ih2; exact wf_switch_dummy ih2
-  case wf_lam Γ A B _ _ _ ih1 ih2 =>
-    simp; constructor; apply ih1 h1 h2 h3
-    replace ih2 := @ih2 (^σ) ([σ]A::Δ) (IsPreProof.lift h1) (lift_subst_rename h2) (lift_subst_replace h3)
-    simp at ih2; exact wf_switch_dummy ih2
-  case wf_app ih1 ih2 =>
-    simp; constructor; apply ih1 h1 h2 h3; apply ih2 h1 h2 h3
-  case wf_conv ih1 ih2 =>
-    simp; constructor; apply ih1 h1 h2 h3; apply ih2 h1 h2 h3
-  case ax ih =>
-    constructor; apply ih h1 h2 h3
-  case var Γ K x _ _ ih =>
+    -- constructor; apply ih h1 h2 h3
+  case var Γ x K _ ih =>
     simp; generalize ydef : σ x = y at *
     cases y <;> simp
     case _ y =>
       rw [h2 x y ydef]; constructor
-      replace ih := ih h1 h2 h3; simp at ih; rw [ydef] at ih; simp at ih
+      replace ih := ih h1 h2 h3; simp at ih; rw [h2 _ _ ydef] at ih
       apply ih
     case _ t' => apply h3 x t' ydef
   case pi Γ' A' K B _j1 _j2 ih1 ih2 =>

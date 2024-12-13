@@ -5,9 +5,11 @@ import Fomega.Ctx
 namespace Fomega
 
   inductive Proof : Ctx -> Term -> Term -> Prop
-  | ax : Proof Γ ★ □
+  | ax :
+    ∀ (f : Nat -> Const), (∀ x, Proof Γ (Γ d@ x) (.const (f x))) ->
+    Proof Γ ★ □
   | var :
-    -- Proof Γ A (.const K) ->
+    Proof Γ (Γ d@ x) (.const K) ->
     Proof Γ (.bound K x) (Γ d@ x)
   | pi :
     Proof Γ A (.const K) ->
