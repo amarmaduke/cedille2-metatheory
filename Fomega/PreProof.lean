@@ -17,7 +17,7 @@ namespace Fomega
   | all : IsPreProof A -> IsPreProof B -> IsPreProof (.all mf A B)
   | lam : IsPreProof A -> IsPreProof t -> IsPreProof (.lam mf A t)
   | app : IsPreProof f -> IsPreProof a -> IsPreProof (.app mf f a)
-  | conv : IsPreProof B -> IsPreProof t -> IsPreProof (.conv B t 0)
+  | conv : IsPreProof B -> IsPreProof t -> IsPreProof (.conv 0 B t)
 
   namespace IsPreProof
     theorem from_subst : IsPreProof ([σ]t) -> IsPreProof t := by

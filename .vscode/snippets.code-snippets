@@ -15,16 +15,10 @@
 	// 	],
 	// 	"description": "Log output to console"
 	// }
-	"Generate Induction Cases for Jud": {
+	"Generate Induction Cases for FOmega": {
 		"scope": "lean4",
-		"prefix": "case jud",
+		"prefix": "case fom",
 		"body": [
-			"case wf_ax => sorry",
-			"case wf_var => sorry",
-			"case wf_pi => sorry",
-			"case wf_lam => sorry",
-			"case wf_app => sorry",
-			"case wf_conv => sorry",
 			"case ax => sorry",
 			"case var => sorry",
 			"case pi => sorry",
@@ -34,6 +28,28 @@
 			"case econv => sorry",
 			"case iconv => sorry",
 		],
-		"description": "Generate all cases for an FomegaMut judgement"
+		"description": "Generate all cases for an Fomega Proof judgement"
+	},
+	"Generate Induction Cases for WCCC": {
+		"scope": "lean4",
+		"prefix": "case ced",
+		"body": [
+			"case ax => sorry",
+			"case var => sorry",
+			"case pi => sorry",
+			"case lam => sorry",
+			"case app => sorry",
+			"case prod => sorry",
+			"case pair => sorry",
+			"case fst => sorry",
+			"case snd => sorry",
+			"case eq => sorry",
+			"case refl => sorry",
+			"case subst => sorry",
+			"case phi => sorry",
+			"case iconv => sorry",
+			"case econv => sorry",
+		],
+		"description": "Generate all cases for Cedille Proof judgement"
 	}
 }

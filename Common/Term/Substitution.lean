@@ -76,7 +76,7 @@ namespace Term
     | σ, lam m t1 t2 => lam m (apply σ t1) (apply (lift σ) t2)
     | σ, app m t1 t2 => app m (apply σ t1) (apply σ t2)
     | σ, all m t1 t2 => all m (apply σ t1) (apply (lift σ) t2)
-    | σ, pair t1 t2 t3 => pair (apply σ t1) (apply σ t2) (apply σ t3)
+    | σ, pair n t1 t2 t3 => pair n (apply σ t1) (apply σ t2) (apply σ t3)
     | σ, fst t => fst (apply σ t)
     | σ, snd t => snd (apply σ t)
     | σ, prod t1 t2 => prod (apply σ t1) (apply (lift σ) t2)
@@ -84,7 +84,7 @@ namespace Term
     | σ, subst t1 t2 => subst (apply σ t1) (apply σ t2)
     | σ, phi t1 t2 t3 => phi (apply σ t1) (apply σ t2) (apply σ t3)
     | σ, eq t1 t2 t3 => eq (apply σ t1) (apply σ t2) (apply σ t3)
-    | σ, conv t1 t2 c => conv (apply σ t1) (apply σ t2) c
+    | σ, conv n t1 t2 => conv n (apply σ t1) (apply σ t2)
     -- | σ, conv t1 t2 c => conv (apply σ t1) (apply σ t2) (cvapply σ c)
   end Ren
 
@@ -154,7 +154,7 @@ namespace Term
     | σ, lam m t1 t2 => lam m (apply σ t1) (apply (lift σ) t2)
     | σ, app m t1 t2 => app m (apply σ t1) (apply σ t2)
     | σ, all m t1 t2 => all m (apply σ t1) (apply (lift σ) t2)
-    | σ, pair t1 t2 t3 => pair (apply σ t1) (apply σ t2) (apply σ t3)
+    | σ, pair n t1 t2 t3 => pair n (apply σ t1) (apply σ t2) (apply σ t3)
     | σ, fst t => fst (apply σ t)
     | σ, snd t => snd (apply σ t)
     | σ, prod t1 t2 => prod (apply σ t1) (apply (lift σ) t2)
@@ -162,7 +162,7 @@ namespace Term
     | σ, subst t1 t2 => subst (apply σ t1) (apply σ t2)
     | σ, phi t1 t2 t3 => phi (apply σ t1) (apply σ t2) (apply σ t3)
     | σ, eq t1 t2 t3 => eq (apply σ t1) (apply σ t2) (apply σ t3)
-    | σ, conv t1 t2 c => conv (apply σ t1) (apply σ t2) c
+    | σ, conv n t1 t2 => conv n (apply σ t1) (apply σ t2)
     -- | σ, conv t1 t2 c => conv (apply σ t1) (apply σ t2) (cvapply ▸σ c)
 
     -- def cvcompose : Subst CvTerm -> Subst CvTerm -> Subst CvTerm
@@ -1012,81 +1012,81 @@ namespace Term
     case _ h2 => exists x; apply rep_n_S_gt h2
   case _ h => exists (x + 1); apply rep_n_S_le h
 
-  theorem n_not_in_lift_S (t : Term) : ¬ (n ∈ ([^{n}S]t)) := by
-  intro h
-  induction t generalizing n <;> simp at h
-  case bound K x =>
-    cases (Nat.decLe n x)
-    case _ h2 =>
-      cases (Nat.decLt x n)
-      case _ h3 => omega
-      case _ h3 =>
-        rw [rep_n_S_gt h3] at h; simp at h
-        cases h; omega
-    case _ h2 =>
-      rw [rep_n_S_le h2] at h; simp at h
-      cases h; omega
-  case none => cases h
-  case const => cases h
-  case lam t1 t2 ih1 ih2 =>
-    cases h
-    case _ h => apply ih1 h
-    case _ h =>
-      have lem : (n + 1) ∈ ([^{n + 1}S]t2) := by simp; exact h
-      apply ih2 lem
-  case app t1 t2 ih1 ih2 =>
-    cases h
-    case _ h => apply ih1 h
-    case _ h => apply ih2 h
-  case all t1 t2 ih1 ih2 =>
-    cases h
-    case _ h => apply ih1 h
-    case _ h =>
-      have lem : (n + 1) ∈ ([^{n + 1}S]t2) := by simp; exact h
-      apply ih2 lem
-  case pair t1 t2 t3 ih1 ih2 ih3 =>
-    cases h
-    case _ h => apply ih1 h
-    case _ h => apply ih2 h
-    case _ h => apply ih3 h
-  case fst t ih =>
-    cases h
-    case _ h => apply ih h
-  case snd t ih =>
-    cases h
-    case _ h => apply ih h
-  case prod t1 t2 ih1 ih2 =>
-    cases h
-    case _ h => apply ih1 h
-    case _ h =>
-      have lem : (n + 1) ∈ ([^{n + 1}S]t2) := by simp; exact h
-      apply ih2 lem
-  case refl t ih =>
-    cases h
-    case _ h => apply ih h
-  case subst t1 t2 ih1 ih2 =>
-    cases h
-    case _ h => apply ih1 h
-    case _ h => apply ih2 h
-  case phi t1 t2 t3 ih1 ih2 ih3 =>
-    cases h
-    case _ h => apply ih1 h
-    case _ h => apply ih2 h
-    case _ h => apply ih3 h
-  case eq t1 t2 t3 ih1 ih2 ih3 =>
-    cases h
-    case _ h => apply ih1 h
-    case _ h => apply ih2 h
-    case _ h => apply ih3 h
-  case conv t1 t2 _ ih1 ih2 =>
-    cases h
-    case _ h => apply ih1 h
-    case _ h => apply ih2 h
+  -- theorem n_not_in_lift_S (t : Term) : ¬ (n ∈ ([^{n}S]t)) := by
+  -- intro h
+  -- induction t generalizing n <;> simp at h
+  -- case bound K x =>
+  --   cases (Nat.decLe n x)
+  --   case _ h2 =>
+  --     cases (Nat.decLt x n)
+  --     case _ h3 => omega
+  --     case _ h3 =>
+  --       rw [rep_n_S_gt h3] at h; simp at h
+  --       cases h; omega
+  --   case _ h2 =>
+  --     rw [rep_n_S_le h2] at h; simp at h
+  --     cases h; omega
+  -- case none => cases h
+  -- case const => cases h
+  -- case lam t1 t2 ih1 ih2 =>
+  --   cases h
+  --   case _ h => apply ih1 h
+  --   case _ h =>
+  --     have lem : (n + 1) ∈ ([^{n + 1}S]t2) := by simp; exact h
+  --     apply ih2 lem
+  -- case app t1 t2 ih1 ih2 =>
+  --   cases h
+  --   case _ h => apply ih1 h
+  --   case _ h => apply ih2 h
+  -- case all t1 t2 ih1 ih2 =>
+  --   cases h
+  --   case _ h => apply ih1 h
+  --   case _ h =>
+  --     have lem : (n + 1) ∈ ([^{n + 1}S]t2) := by simp; exact h
+  --     apply ih2 lem
+  -- case pair t1 t2 t3 ih1 ih2 ih3 =>
+  --   cases h
+  --   case _ h => apply ih1 h
+  --   case _ h => apply ih2 h
+  --   case _ h => apply ih3 h
+  -- case fst t ih =>
+  --   cases h
+  --   case _ h => apply ih h
+  -- case snd t ih =>
+  --   cases h
+  --   case _ h => apply ih h
+  -- case prod t1 t2 ih1 ih2 =>
+  --   cases h
+  --   case _ h => apply ih1 h
+  --   case _ h =>
+  --     have lem : (n + 1) ∈ ([^{n + 1}S]t2) := by simp; exact h
+  --     apply ih2 lem
+  -- case refl t ih =>
+  --   cases h
+  --   case _ h => apply ih h
+  -- case subst t1 t2 ih1 ih2 =>
+  --   cases h
+  --   case _ h => apply ih1 h
+  --   case _ h => apply ih2 h
+  -- case phi t1 t2 t3 ih1 ih2 ih3 =>
+  --   cases h
+  --   case _ h => apply ih1 h
+  --   case _ h => apply ih2 h
+  --   case _ h => apply ih3 h
+  -- case eq t1 t2 t3 ih1 ih2 ih3 =>
+  --   cases h
+  --   case _ h => apply ih1 h
+  --   case _ h => apply ih2 h
+  --   case _ h => apply ih3 h
+  -- case conv t1 t2 _ ih1 ih2 =>
+  --   cases h
+  --   case _ h => apply ih1 h
+  --   case _ h => apply ih2 h
 
-  @[simp]
-  theorem zero_not_in_S {t : Term} : ¬ (0 ∈ ([S]t)) := by
-  have lem := @n_not_in_lift_S 0 t
-  simp at lem; exact lem
+  -- @[simp]
+  -- theorem zero_not_in_S {t : Term} : ¬ (0 ∈ ([S]t)) := by
+  -- have lem := @n_not_in_lift_S 0 t
+  -- simp at lem; exact lem
 
   @[simp]
   theorem S_on_bound : [S](.bound K n) = .bound K (n + 1) := by
@@ -1155,7 +1155,7 @@ namespace Term
   case pair t1 t2 t3 ih1 ih2 ih3 =>
     cases s <;> simp at h
     case _ r1 r2 r3 =>
-      rw [ih1 r rinj h.1, ih2 r rinj h.2.1, ih3 r rinj h.2.2]
+      rw [h.1, ih1 r rinj h.2.1, ih2 r rinj h.2.2.1, ih3 r rinj h.2.2.2]
   case fst t ih =>
     cases s <;> simp at h
     case _ r1 =>
@@ -1190,7 +1190,7 @@ namespace Term
   case conv t1 t2 t3 ih1 ih2 =>
     cases s <;> simp at h
     case _ r1 r2 r3 =>
-      rw [ih1 r rinj h.1, ih2 r rinj h.2.1, h.2.2]
+      rw [ih1 r rinj h.2.1, ih2 r rinj h.2.2, h.1]
 
   -- theorem rename_injective_liftn n r :
   --   (∀ x y, r x = r y -> x = y) ->

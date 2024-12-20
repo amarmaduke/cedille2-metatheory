@@ -39,7 +39,7 @@ namespace WCCC.Mode
   }
 
   @[simp]
-  theorem mem_trans : m1 ∈ m2 -> m2 ∈ m3 -> m1 ∈ m3 := by {
+  theorem mem_trans {m1 m2 m3 : Mode} : m1 ∈ m2 -> m2 ∈ m3 -> m1 ∈ m3 := by {
     intro j1 j2
     cases m2
     case free =>
@@ -51,7 +51,7 @@ namespace WCCC.Mode
       cases j2; exact j1
   }
 
-  theorem mem_mul m : m1 ∈ m2 -> (m1*m) ∈ m2*m := by {
+  theorem mem_mul {m1 m2 : Mode} m : m1 ∈ m2 -> (m1*m) ∈ m2*m := by {
     intro h
     induction h generalizing m
     case _ m1 => simp; constructor

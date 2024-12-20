@@ -190,7 +190,7 @@ namespace Term
     if classify A == .type && classify B == .type
     then .type
     else .none
-  | pair T a b =>
+  | pair _ T a b =>
     if classify T == .type && classify a == .term && classify b == .term
     then .term
     else .none
@@ -216,7 +216,7 @@ namespace Term
     if classify A == .type && classify a == .term && classify b == .term
     then .term
     else .none
-  | conv _ t _ => classify t
+  | conv _ _ t => classify t
   termination_by t => size t
 
 end Term

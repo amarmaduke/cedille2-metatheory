@@ -7,13 +7,13 @@ namespace Fomega
 
   @[simp]
   def nth : List Term -> Nat -> Term
-  | [], _ => .none
+  | [], _ => ★
   | .cons h _, 0 => h
   | .cons _ t, n + 1 => nth t n
 
   @[simp]
   def dnth : List Term -> Nat -> Term
-  | [], _ => .none
+  | [], _ => ★
   | .cons h _, 0 => [S]h
   | .cons _ t, n + 1 => [S](dnth t n)
 

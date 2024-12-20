@@ -32,7 +32,7 @@ namespace Fomega
     Proof Γ t A ->
     Proof Γ B (.const K) ->
     A =β= B ->
-    Proof Γ (.conv B t 0) B
+    Proof Γ (.conv 0 B t) B
   | iconv :
     Proof Γ t A ->
     Proof Γ B (.const K) ->
@@ -48,7 +48,7 @@ namespace Fomega
   | pi : Wf A Γ -> Wf B (A::Γ) -> Wf (.all mf A B) Γ
   | lam : Wf A Γ -> Wf B (A::Γ) -> Wf (.lam mf A B) Γ
   | app : Wf f Γ -> Wf a Γ -> Wf (.app mf f a) Γ
-  | conv : Wf B Γ -> Wf t Γ -> Wf (.conv B t 0) Γ
+  | conv : Wf B Γ -> Wf t Γ -> Wf (.conv 0 B t) Γ
 
 end Fomega
 
