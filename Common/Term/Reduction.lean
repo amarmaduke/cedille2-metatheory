@@ -5,7 +5,7 @@ namespace Term
 
   inductive Red : Term -> Term -> Prop where
   -- Basic reduction Steps
-  | beta : Red (.app m (.lam m A b) t) (b β[t])
+  | beta : Red (.app m1 (.lam m2 A b) t) (b β[t])
   | proj1 : Red (.fst (.pair n B t s)) t
   | proj2 : Red (.snd (.pair n B t s)) s
   | substelim : Red (.subst Pr (.refl t)) (.lam mf (Pr `@τ t `@τ .refl t) (.bound .type 0))
@@ -74,7 +74,7 @@ namespace Term
 
   abbrev RedConvBounded (n : Nat) (A : Term) (B : Term) : Prop := ∃ C, RedBounded n A C ∧ RedBounded n B C
 
-  -- inductive ParRed : Term -> Term -> Prop where
+  inductive ParRed : Term -> Term -> Prop where
   -- | bound : ParRed (.bound K n) (.bound K n)
   -- | none : ParRed .none .none
   -- | const : ParRed (.const K) (.const K)
@@ -141,11 +141,11 @@ namespace Term
   -- | .const K => .const K
   -- | .none => .none
 
-  -- inductive ParRedStar : Term -> Term -> Prop where
+    inductive ParRedStar : Term -> Term -> Prop where
   -- | refl : ParRedStar t t
   -- | step : ParRed x y -> ParRedStar y z -> ParRedStar x z
 
-  -- abbrev ParRedConv (A : Term) (B : Term) : Prop := ∃ C, ParRedStar A C ∧ ParRedStar B C
+  abbrev ParRedConv (A : Term) (B : Term) : Prop := ∃ C, ParRedStar A C ∧ ParRedStar B C
 
 end Term
 
@@ -405,13 +405,12 @@ namespace Red
 
 end Red
 
--- namespace ParRed
+namespace ParRed
 
---   @[simp]
---   theorem refl1 t : t =β> t := by
---   induction t; all_goals constructor <;> simp [*]
+  @[simp]
+  theorem refl1 t : t =β> t := by sorry
 
---   theorem refl t : t =β>* t := by constructor
+  theorem refl t : t =β>* t := by sorry
 
 --   theorem trans_flip : x =β>* y -> y =β> z -> x =β>* z := by
 --   intro h1 h2
@@ -881,7 +880,7 @@ end Red
 --         apply ih.1; apply ParRedStar.step
 --         apply h3.2; apply ih.2
 
--- end ParRed
+end ParRed
 
 -- namespace ParRedConv
 

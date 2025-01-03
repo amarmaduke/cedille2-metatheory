@@ -1,8 +1,17 @@
 import Common.Util
 import Common.Term
 
+abbrev Sequence (T : Type) : Type := Nat -> T
 
-def Ren : Type := Nat -> Nat
+namespace Sequence
+  def cons : T -> Sequence T -> Sequence T
+  | t, _, 0 => t
+  | _, σ, n + 1 => σ n
+end Sequence
+
+infix:70 "::" => Sequence.cons
+
+def Ren : Type := Sequence Nat
 
 inductive SubstAction (T : Type) : Type where
 | rename : Nat -> SubstAction T
@@ -14,7 +23,7 @@ namespace SubstAction
   | .replace t => Term.size t
 end SubstAction
 
-def Subst (T : Type) : Type := Nat -> SubstAction T
+def Subst (T : Type) : Type := Sequence (SubstAction T)
 
 -- def subst_term_to_subst_cvterm : Subst Term -> Subst CvTerm
 -- | σ, n => match σ n with
@@ -91,10 +100,6 @@ namespace Term
   namespace Subst
     def from_ren : Ren -> Subst T
     | σ, n => .rename (σ n)
-
-    def cons : SubstAction T -> Subst T -> Subst T
-    | t, _, 0 => t
-    | _, σ, n + 1 => σ n
 
     -- def cvlift : Subst CvTerm -> Subst CvTerm
     -- | _, 0 => .rename 0
@@ -187,11 +192,10 @@ end Term
 
 @[simp]
 def beta : Term -> Subst Term
-| t => Term.Subst.cons (.replace t) I
+| t => (.replace t) :: I
 
 prefix:max "r#" => @Term.Subst.from_ren Term
 -- prefix:max "cr#" => @Term.Subst.from_ren CvTerm
-infix:70 "::" => Term.Subst.cons
 prefix:max "^" => Term.Subst.lift
 notation:1000 "^{" n "}" σ:90 => rep n Term.Subst.lift σ
 -- prefix:max "^" => Term.Subst.cvlift
@@ -228,9 +232,9 @@ namespace Term
   --   by unfold Subst.from_ren; rfl
 
   @[simp] theorem subst_cons_zero {σ : Subst T} : (s :: σ) 0 = s :=
-    by unfold Subst.cons; rfl
+    by unfold Sequence.cons; rfl
   @[simp] theorem subst_cons_succ {σ : Subst T} : (s :: σ) (n + 1) = σ n :=
-    by unfold Subst.cons; rfl
+    by unfold Sequence.cons; rfl
 
   @[simp]
   theorem subst_lift_is_ren_lift r : r#(Ren.lift r) = ^(r#r) := by {
@@ -585,22 +589,22 @@ namespace Term
   @[simp] -- 0[s.σ ] = s
   theorem subst_valid2_replace
     : [.replace s :: σ]bound c 0 = s
-  := by unfold Subst.cons; simp
+  := by unfold Sequence.cons; simp
 
   @[simp] -- 0[s.σ ] = s
   theorem subst_valid2_rename
     : [.rename k :: σ]bound c 0 = bound c k
-  := by unfold Subst.cons; simp
+  := by unfold Sequence.cons; simp
 
   -- @[simp]
   -- theorem cvsubst_valid2_replace
   --   : [.replace s :: σ]CvTerm.bound 0 = s
-  -- := by unfold Subst.cons; simp
+  -- := by unfold Sequence.cons; simp
 
   -- @[simp]
   -- theorem cvsubst_valid2_rename
   --   : [.rename k :: σ]CvTerm.bound 0 = CvTerm.bound k
-  -- := by unfold Subst.cons; simp
+  -- := by unfold Sequence.cons; simp
 
   @[simp] -- ⇑σ = 0.(σ ◦ S)
   theorem subst_valid3 {σ : Subst Term} : ^σ = .rename 0 :: (S ⊙ σ) := by {
@@ -629,9 +633,9 @@ namespace Term
     funext; case _ x =>
     cases x
     case _ =>
-      unfold Subst.cons; unfold S; simp
+      unfold Sequence.cons; unfold S; simp
     case _ n =>
-      unfold Subst.cons; unfold S; simp
+      unfold Sequence.cons; unfold S; simp
   }
 
   -- @[simp]
@@ -639,9 +643,9 @@ namespace Term
   --   funext; case _ x =>
   --   cases x
   --   case _ =>
-  --     unfold Subst.cons; unfold S; simp
+  --     unfold Sequence.cons; unfold S; simp
   --   case _ n =>
-  --     unfold Subst.cons; unfold S; simp
+  --     unfold Sequence.cons; unfold S; simp
   -- }
 
   @[simp] -- σ ◦ I = σ
@@ -698,7 +702,7 @@ namespace Term
   := by {
     funext; case _ x =>
     cases x
-    all_goals (unfold Subst.compose; unfold Subst.cons; simp)
+    all_goals (unfold Subst.compose; unfold Sequence.cons; simp)
   }
 
   -- @[simp]
@@ -707,7 +711,7 @@ namespace Term
   -- := by {
   --   funext; case _ x =>
   --   cases x
-  --   all_goals (unfold Subst.cvcompose; unfold Subst.cons; simp)
+  --   all_goals (unfold Subst.cvcompose; unfold Sequence.cons; simp)
   -- }
 
   @[simp] -- (s.σ ) ◦ τ = s[τ].(σ ◦ τ)
@@ -716,7 +720,7 @@ namespace Term
   := by {
     funext; case _ x =>
     cases x
-    all_goals (unfold Subst.compose; unfold Subst.cons; simp)
+    all_goals (unfold Subst.compose; unfold Sequence.cons; simp)
   }
 
   -- @[simp] -- (s.σ ) ◦ τ = s[τ].(σ ◦ τ)
@@ -725,7 +729,7 @@ namespace Term
   -- := by {
   --   funext; case _ x =>
   --   cases x
-  --   all_goals (unfold Subst.cvcompose; unfold Subst.cons; simp)
+  --   all_goals (unfold Subst.cvcompose; unfold Sequence.cons; simp)
   -- }
 
   @[simp] -- S ◦ (s.σ ) = σ
@@ -733,7 +737,7 @@ namespace Term
     funext; case _ x =>
     cases x
     all_goals {
-      unfold Subst.compose; unfold Subst.cons; unfold S; simp
+      unfold Subst.compose; unfold Sequence.cons; unfold S; simp
     }
   }
 
@@ -742,7 +746,7 @@ namespace Term
   --   funext; case _ x =>
   --   cases x
   --   all_goals {
-  --     unfold Subst.cvcompose; unfold Subst.cons; unfold Subst.from_ren
+  --     unfold Subst.cvcompose; unfold Sequence.cons; unfold Subst.from_ren
   --     unfold S; simp
   --   }
   -- }
@@ -1208,7 +1212,7 @@ namespace Term
   --     all_goals (exfalso; unfold S at *; simp at h)
   --   }
   --   case lam t1 t2 ih1 ih2 => {
-  --     unfold Subst.cons at *; simp at *
+  --     unfold Sequence.cons at *; simp at *
   --   }
   --   case all => sorry
   --   case int => sorry

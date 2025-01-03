@@ -9,10 +9,84 @@ namespace Term
   abbrev NormalForm (t : Term) (t' : Term) := t -β>* t' ∧ Normal t'
   def WN (t : Term) := ∃ t', NormalForm t t'
 
+  theorem reducible_decidable : ∀ t, (Reducible t) ∨ ¬ (Reducible t) := by
+  intro t
+  induction t
+  case bound =>
+    apply Or.inr; intro h
+    cases h; case _ _ r => cases r
+  case none =>
+    apply Or.inr; intro h
+    cases h; case _ _ r => cases r
+  case const =>
+    apply Or.inr; intro h
+    cases h; case _ _ r => cases r
+  case lam m A t ih1 ih2 =>
+    cases ih1
+    case _ h =>
+      apply Or.inl
+      cases h
+      case _ A' r =>
+        exists (.lam m A' t)
+        apply Red.lam_congr1 r
+    case _ h1 =>
+      cases ih2
+      case _ h =>
+        apply Or.inl
+        cases h
+        case _ t' r =>
+          exists (.lam m A t')
+          apply Red.lam_congr2 r
+      case _ h2 =>
+        apply Or.inr; intro h
+        cases h; case _ w r =>
+          cases r
+          case _ f' r => apply h1; exists f'
+          case _ a' r => apply h2; exists a'
+  case app m f a ih1 ih2 =>
+    cases ih1
+    case _ h =>
+      cases h; case _ f' r =>
+        apply Or.inl; exists (.app m f' a)
+        apply Red.app_congr1 r
+    case _ h1 =>
+      cases ih2
+      case _ h =>
+        cases h; case _ a' r =>
+          apply Or.inl; exists .app m f a'
+          apply Red.app_congr2 r
+      case _ h2 =>
+        cases f
+        case lam m2 A t =>
+          apply Or.inl; exists (t β[a])
+          apply Red.beta
+        case conv => sorry
+        all_goals (
+          apply Or.inr; intro h
+          cases h; case _ w r =>
+          cases r
+          case _ w r => apply h1; exists w
+          case _ w r => apply h2; exists w
+        )
+  case all => sorry
+  case pair => sorry
+  case fst => sorry
+  case snd => sorry
+  case prod => sorry
+  case refl => sorry
+  case subst => sorry
+  case phi => sorry
+  case eq => sorry
+  case conv => sorry
+
   inductive SN : Term -> Prop where
   | sn : (∀ y, x -β> y -> SN y) -> SN x
 
-  theorem sn_preimage (f : Term -> Term) x : (∀ x y, x -β> y -> (f x) -β> (f y)) -> SN (f x) -> SN x := by
+  theorem sn_preimage (f : Term -> Term) x :
+    (∀ x y, x -β> y -> (f x) -β> (f y)) ->
+    SN (f x) ->
+    SN x
+  := by
   intro h sh
   generalize zdef : f x = z at sh
   induction sh generalizing f x
@@ -20,6 +94,51 @@ namespace Term
     subst zdef; constructor
     intro y r
     apply ih (f y) (h _ _ r) f y h rfl
+
+  theorem sn_preservation_step : SN t -> t -β> t' -> SN t' := by
+  intro h red
+  induction h
+  case _ z h1 _h2 =>
+    apply h1 _ red
+
+  theorem sn_preservation : SN t -> t -β>* t' -> SN t' := by
+  intro h red
+  induction red
+  case _ => simp [*]
+  case _ r1 _ ih =>
+    replace h := sn_preservation_step h r1
+    apply ih h
+
+  theorem sn_star : (∀ y, t -β>* y -> SN y) -> SN t := by
+  intro h
+  constructor
+  intro y r
+  apply h y (RedStar.step r Red.refl)
+
+
+  theorem sn_conv : SN t -> t =β= t' -> SN t' := by sorry
+  -- intro h cv
+  -- induction h
+  -- case _ z h ih =>
+  --   constructor
+  --   intro y r
+  --   cases cv
+  --   case _ w rh =>
+  --     cases rh.1
+  --     case _ =>
+
+  --     case _ z' r1 r2 =>
+  --       have lem : z' =β= t' := by sorry
+  --       replace ih := ih _ r1 lem
+  --       apply sn_preservation_step ih r
+
+  theorem sn_expansion_step : SN t' -> t -β> t' -> SN t := by
+  intro h red
+  induction h generalizing t
+  case _ z h ih =>
+    have lem := reducible_decidable z
+    sorry
+
 
   theorem sn_closed : SN (.app m f a) -> SN f := by
   apply sn_preimage (λ f => .app m f a);
@@ -33,7 +152,7 @@ namespace Term
   intro h
   induction h
   case sn t' _ ih =>
-    have lem : Reducible t' ∨ Normal t' := by apply Classical.em
+    have lem : Reducible t' ∨ Normal t' := reducible_decidable t'
     cases lem
     case _ h' =>
       cases h'
