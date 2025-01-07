@@ -1,6 +1,5 @@
 import Common.Term
-import Common.Term.Substitution
-import Common.Term.Reduction
+import Common.Reduction
 
 namespace Term
 

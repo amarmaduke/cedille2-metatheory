@@ -28,12 +28,7 @@ namespace Fomega
     Proof Γ a A ->
     B' = (B β[a]) ->
     Proof Γ (.app mf f a) B'
-  | econv :
-    Proof Γ t A ->
-    Proof Γ B (.const K) ->
-    A =β= B ->
-    Proof Γ (.conv 0 B t) B
-  | iconv :
+  | conv :
     Proof Γ t A ->
     Proof Γ B (.const K) ->
     A =β= B ->

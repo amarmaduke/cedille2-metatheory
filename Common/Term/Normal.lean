@@ -1,6 +1,6 @@
 
 import Common.Term
-import Common.Term.Reduction
+import Common.Reduction
 
 namespace Term
 
@@ -161,10 +161,10 @@ namespace Term
         cases lem
         case _ z lem =>
           exists z; apply And.intro
-          apply Term.RedStar.step; apply h'; apply lem.1
+          apply RedStar.step; apply h'; apply lem.1
           apply lem.2
     case _ h' =>
-      exists t'; apply And.intro; apply Term.Red.refl
+      exists t'; apply And.intro; apply Red.refl
       apply h'
 
   -- theorem normal_lam : Normal (.lam m A t) -> Normal A ∧ Normal t := by sorry
