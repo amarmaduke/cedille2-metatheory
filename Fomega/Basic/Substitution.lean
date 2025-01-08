@@ -24,10 +24,11 @@ namespace Fomega.Proof
       rw [<-Term.subst_apply_compose_commute, h1]
 
   theorem lift_subst_replace :
+    Δ ⊢ ([σ]A) : .const K ->
     (∀ n t, σ n = .replace t -> Δ ⊢ t : ([σ]Γ d@ n)) ->
     (∀ n t, ^σ n = .replace t -> ([σ]A :: Δ) ⊢ t : ([^σ](A :: Γ) d@ n))
   := by
-  intro h1 n t h2
+  intro j h1 n t h2
   cases n <;> simp at *
   case _ n =>
     unfold Term.Subst.compose at h2; simp at h2
@@ -37,106 +38,59 @@ namespace Fomega.Proof
       replace h1 := h1 n t' ydef
       subst h2
       rw [<-Term.subst_apply_compose_commute]
-      apply weaken; exact h1
+      apply weaken; apply j; apply h1
 
-  theorem lift_subst_replace_wf :
-    (∀ n t, σ n = .replace t -> t ⊢ Δ) ->
-    (∀ n t, ^σ n = .replace t -> t ⊢ ([σ]A :: Δ))
-  := by
-  intro h1 n t h2
-  cases n <;> simp at *
-  case _ n =>
-    unfold Term.Subst.compose at h2; simp at h2
-    generalize ydef : σ n = y at *
-    cases y <;> simp at h2
-    case _ t' =>
-      rw [<-h2]; apply weaken_wf; apply h1 n t' ydef
+  @[simp]
+  abbrev idx_subst (σ : Subst Term) : JudgmentIndex v -> JudgmentIndex v :=
+    match v with
+    | .prf => λ (t, A) => ([σ]t, [σ]A)
+    | .wf => λ () => ()
 
   theorem subst :
-    (∀ n t, σ n = .replace t -> IsPreProof t) ->
     (∀ n y, σ n = .rename y -> [σ](Γ d@ n) = Δ d@ y) ->
     (∀ n t, σ n = .replace t -> Δ ⊢ t : ([σ]Γ d@ n)) ->
-    Γ ⊢ t : A -> Δ ⊢ ([σ]t) : ([σ]A)
+    Judgment v Γ idx ->
+    ⊢ Δ ->
+    Judgment v Δ (idx_subst σ idx)
   := by
-  intro h1 h2 h3 j
-  induction j generalizing Δ σ
-  case ax ih =>
-    replace ih := ih 0 h1 h2 h3
-    have lem := ctx_wf ih
-    cases lem
-    case _ f lem =>
-      constructor; apply lem
-  case var Γ x K _ ih =>
-    simp; generalize ydef : σ x = y at *
-    cases y <;> simp
+  intro h2 h3 j1 j2
+  induction j1 generalizing Δ σ
+  case nil => apply j2
+  case cons => apply j2
+  case ax Γ _j _ih => simp; constructor; apply j2
+  case var Γ x K T _q1 q2 ih =>
+    simp; generalize zdef : σ x = z
+    cases z
     case _ y =>
-      rw [h2 x y ydef]; constructor
-      replace ih := ih h1 h2 h3; simp at ih; rw [h2 _ _ ydef] at ih
-      apply ih
-    case _ t' => apply h3 x t' ydef
-  case pi Γ' A' K B _j1 _j2 ih1 ih2 =>
-    simp; constructor; apply ih1 h1 h2 h3
-    replace ih2 := @ih2 (^σ) ([σ]A' :: Δ) (IsPreProof.lift h1) (lift_subst_rename h2) (lift_subst_replace h3)
+      replace ih := ih h2 h3 j2; simp at ih; rw [h2 x y zdef] at ih
+      simp; rw [q2, h2 x y zdef]
+      constructor; apply ih; rfl
+    case _ t => simp; rw [q2]; apply h3 x t zdef
+  case pi Γ A K1 K2 B _j1 _j2 ih1 ih2 =>
+    have lem1 := ih1 h2 h3 j2
+    have lem2 : ⊢ ([σ]A :: Δ) := by constructor; apply j2; apply lem1
+    simp; constructor; apply ih1 h2 h3 j2
+    replace ih2 := @ih2 (^σ) ([σ]A :: Δ) (lift_subst_rename h2) (lift_subst_replace lem1 h3) lem2
     simp at ih2; exact ih2
-  case tpi Γ' A' B _j1 _j2 ih1 ih2 =>
-    simp; constructor; apply ih1 h1 h2 h3
-    replace ih2 := @ih2 (^σ) ([σ]A' :: Δ) (IsPreProof.lift h1) (lift_subst_rename h2)  (lift_subst_replace h3)
+  case lam Γ A K1 K2 B t _j1 _j2 _j3 ih1 ih2 ih3 =>
+    have lem1 := ih1 h2 h3 j2
+    have lem2 : ⊢ ([σ]A :: Δ) := by constructor; apply j2; apply lem1
+    simp; constructor; simp at *; apply ih1 h2 h3 j2
+    replace ih2 := @ih2 (^σ) ([σ]A :: Δ) (lift_subst_rename h2)  (lift_subst_replace lem1 h3) lem2
     simp at ih2; exact ih2
-  case lam Γ' A' B K t' _j1 _j2 ih1 ih2 =>
-    simp; constructor; simp at *; apply ih1 h1 h2 h3
-    replace ih2 := @ih2 (^σ) ([σ]A' :: Δ) (IsPreProof.lift h1) (lift_subst_rename h2)  (lift_subst_replace h3)
-    simp at ih2; exact ih2
+    replace ih3 := @ih3 (^σ) ([σ]A :: Δ) (lift_subst_rename h2)  (lift_subst_replace lem1 h3) lem2
+    simp at ih3; exact ih3
   case app _j1 _j2 j3 ih1 ih2 =>
-    simp; constructor; apply ih1 h1 h2 h3; apply ih2 h1 h2 h3
+    simp; constructor; apply ih1 h2 h3 j2; apply ih2 h2 h3 j2
     subst j3; simp
-  case econv Γ' t' A' B K _j1 _j2 j3 ih1 ih2 =>
-    constructor; apply ih1 h1 h2 h3; apply ih2 h1 h2 h3
-    apply Term.RedConv.subst _ j3
-  case iconv Γ' t' A' B K _j1 _j2 j3 ih1 ih2 =>
-    constructor; apply ih1 h1 h2 h3; apply ih2 h1 h2 h3
-    apply Term.RedConv.subst _ j3
-
-  theorem subst_wf :
-    (∀ n t, σ n = .replace t -> IsPreProof t) ->
-    (∀ n y, σ n = .rename y -> [σ](Γ d@ n) = Δ d@ y) ->
-    (∀ n t, σ n = .replace t -> Δ ⊢ t : ([σ]Γ d@ n)) ->
-    (∀ n t, σ n = .replace t -> t ⊢ Δ) ->
-    t ⊢ Γ -> ([σ]t) ⊢ Δ
-  := by
-  intro h1 h2 h3 h4 j
-  induction j generalizing Δ σ
-  case _ => constructor
-  case var Γ x K j1 _j2 ih =>
-    simp; generalize ydef : σ x = y at *
-    cases y <;> simp
-    case _ y =>
-      constructor
-      replace j := subst h1 h2 h3 j1
-      rw [h2 _ _ ydef] at j; simp at j; exact j
-      replace ih := ih h1 h2 h3 h4; rw [h2 _ _ ydef] at ih; exact ih
-    case _ t' => apply h4 _ _ ydef
-  case pi A Γ B _ _ ih1 ih2 =>
-    simp; constructor; apply ih1 h1 h2 h3 h4
-    replace ih2 := @ih2 (^σ) ([σ]A::Δ) (IsPreProof.lift h1) (lift_subst_rename h2)
-      (lift_subst_replace h3) (lift_subst_replace_wf h4)
-    simp at ih2; exact ih2
-  case lam A Γ B _ _ ih1 ih2 =>
-    simp; constructor; apply ih1 h1 h2 h3 h4
-    replace ih2 := @ih2 (^σ) ([σ]A::Δ) (IsPreProof.lift h1) (lift_subst_rename h2)
-      (lift_subst_replace h3) (lift_subst_replace_wf h4)
-    simp at ih2; exact ih2
-  case app ih1 ih2 =>
-    simp; constructor; apply ih1 h1 h2 h3 h4; apply ih2 h1 h2 h3 h4
-  case conv ih1 ih2 =>
-    simp; constructor; apply ih1 h1 h2 h3 h4; apply ih2 h1 h2 h3 h4
+  case conv Γ' t' A' B K _j1 _j2 j3 ih1 ih2 =>
+    constructor; apply ih1 h2 h3 j2; apply ih2 h2 h3 j2
+    apply RedConv.subst _ j3
 
   theorem beta : (A::Γ) ⊢ b : B -> Γ ⊢ t : A -> Γ ⊢ (b β[t]) : (B β[t]) := by
   simp; intro j1 j2
-  apply @subst _ (A::Γ)
-  case _ =>
-    intro n s eq
-    cases n <;> simp at *
-    subst eq; apply IsPreProof.from_proof j2
+  have lem := @subst (.replace t :: I) (A::Γ) Γ .prf (b, B); simp at lem
+  apply lem
   case _ =>
     intro n y h
     cases n <;> simp at h
@@ -146,26 +100,6 @@ namespace Fomega.Proof
     cases n <;> simp at h
     case _ => subst h; simp; exact j2
   case _ => exact j1
-
-  theorem beta_wf : b ⊢ (A::Γ) -> Γ ⊢ t : A -> t ⊢ Γ -> (b β[t]) ⊢ Γ := by
-  simp; intro j1 j2 j3
-  apply @subst_wf _ (A::Γ)
-  case _ =>
-    intro n s eq
-    cases n <;> simp at *
-    subst eq; apply IsPreProof.from_proof j2
-  case _ =>
-    intro n y h
-    cases n <;> simp at h
-    case _ n => subst h; simp
-  case _ =>
-    intro n t' h
-    cases n <;> simp at h
-    case _ => subst h; simp; exact j2
-  case _ =>
-    intro n t' h
-    cases n <;> simp at h
-    case _ => subst h; exact j3
-  case _ => exact j1
+  case _ => apply judgment_ctx_wf j2
 
 end Fomega.Proof

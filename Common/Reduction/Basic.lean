@@ -281,6 +281,18 @@ namespace RedConv
     case _ r _ => cases r
   case _ r _ => cases r
 
+  theorem const_red_implies_eq : .const K -β>* T -> T = .const K := by
+  intro r
+  generalize zdef : Term.const K = z at *
+  induction r; simp
+  case _ r1 r2 ih => rw [<-zdef] at r1; cases r1
+
+  theorem const_conv_implies_eq : .const K1 =β= .const K2 -> K1 = K2 := by
+  intro j; cases j; case _ w r =>
+    have lem1 := const_red_implies_eq r.1
+    have lem2 := const_red_implies_eq r.2
+    subst lem1; injection lem2
+
   theorem lam_congr : .lam m1 A1 B1 =β= .lam m2 A2 B2 -> m1 = m2 ∧ A1 =β= A2 ∧ B1 =β= B2 := by
   intro h
   cases h

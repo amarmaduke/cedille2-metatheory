@@ -9,29 +9,29 @@ namespace Fomega.Proof
 
 
 
-  theorem lam_destruct_conv :
-    Γ ⊢ .lam mf A t : T ->
-    T =β= .all mf C D ->
-    ∃ B, A =β= C ∧ B =β= D ∧ Γ ⊢ .lam mf A t : .all mf A B
-  := by
-  intro j hc
-  generalize sdef : Term.lam mf A t = s at *
-  induction j generalizing A C D t
-  case ax => simp at sdef
-  case var => simp at sdef
-  case pi => simp at sdef
-  case tpi => simp at sdef
-  case lam A' B' K' t' j3 j4 ih1 ih2 => sorry
-    -- replace hc := Term.RedConv.all_congr hc
-    -- injection sdef with e1 e2 e3
-    -- subst e2; subst e3; exists B'
-    -- apply And.intro hc.2.1
-    -- apply And.intro hc.2.2
-    -- constructor; apply j3; apply j4
-  case app => simp at sdef
-  case econv Γ t' A' B' _K' h1 _h2 h3 ih1 _ih2 =>
-    cases t' <;> simp at sdef
-  case iconv Γ t' A' B' _K' h1 _h2 h3 ih1 _ih2 => sorry
+  -- theorem lam_destruct_conv :
+  --   Γ ⊢ .lam mf A t : T ->
+  --   T =β= .all mf C D ->
+  --   ∃ B, A =β= C ∧ B =β= D ∧ Γ ⊢ .lam mf A t : .all mf A B
+  -- := by
+  -- intro j hc
+  -- generalize sdef : Term.lam mf A t = s at *
+  -- induction j generalizing A C D t
+  -- case ax => simp at sdef
+  -- case var => simp at sdef
+  -- case pi => simp at sdef
+  -- case tpi => simp at sdef
+  -- case lam A' B' K' t' j3 j4 ih1 ih2 => sorry
+  --   -- replace hc := Term.RedConv.all_congr hc
+  --   -- injection sdef with e1 e2 e3
+  --   -- subst e2; subst e3; exists B'
+  --   -- apply And.intro hc.2.1
+  --   -- apply And.intro hc.2.2
+  --   -- constructor; apply j3; apply j4
+  -- case app => simp at sdef
+  -- case econv Γ t' A' B' _K' h1 _h2 h3 ih1 _ih2 =>
+  --   cases t' <;> simp at sdef
+  -- case iconv Γ t' A' B' _K' h1 _h2 h3 ih1 _ih2 => sorry
 
   -- theorem lam_destruct_body :
   --   Γ ⊢ .lam mf A t : T ->

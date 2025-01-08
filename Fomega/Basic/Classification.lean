@@ -4,45 +4,66 @@ import Fomega.Proof
 import Fomega.PreProof
 import Fomega.Basic.Weaken
 import Fomega.Basic.Substitution
-import Fomega.Basic.Inversion
 
 namespace Fomega.Proof
 
-  theorem proof_classification : Γ ⊢ t : A -> A = □ ∨ (∃ K, Γ ⊢ A : .const K) := by
-  intro j
-  induction j
-  case ax => apply Or.inl; rfl
-  case var K h _ => apply Or.inr; exists K
-  case pi h _ _ _ =>
-    have h2 := ctx_wf h
-    cases h2
-    case _ f h2 =>
-      apply Or.inr; exists .kind; apply Proof.ax f h2
-  case tpi => apply Or.inl; rfl
-  case lam h1 _h2 _ih1 _ih2 => apply Or.inr; apply Exists.intro; apply h1
-  case app _h1 h2 h3 ih1 _ih2 =>
-    replace ih1 := ih1
-    cases ih1 <;> simp at *
+  @[simp]
+  abbrev AllDestructLemmaType (Γ : Ctx) : (v : JudgmentVariant) -> JudgmentIndex v -> Prop
+  | .prf => λ (t, T) => ∀ A B K, t = .all mf A B -> T =β= .const K -> (A::Γ) ⊢ B : .const K
+  | .wf => λ () => True
+
+  theorem all_destruct_lemma : Judgment v Γ ix -> AllDestructLemmaType Γ v ix := by
+  intro j; induction j <;> simp at *
+  case pi K1 K2 _ j1 j2 _ _ =>
+    intro A B K h1 h2 T h3 h4
+    have lem := @RedConv.const_conv_implies_eq K2 K (by exists T); subst lem
+    subst h2; subst h1; apply j2
+  case conv A' B' _ _ _ cv ih1 _ih2 =>
+    intro A B K h1 T h2 h3
+    have lem : A' =β= .const K := by apply RedConv.trans cv (by exists T)
+    cases lem; case _ q r =>
+      apply ih1 _ _ _ h1 q r.1 r.2
+
+  @[simp]
+  abbrev class_idx (t A : Term) : JudgmentIndex v :=
+    match v with
+    | .prf => (t, A)
+    | .wf => ()
+
+  @[simp]
+  abbrev ClassType (Γ : Ctx) : (v : JudgmentVariant) -> JudgmentIndex v -> Prop
+  | .prf => λ (_, A) => A = □ ∨ (∃ K, Γ ⊢ A : .const K)
+  | .wf => λ () => True
+
+  theorem classification_lemma : Judgment v Γ ix -> ClassType Γ v ix := by
+  intro j; induction j <;> simp at *
+  case var K _ j1 j2 _ih =>
+    apply Or.inr; exists K; rw [j2]; apply j1
+  case pi K1 K2 _ j1 _ ih1 ih2 =>
+    cases ih1
     case _ h =>
-      cases h
-      case _ K h =>
-        cases h
-        case _ K q1 q2 =>
-          have h := Proof.beta q2 h2; simp at h
-          apply Or.inr; exists .type
-          subst h3; exact h
-        case _ K q1 q2 =>
-          have h := Proof.beta q2 h2; simp at h
-          apply Or.inr; exists .kind
-          subst h3; exact h
-        case _ C K' q1 q2 q3 =>
-          replace q1 := all_destruct q1 q2
-          have h := Proof.beta (q1.2.2) h2
-          simp at h; apply Or.inr; exists K
-          subst h3; apply h
-  case iconv K _h1 h2 _h3 _ih1 _ih2 =>
+      cases K2; simp at *; exists .kind
+      constructor; apply judgment_ctx_wf j1
+      simp
+    case _ h =>
+      cases K2; simp at *; exists .kind
+      constructor; apply judgment_ctx_wf j1
+      simp
+  case lam K1 K2 _ _ j1 j2 j3 _ _ _ =>
+    exists K2; constructor; apply j1; apply j2
+  case app Γ f A B a B' j1 j2 j3 _ ih2 =>
+    cases ih2; case _ K ih2 =>
+      have lem := all_destruct_lemma ih2; simp at lem
+      replace lem := lem A B K rfl rfl (.const K) Red.refl Red.refl
+      replace lem := Proof.beta lem j2; simp at lem
+      apply Or.inr; exists K
+      rw [j3]; apply lem
+  case conv K _h1 h2 _h3 _ih1 _ih2 =>
     apply Or.inr; exists K
-  case econv K _h1 h2 _h3 _ih1 _ih2 =>
-    apply Or.inr; exists K
+
+  theorem classification : Γ ⊢ t : A -> A = □ ∨ (∃ K, Γ ⊢ A : .const K) := by
+  intro j
+  have lem := classification_lemma j; simp at lem
+  apply lem
 
 end Fomega.Proof
