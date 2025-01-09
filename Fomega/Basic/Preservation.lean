@@ -9,10 +9,28 @@ import Fomega.Basic.Classification
 
 namespace Fomega.Proof
 
+  @[simp]
+  abbrev LamDestructLemmaType (Γ : Ctx) : (v : JudgmentVariant) -> JudgmentIndex v -> Prop
+  | .prf => λ (t, T) => ∀ m C A b B, t = .lam m C b -> T =β= .all mf A B ->
+    m = mf
+    ∧ (∃ K, A =β= C ∧ Γ ⊢ C : .const K)
+    ∧ (∃ K D, B =β= D ∧ (C::Γ) ⊢ D : .const K ∧ (C::Γ) ⊢ b : D)
+  | .wf => λ () => True
+
+  theorem lam_destruct_lemma : Judgment v Γ ix -> LamDestructLemmaType Γ v ix := by
+  intro j; induction j <;> simp at *
+  case lam A' _ _ B' _ j1 j2 j3 ih1 ih2 ih3 => sorry
+    -- intro m C A b B h1 h2 h3 x r1 r2
+    -- apply And.intro; subst h1; rfl; subst h1; subst h2; subst h3
+    -- have lem := @RedConv.all_congr _ A' B' _ A B (by exists x)
+    -- apply And.intro; apply RedConv.sym; apply lem.2.1
+    -- exists B'; apply And.intro; apply RedConv.sym; apply lem.2.2
+    -- apply j3
+  case conv A' B' _ _ _ cv ih1 _ih2 => sorry
 
   inductive CtxRed : Ctx -> Ctx -> Prop where
   | nil : CtxRed [] []
-  | head : A -β> A' -> CtxRed (A::Γ) (A'::Γ)
+  | head : A -β> A' -> CtxRed Γ Γ' -> CtxRed (A::Γ) (A'::Γ')
   | tail : CtxRed Γ Γ' -> CtxRed (A::Γ) (A::Γ')
 
   namespace CtxRed
@@ -24,9 +42,13 @@ namespace Fomega.Proof
 
     theorem nth x : CtxRed Γ Γ' -> Γ d@ x = Γ' d@ x ∨ Γ d@ x -β> Γ' d@ x := by
     intro j; induction j generalizing x; simp
-    case _ A A' Δ r =>
+    case _ A A' Γ Γ' r1 _r2 ih =>
       cases x <;> simp
-      apply Or.inr; apply Red.subst1_same; apply r
+      case _ => apply Or.inr; apply Red.subst1_same; apply r1
+      case _ x =>
+        cases (ih x)
+        case _ ih => rw [ih]; apply Or.inl rfl
+        case _ ih => apply Or.inr; apply Red.subst1_same; apply ih
     case _ Γ Γ' A _ ih =>
       cases x <;> simp
       case _ x =>
@@ -49,7 +71,7 @@ namespace Fomega.Proof
   case cons Γ A K j1 j2 ih1 ih2 =>
     intro Γ' r
     cases r
-    case _ A' r => constructor; apply j1; apply ih2 (Or.inr r) CtxRed.refl
+    case _ r1 r2 => constructor; apply ih1 r2; apply ih2 (Or.inr r1) r2
     case _ Γ' r => constructor; apply ih1 r; apply ih2 (Or.inl rfl) r
   case ax Γ j ih =>
     intro t' Γ' r1 r2
@@ -60,13 +82,97 @@ namespace Fomega.Proof
     intro t' Γ' r1 r2
     cases r1
     case _ r1 =>
-      rw [<-r1]; apply @Judgment.conv _ _ (Γ' d@ x) _ K
-
+      rw [<-r1]; have lem := CtxRed.nth x r2
+      apply @Judgment.conv _ _ (Γ' d@ x) _ K
+      constructor; apply ih lem r2; rfl
+      rw [j2]; apply ih (Or.inl rfl) r2
+      rw [j2]; cases lem
+      case _ h2 => rw [h2]; apply RedConv.refl
+      case _ h2 =>
+        exists (Γ' d@ x); apply And.intro
+        apply RedStar.refl; apply Red.trans_flip RedStar.refl h2
     case _ r1 => cases r1
   case pi => sorry
-  case lam Γ A K1 K2 B t j1 j2 j3 ih1 ih2 ih3 => sorry
-  case app => sorry
-  case conv => sorry
+  case lam Γ A K1 K2 B t j1 j2 j3 ih1 ih2 ih3 =>
+    intro t' Γ' r1 r2
+    cases r1
+    case _ r1 =>
+      rw [<-r1]; constructor
+      apply ih1 (Or.inl rfl) r2
+      apply ih2 (Or.inl rfl) (.tail r2)
+      apply ih3 (Or.inl rfl) (.tail r2)
+    case _ r1 =>
+      cases r1
+      case _ A' r1 =>
+        apply @Judgment.conv _ _ (.all mf A' B) _ K2
+        constructor; apply ih1 (Or.inr r1) r2
+        apply ih2 (Or.inl rfl) (.head r1 r2)
+        apply ih3 (Or.inl rfl) (.head r1 r2)
+        constructor; apply ih1 (Or.inl rfl) r2
+        apply ih2 (Or.inl rfl) (.tail r2)
+        exists (.all mf A' B); apply And.intro
+        apply Red.refl; apply Red.trans_flip Red.refl
+        apply Red.all_congr1 r1
+      case _ t' r1 =>
+        constructor; apply ih1 (Or.inl rfl) r2
+        apply ih2 (Or.inl rfl) (.tail r2)
+        apply ih3 (Or.inr r1) (.tail r2)
+  case app Γ f A B a B' j1 j2 j3 ih1 ih2 =>
+    intro t' Γ' r1 r2
+    cases r1
+    case _ r1 =>
+      rw [<-r1]; constructor; apply ih1 (Or.inl rfl) r2
+      apply ih2 (Or.inl rfl) r2; apply j3
+    case _ r1 =>
+      cases r1
+      case _ m2 A' b =>
+        replace ih1 := ih1 (Or.inl rfl) r2
+        replace ih2 := ih2 (Or.inl rfl) r2
+        have lem := lam_destruct_lemma ih1; simp at lem
+        replace lem := lem m2 A' A b B rfl rfl rfl (.all mf A B) Red.refl Red.refl
+        cases lem.2.1.2; case _ K1 lem2 =>
+        cases lem.2.2; case _ K2 lem3 =>
+        cases lem3; case _ D lem3 =>
+          have ih2' : Γ' ⊢ a : A' := by
+            apply Judgment.conv; apply ih2
+            apply lem2; apply lem.2.1.1
+          have lem4 := Proof.beta lem3.2.2 ih2'; simp at *; rw [j3]
+          have lem5 := classification ih1
+          cases lem5 <;> simp at *; case _ lem5 =>
+          cases lem5; case _ K3 lem5 =>
+            have lem6 := all_destruct_lemma lem5; simp at lem6
+            replace lem6 := lem6 A B K3 rfl rfl (.const K3) Red.refl Red.refl
+            replace lem6 := Proof.beta lem6 ih2; simp at lem6
+            apply Judgment.conv; apply lem4; apply lem6
+            apply RedConv.subst; apply RedConv.sym; apply lem3.1
+      case _ =>
+        have lem := IsPreProof.from_proof j1; simp at lem
+        cases lem
+      case _ f' r1 =>
+        constructor; apply ih1 (Or.inr r1) r2
+        apply ih2 (Or.inl rfl) r2; apply j3
+      case _ a' r1 =>
+        replace j1 := ih1 (Or.inl rfl) r2
+        replace j2 := ih2 (Or.inl rfl) r2
+        have lem1 := classification j1
+        cases lem1 <;> simp at *; case _ lem1 =>
+          cases lem1; case _ K lem1 =>
+            have lem2 := all_destruct_lemma lem1; simp at lem2
+            replace lem2 := lem2 A B K rfl rfl (.const K) Red.refl Red.refl
+            have lem3 := Proof.beta lem2 j2; simp at lem3
+            apply @Judgment.conv _ _ (B β[a']) _ K
+            constructor; apply j1; apply ih2 (Or.inr r1) r2; rfl
+            rw [j3]; apply lem3; rw [j3]; simp
+            apply RedConv.subst2
+            intro n t h1; cases n <;> simp at *; subst h1
+            exists a'; apply And.intro
+            apply Red.refl; apply Red.trans_flip Red.refl r1
+            intro n k h1; cases n <;> simp at *; apply h1
+            apply RedConv.refl
+  case conv j1 j2 j3 ih1 ih2 =>
+    intro t' Γ' r1 r2
+    constructor; apply ih1 r1 r2; apply ih2 (Or.inl rfl) r2
+    apply j3
 
   -- abbrev ctx_red x Γ Γ' := ∀ n, Γ d@ x -β> Γ' d@ x ∧ (n ≠ x -> Γ d@ n = Γ' d@ n)
 

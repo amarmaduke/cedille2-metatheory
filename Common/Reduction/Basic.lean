@@ -261,8 +261,6 @@ namespace RedConv
   cases h
   case _ C ih => exists C; simp [*]
 
-
-
   theorem subst σ : A =β= B -> [σ]A =β= [σ]B := by
   intro h
   cases h
@@ -270,6 +268,12 @@ namespace RedConv
     have h1 := Red.subst_same σ h.1
     have h2 := Red.subst_same σ h.2
     exists [σ]C
+
+  theorem subst2 (σ τ : Subst Term) :
+    (∀ n t, σ n = .replace t -> ∃ t', τ n = .replace t' ∧ t =β= t') ->
+    (∀ n k, σ n = .rename k -> τ n = .rename k) ->
+    s =β= t -> [σ]s =β= [τ]t
+  := by sorry
 
   theorem type_not_conv_to_kind : ¬ (★ =β= □) := by
   intro h

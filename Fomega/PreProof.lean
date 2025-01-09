@@ -88,16 +88,19 @@ namespace Fomega
       subst eq; exact j2
     case _ => exact j1
 
-    -- theorem from_proof : Γ ⊢ t : A -> IsPreProof t := by
-    -- intro j; induction j
-    -- case ax => constructor
-    -- case var => constructor
-    -- case pi _j1 _j2 ih1 ih2 => constructor <;> simp [*]
-    -- case tpi => constructor <;> simp [*]
-    -- case lam j1 _j2 ih1 ih2 => constructor; cases ih1; all_goals simp [*]
-    -- case app => constructor <;> simp [*]
-    -- case econv => constructor <;> simp [*]
-    -- case iconv => simp [*]
+    @[simp]
+    abbrev FromProofType : (v : JudgmentVariant) -> JudgmentIndex v -> Prop
+    | .prf => λ (t, _) => IsPreProof t
+    | .wf => λ () => True
+
+    theorem from_proof : Judgment v Γ ix -> FromProofType v ix := by
+    intro j; induction j <;> simp at *
+    case ax => constructor
+    case var => constructor
+    case pi _j1 _j2 ih1 ih2 => constructor; apply ih1; apply ih2
+    case lam j1 _j2 ih1 ih2 => constructor; cases ih1; all_goals simp [*]
+    case app => constructor <;> simp [*]
+    case conv => simp [*]
 
     -- theorem from_proof_type : t ⊢ Γ -> Γ ⊢ t : A -> IsPreProof A := by
     -- intro h j; induction j
