@@ -194,9 +194,17 @@ namespace Term
     if classify T == .type && classify a == .term && classify b == .term
     then .term
     else .none
+  | spair a b =>
+    if classify a == .term && classify b == .term
+    then .term
+    else .none
   | fst t => if classify t == .term then .term else .none
   | snd t => if classify t == .term then .term else .none
   | prod A B =>
+    if classify A == .type && classify B == .type
+    then .type
+    else .none
+  | sprod A B =>
     if classify A == .type && classify B == .type
     then .type
     else .none
@@ -217,6 +225,7 @@ namespace Term
     then .term
     else .none
   | conv _ _ t => classify t
+  | id t => classify t
   termination_by t => size t
 
 end Term

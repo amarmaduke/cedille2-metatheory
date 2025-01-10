@@ -86,14 +86,17 @@ namespace Term
     | σ, app m t1 t2 => app m (apply σ t1) (apply σ t2)
     | σ, all m t1 t2 => all m (apply σ t1) (apply (lift σ) t2)
     | σ, pair n t1 t2 t3 => pair n (apply σ t1) (apply σ t2) (apply σ t3)
+    | σ, spair t1 t2 => spair (apply σ t1) (apply σ t2)
     | σ, fst t => fst (apply σ t)
     | σ, snd t => snd (apply σ t)
+    | σ, sprod t1 t2 => sprod (apply σ t1) (apply σ t2)
     | σ, prod t1 t2 => prod (apply σ t1) (apply (lift σ) t2)
     | σ, refl t => refl (apply σ t)
     | σ, subst t1 t2 => subst (apply σ t1) (apply σ t2)
     | σ, phi t1 t2 t3 => phi (apply σ t1) (apply σ t2) (apply σ t3)
     | σ, eq t1 t2 t3 => eq (apply σ t1) (apply σ t2) (apply σ t3)
     | σ, conv n t1 t2 => conv n (apply σ t1) (apply σ t2)
+    | σ, id t => id (apply σ t)
     -- | σ, conv t1 t2 c => conv (apply σ t1) (apply σ t2) (cvapply σ c)
   end Ren
 
@@ -160,14 +163,17 @@ namespace Term
     | σ, app m t1 t2 => app m (apply σ t1) (apply σ t2)
     | σ, all m t1 t2 => all m (apply σ t1) (apply (lift σ) t2)
     | σ, pair n t1 t2 t3 => pair n (apply σ t1) (apply σ t2) (apply σ t3)
+    | σ, spair t1 t2 => spair (apply σ t1) (apply σ t2)
     | σ, fst t => fst (apply σ t)
     | σ, snd t => snd (apply σ t)
+    | σ, sprod t1 t2 => sprod (apply σ t1) (apply σ t2)
     | σ, prod t1 t2 => prod (apply σ t1) (apply (lift σ) t2)
     | σ, refl t => refl (apply σ t)
     | σ, subst t1 t2 => subst (apply σ t1) (apply σ t2)
     | σ, phi t1 t2 t3 => phi (apply σ t1) (apply σ t2) (apply σ t3)
     | σ, eq t1 t2 t3 => eq (apply σ t1) (apply σ t2) (apply σ t3)
     | σ, conv n t1 t2 => conv n (apply σ t1) (apply σ t2)
+    | σ, id t => id (apply σ t)
     -- | σ, conv t1 t2 c => conv (apply σ t1) (apply σ t2) (cvapply ▸σ c)
 
     -- def cvcompose : Subst CvTerm -> Subst CvTerm -> Subst CvTerm
@@ -1160,6 +1166,10 @@ namespace Term
     cases s <;> simp at h
     case _ r1 r2 r3 =>
       rw [h.1, ih1 r rinj h.2.1, ih2 r rinj h.2.2.1, ih3 r rinj h.2.2.2]
+  case spair ih1 ih2 =>
+    cases s <;> simp at h
+    case _ r1 r2 =>
+      rw [ih1 r rinj h.1, ih2 r rinj h.2]
   case fst t ih =>
     cases s <;> simp at h
     case _ r1 =>
@@ -1175,6 +1185,10 @@ namespace Term
       have rlinj := rename_injective_lift r rinj
       replace ih2 := @ih2 r2 (Ren.lift r) rlinj
       simp at ih2; rw [ih2 h.2]
+  case sprod t1 t2 ih1 ih2 =>
+    cases s <;> simp at h
+    case _ r1 r2 =>
+      rw [ih1 r rinj h.1, ih2 r rinj h.2]
   case refl t ih =>
     cases s <;> simp at h
     case _ r1 =>
@@ -1195,6 +1209,9 @@ namespace Term
     cases s <;> simp at h
     case _ r1 r2 r3 =>
       rw [ih1 r rinj h.2.1, ih2 r rinj h.2.2, h.1]
+  case id ih =>
+    cases s <;> simp at h
+    case _ => rw [ih r rinj h]
 
   -- theorem rename_injective_liftn n r :
   --   (∀ x y, r x = r y -> x = y) ->

@@ -30,6 +30,28 @@ namespace Fomega.Proof
       cases lem; case _ q r4 =>
         apply ih1 m C A b B h1 q (Red.trans r3.1 r4.2) (Red.trans r2 r4.1)
 
+  @[simp]
+  abbrev PairDestructLemmaType (Γ : Ctx) : (v : JudgmentVariant) -> JudgmentIndex v -> Prop
+  | .prf => λ (t, T) => ∀ c d A B, t = .spair c d -> T =β= .sprod A B ->
+    (∃ C, A =β= C ∧ Γ ⊢ c : C ∧ Γ ⊢ C : ★)
+    ∧ (∃ D, B =β= D ∧ Γ ⊢ d : D ∧ Γ ⊢ D : ★)
+  | .wf => λ () => True
+
+  theorem pair_destruct_lemma : Judgment v Γ ix -> PairDestructLemmaType Γ v ix := by
+  intro j; induction j <;> simp at *
+  case pair Γ a A b B j1 j2 j3 j4 _ _ _ _ =>
+    intro c d A' B' h1 h2 x r1 r2; subst h1; subst h2
+    have lem := @RedConv.sprod_congr A' B' A B (by exists x)
+    apply And.intro; exists A; apply And.intro; apply lem.1
+    apply And.intro; apply j1; apply j3
+    exists B; apply And.intro; apply lem.2
+    apply And.intro; apply j2; apply j4
+  case conv A' B' _ _ _ cv ih1 _ih2 =>
+    intro c d A B h1 x r1 r2; cases cv; case _ w r3 =>
+      have lem := Red.confluence r1 r3.2
+      cases lem; case _ q r4 =>
+        apply ih1 c d A B h1 q (Red.trans r3.1 r4.2) (Red.trans r2 r4.1)
+
   inductive CtxRed : Ctx -> Ctx -> Prop where
   | nil : CtxRed [] []
   | head : A -β> A' -> CtxRed Γ Γ' -> CtxRed (A::Γ) (A'::Γ')
@@ -186,6 +208,79 @@ namespace Fomega.Proof
             apply Red.refl; apply Red.trans_flip Red.refl r1
             intro n k h1; cases n <;> simp at *; apply h1
             apply RedConv.refl
+  case prod Γ A B j1 j2 ih1 ih2 =>
+    intro t' Γ' r1 r2
+    cases r1
+    case _ r1 =>
+      rw [<-r1]; constructor; apply ih1 (Or.inl rfl) r2
+      apply ih2 (Or.inl rfl) r2
+    case _ r1 =>
+      cases r1
+      case _ A' r1 => constructor; apply ih1 (Or.inr r1) r2; apply ih2 (Or.inl rfl) r2
+      case _ B' r1 => constructor; apply ih1 (Or.inl rfl) r2; apply ih2 (Or.inr r1) r2
+  case pair Γ a A b B j1 j2 j3 j4 ih1 ih2 ih3 ih4 =>
+    intro t' Γ' r1 r2
+    cases r1
+    case _ r1 =>
+      rw [<-r1]; constructor; apply ih1 (Or.inl rfl) r2
+      apply ih2 (Or.inl rfl) r2; apply ih3 (Or.inl rfl) r2
+      apply ih4 (Or.inl rfl) r2
+    case _ r1 =>
+      cases r1
+      case _ a' r1 =>
+        constructor; apply ih1 (Or.inr r1) r2; apply ih2 (Or.inl rfl) r2
+        apply ih3 (Or.inl rfl) r2; apply ih4 (Or.inl rfl) r2
+      case _ b' r1 =>
+        constructor; apply ih1 (Or.inl rfl) r2; apply ih2 (Or.inr r1) r2
+        apply ih3 (Or.inl rfl) r2; apply ih4 (Or.inl rfl) r2
+  case fst Γ t A B j ih =>
+    intro t' Γ' r1 r2
+    cases r1
+    case _ r1 => rw [<-r1]; constructor; apply ih (Or.inl rfl) r2
+    case _ r1 =>
+      cases r1
+      case _ => have lem := IsPreProof.from_proof j; cases lem
+      case _ s =>
+        replace ih := ih (Or.inl rfl) r2
+        have lem := pair_destruct_lemma ih; simp at lem
+        replace lem := lem t' s A B rfl rfl (.sprod A B) Red.refl Red.refl
+        have lem2 := classification ih; simp at lem2
+        cases lem2; case _ K lem2 =>
+        cases lem.1; case _ C lem =>
+          replace lem2 := prod_destruct_lemma lem2; simp at lem2
+          replace lem2 := lem2 A B K rfl rfl (.const K) Red.refl Red.refl
+          apply Judgment.conv; apply lem.2.1; apply lem2.1
+          apply RedConv.sym; apply lem.1
+      case _ => have lem := IsPreProof.from_proof j; cases lem
+      case _ t' r1 => constructor; apply ih (Or.inr r1) r2
+  case snd Γ t A B j ih =>
+    intro t' Γ' r1 r2
+    cases r1
+    case _ r1 => rw [<-r1]; constructor; apply ih (Or.inl rfl) r2
+    case _ r1 =>
+      cases r1
+      case _ => have lem := IsPreProof.from_proof j; cases lem
+      case _ s =>
+        replace ih := ih (Or.inl rfl) r2
+        have lem := pair_destruct_lemma ih; simp at lem
+        replace lem := lem s t' A B rfl rfl (.sprod A B) Red.refl Red.refl
+        have lem2 := classification ih; simp at lem2
+        cases lem2; case _ K lem2 =>
+        cases lem.2; case _ C lem =>
+          replace lem2 := prod_destruct_lemma lem2; simp at lem2
+          replace lem2 := lem2 A B K rfl rfl (.const K) Red.refl Red.refl
+          apply Judgment.conv; apply lem.2.1; apply lem2.2
+          apply RedConv.sym; apply lem.1
+      case _ => have lem := IsPreProof.from_proof j; cases lem
+      case _ t' r1 => constructor; apply ih (Or.inr r1) r2
+  case id Γ t A j ih =>
+    intro t' Γ' r1 r2
+    cases r1
+    case _ r1 => rw [<-r1]; apply Judgment.id; apply ih (Or.inl rfl) r2
+    case _ r1 =>
+      cases r1
+      case _ r1 => apply ih (Or.inl rfl) r2
+      case _ t' r1 => apply Judgment.id; apply ih (Or.inr r1) r2
   case conv j1 j2 j3 ih1 ih2 =>
     intro t' Γ' r1 r2
     constructor; apply ih1 r1 r2; apply ih2 (Or.inl rfl) r2

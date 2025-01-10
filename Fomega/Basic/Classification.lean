@@ -24,6 +24,23 @@ namespace Fomega.Proof
       apply ih1 _ _ _ h1 q r.1 r.2
 
   @[simp]
+  abbrev ProdDestructLemmaType (Γ : Ctx) : (v : JudgmentVariant) -> JudgmentIndex v -> Prop
+  | .prf => λ (t, T) => ∀ A B K, t = .sprod A B -> T =β= .const K -> Γ ⊢ A : ★ ∧ Γ ⊢ B : ★
+  | .wf => λ () => True
+
+  theorem prod_destruct_lemma : Judgment v Γ ix -> ProdDestructLemmaType Γ v ix := by
+  intro j; induction j <;> simp at *
+  case prod j1 j2 _ _ =>
+    intro A B K h1 h2 x r1 r2; subst h1; subst h2
+    have lem := @RedConv.const_conv_implies_eq K .type (by exists x)
+    subst lem; apply And.intro; apply j1; apply j2
+  case conv A' B' _ _ _ cv ih1 _ih2 =>
+    intro A B K h1 T h2 h3
+    have lem : A' =β= .const K := by apply RedConv.trans cv (by exists T)
+    cases lem; case _ q r =>
+      apply ih1 _ _ _ h1 q r.1 r.2
+
+  @[simp]
   abbrev class_idx (t A : Term) : JudgmentIndex v :=
     match v with
     | .prf => (t, A)
@@ -57,6 +74,19 @@ namespace Fomega.Proof
       replace lem := Proof.beta lem j2; simp at lem
       apply Or.inr; exists K
       rw [j3]; apply lem
+  case prod j _ _ => exists .kind; constructor; apply judgment_ctx_wf j
+  case pair j1 j2 _ _ _ _=> exists .type; constructor; apply j1; apply j2
+  case fst t A B j ih =>
+    cases ih; case _ K ih =>
+      have lem := prod_destruct_lemma ih; simp at lem
+      replace lem := lem A B K rfl rfl (.const K) Red.refl Red.refl
+      apply Or.inr; exists .type; apply lem.1
+  case snd t A B j ih =>
+    cases ih; case _ K ih =>
+      have lem := prod_destruct_lemma ih; simp at lem
+      replace lem := lem A B K rfl rfl (.const K) Red.refl Red.refl
+      apply Or.inr; exists .type; apply lem.2
+  case id j ih => apply ih
   case conv K _h1 h2 _h3 _ih1 _ih2 =>
     apply Or.inr; exists K
 

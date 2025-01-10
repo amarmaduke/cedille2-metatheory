@@ -77,14 +77,17 @@ inductive Term : Type where
 | app : Mode -> Term -> Term -> Term
 | all : Mode -> Term -> Term -> Term
 | pair : Nat -> Term -> Term -> Term -> Term
+| spair : Term -> Term -> Term
 | fst : Term -> Term
 | snd : Term -> Term
+| sprod : Term -> Term -> Term
 | prod : Term -> Term -> Term
 | refl : Term -> Term
 | subst : Term -> Term -> Term
 | phi : Term -> Term -> Term -> Term
 | eq : Term -> Term -> Term -> Term
 | conv : Nat -> Term -> Term -> Term
+| id : Term -> Term
 
 @[reducible]
 def beqfn : Term -> Term -> Bool
@@ -95,14 +98,17 @@ def beqfn : Term -> Term -> Bool
 | .app m1 x1 x2, .app m2 y1 y2 => m1 == m2 && beqfn x1 y1 && beqfn x2 y2
 | .all m1 x1 x2, .all m2 y1 y2 => m1 == m2 && beqfn x1 y1 && beqfn x2 y2
 | .pair n1 x1 x2 x3, .pair n2 y1 y2 y3 => n1 == n2 && beqfn x1 y1 && beqfn x2 y2 && beqfn x3 y3
+| .spair x1 x2, .spair y1 y2 => beqfn x1 y1 && beqfn x2 y2
 | .fst x1, .fst y1 => beqfn x1 y1
 | .snd x1, .snd y1 => beqfn x1 y1
+| .sprod x1 x2, .sprod y1 y2 => beqfn x1 y1 && beqfn x2 y2
 | .prod x1 x2, .prod y1 y2 => beqfn x1 y1 && beqfn x2 y2
 | .refl x1, .refl y1 => beqfn x1 y1
 | .subst x1 x2, .subst y1 y2 => beqfn x1 y1 && beqfn x2 y2
 | .phi x1 x2 x3, .phi y1 y2 y3 => beqfn x1 y1 && beqfn x2 y2 && beqfn x3 y3
 | .eq x1 x2 x3, .eq y1 y2 y3 => beqfn x1 y1 && beqfn x2 y2 && beqfn x3 y3
 | .conv n1 x1 x2, .conv n2 y1 y2 => n1 == n2 && beqfn x1 y1 && beqfn x2 y2
+| .id x1, .id y1 => beqfn x1 y1
 | _, _ => false
 
 namespace Term
@@ -117,14 +123,17 @@ namespace Term
   case app ih1 ih2 _ _ _ => rw [@LawfulBEq.eq_of_beq Mode _ _ _ _ h.1.1, ih1 h.1.2, ih2 h.2]; simp
   case all ih1 ih2 _ _ _ => rw [@LawfulBEq.eq_of_beq Mode _ _ _ _ h.1.1, ih1 h.1.2, ih2 h.2]; simp
   case pair ih1 ih2 ih3 _ _ _ _ => rw [ih1 h.1.1.2, ih2 h.1.2, ih3 h.2, h.1.1.1]; simp
+  case spair ih1 ih2 _ _ => rw [ih1 h.1, ih2 h.2]; simp
   case fst ih _ => rw [ih h]
   case snd ih _ => rw [ih h]
+  case sprod ih1 ih2 _ _ => rw [ih1 h.1, ih2 h.2]; simp
   case prod ih1 ih2 _ _ => rw [ih1 h.1, ih2 h.2]; simp
   case refl ih _ => rw [ih h]
   case subst ih1 ih2 _ _ => rw [ih1 h.1, ih2 h.2]; simp
   case phi ih1 ih2 ih3 _ _ _ => rw [ih1 h.1.1, ih2 h.1.2, ih3 h.2]; simp
   case eq ih1 ih2 ih3 _ _ _ => rw [ih1 h.1.1, ih2 h.1.2, ih3 h.2]; simp
   case conv ih1 ih2 _ _ _ => rw [h.1.1, ih1 h.1.2, ih2 h.2]; simp
+  case id ih _ => rw [ih h]
 
   theorem beq_rfl : {t : Term} -> beqfn t t = true := by
   intro t; induction t <;> simp at * <;> simp [*]
@@ -223,14 +232,17 @@ namespace Term
   | app _ t1 t2 => size t1 + size t2 + 1
   | all _ t1 t2 => size t1 + size t2 + 1
   | pair _ t1 t2 t3 => size t1 + size t2 + size t3 + 1
+  | spair t1 t2 => size t1 + size t2 + 1
   | fst t => size t + 1
   | snd t => size t + 1
+  | sprod t1 t2 => size t1 + size t2 + 1
   | prod t1 t2 => size t1 + size t2 + 1
   | refl t => size t + 1
   | subst t1 t2 => size t1 + size t2 + 1
   | phi t1 t2 t3 => size t1 + size t2 + size t3 + 1
   | eq t1 t2 t3 => size t1 + size t2 + size t3 + 1
   | conv _ t1 t2 => size t1 + size t2 + 1
+  | id t => size t + 1
 
   -- inductive IsFreeVar : Nat -> Term -> Prop where
   -- | bound : IsFreeVar n (.bound K n)

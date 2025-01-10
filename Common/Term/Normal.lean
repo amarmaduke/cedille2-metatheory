@@ -69,15 +69,18 @@ namespace Term
           case _ w r => apply h2; exists w
         )
   case all => sorry
+  case spair => sorry
   case pair => sorry
   case fst => sorry
   case snd => sorry
   case prod => sorry
+  case sprod => sorry
   case refl => sorry
   case subst => sorry
   case phi => sorry
   case eq => sorry
   case conv => sorry
+  case id => sorry
 
   inductive SN : Term -> Prop where
   | sn : (∀ y, x -β> y -> SN y) -> SN x

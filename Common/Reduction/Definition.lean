@@ -6,8 +6,11 @@ inductive Red : Term -> Term -> Prop where
 | beta : Red (.app m1 (.lam m2 A b) t) (b β[t])
 | proj1 : Red (.fst (.pair n B t s)) t
 | proj2 : Red (.snd (.pair n B t s)) s
+| sproj1 : Red (.fst (.spair t s)) t
+| sproj2 : Red (.snd (.spair t s)) s
 | substelim : Red (.subst Pr (.refl t)) (.lam mf (Pr `@τ t `@τ .refl t) (.bound .type 0))
 | phi : Red (.phi a b (.refl t)) b
+| id : Red (.id t) t
 -- Weak conversion passthrough reduction steps
 -- .app m (.conv n (.all m A1 B1) (.all m A2 B2) b) t -β>
 --   .conv n (B1 β[t]) (B2 β[.conv n A2 t]) (.app m b (.conv n A2 t))
@@ -44,10 +47,14 @@ inductive Red : Term -> Term -> Prop where
 | pair_congr1 : Red B B' -> Red (.pair n B t s) (.pair n B' t s)
 | pair_congr2 : Red t t' -> Red (.pair n B t s) (.pair n B t' s)
 | pair_congr3 : Red s s' -> Red (.pair n B t s) (.pair n B t s')
+| spair_congr1 : Red t t' -> Red (.spair t s) (.spair t' s)
+| spair_congr2 : Red s s' -> Red (.spair t s) (.spair t s')
 | fst_congr : Red t t' -> Red (.fst t) (.fst t')
 | snd_congr : Red t t' -> Red (.snd t) (.snd t')
 | prod_congr1 : Red A A' -> Red (.prod A B) (.prod A' B)
 | prod_congr2 : Red B B' -> Red (.prod A B) (.prod A B')
+| sprod_congr1 : Red A A' -> Red (.sprod A B) (.sprod A' B)
+| sprod_congr2 : Red B B' -> Red (.sprod A B) (.sprod A B')
 | refl_congr : Red t t' -> Red (.refl t) (.refl t')
 | subst_congr1 : Red B B' -> Red (.subst B e) (.subst B' e)
 | subst_congr2 : Red e e' -> Red (.subst B e) (.subst B e')
@@ -59,6 +66,7 @@ inductive Red : Term -> Term -> Prop where
 | eq_congr3 : Red b b' -> Red (.eq A a b) (.eq A a b')
 | conv_congr1 : Red A A' -> Red (.conv n A t) (.conv n A' t)
 | conv_congr2 : Red t t' -> Red (.conv n A t) (.conv n A t')
+| id_congr : Red t t' -> Red (.id t) (.id t')
 
 inductive RedStar : Term -> Term -> Prop where
 | refl : RedStar t t

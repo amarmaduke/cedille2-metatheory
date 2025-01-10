@@ -14,14 +14,17 @@ namespace Term
   | .app mf f a => .app mf (erase f) (erase a)
   | .app mt f a => .app mt (erase f) (erase a)
   | .all m A B => .all m (erase A) (erase B)
-  | .pair n _ t _ => erase t
+  | .spair t s => .spair (erase t) (erase s)
+  | .pair _ _ t _ => erase t
   | .fst t => erase t
   | .snd t => erase t
   | .prod A B => .prod (erase A) (erase B)
+  | .sprod A B => .sprod (erase A) (erase B)
   | .refl _ => .lam mf .none (.bound .type 0)
   | .subst _ e => erase e
   | .phi a _ _ => erase a
   | .eq A a b => .eq (erase A) (erase a) (erase b)
   | .conv _ t _ => erase t
+  | .id t => erase t
 
 end Term

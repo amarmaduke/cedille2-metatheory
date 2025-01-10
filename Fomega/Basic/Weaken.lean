@@ -58,6 +58,22 @@ namespace Fomega.Proof
     case _ => apply ih1 r h1 h2
     case _ => apply ih2 r h1 h2
     case _ => subst j3; simp
+  case prod ih1 ih2 =>
+    simp; constructor
+    case _ => apply ih1 r h1 h2
+    case _ => apply ih2 r h1 h2
+  case pair ih1 ih2 ih3 ih4 =>
+    simp; constructor
+    case _ => apply ih1 r h1 h2
+    case _ => apply ih2 r h1 h2
+    case _ => apply ih3 r h1 h2
+    case _ => apply ih4 r h1 h2
+  case fst ih =>
+    simp; constructor; case _ => apply ih r h1 h2
+  case snd ih =>
+    simp; constructor; case _ => apply ih r h1 h2
+  case id ih =>
+    simp; apply Judgment.id; case _ => apply ih r h1 h2
   case conv Γ' t A' B K _j1 _j2 j3 ih1 ih2 =>
     constructor
     case _ => apply ih1 r h1 h2
