@@ -1,6 +1,5 @@
 
 import Common
-import Fomega.Ctx
 import Fomega.Proof
 import Fomega.PreProof
 

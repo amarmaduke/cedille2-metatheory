@@ -139,11 +139,21 @@ instance Term_inst_LawfulBEq : LawfulBEq Term where
   eq_of_beq := Term.eq_of_beq
   rfl := Term.beq_rfl
 
+
+notation "★" => Term.const Const.type
+notation "□" => Term.const Const.kind
+
 infixl:15 "`@f" => Term.app mf
 infixl:15 "`@τ" => Term.app mt
 infixl:15 "`@0" => Term.app m0
-notation "★" => Term.const Const.type
-notation "□" => Term.const Const.kind
+
+notation "λf[" A "]" t:50 => Term.lam mf A t
+notation "λτ[" A "]" t:50 => Term.lam mt A t
+notation "λ0[" A "]" t:50 => Term.lam m0 A t
+
+notation "∀f[" A "]" B:50 => Term.all mf A B
+notation "∀τ[" A "]" B:50 => Term.all mt A B
+notation "∀0[" A "]" B:50 => Term.all m0 A B
 
 instance instInhabitedTerm : Inhabited Term where
   default := Term.none
