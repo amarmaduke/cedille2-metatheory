@@ -76,77 +76,81 @@ inductive Term : Type where
 | lam : Mode -> Term -> Term -> Term
 | app : Mode -> Term -> Term -> Term
 | all : Mode -> Term -> Term -> Term
-| pair : Nat -> Term -> Term -> Term -> Term
-| spair : Term -> Term -> Term
+| inter : Nat -> Term -> Term -> Term -> Term
+| pair : Term -> Term -> Term
 | fst : Term -> Term
 | snd : Term -> Term
-| sprod : Term -> Term -> Term
-| prod : Term -> Term -> Term
-| refl : Term -> Term
+| times : Term -> Term -> Term
+| inter_ty : Term -> Term -> Term
+| refl : Term -> Term -> Term
 | subst : Term -> Term -> Term
-| phi : Term -> Term -> Term -> Term
+| phi : Term -> Term -> Term -> Term -> Term
 | eq : Term -> Term -> Term -> Term
 | conv : Nat -> Term -> Term -> Term
-| id : Term -> Term
+| unit_ty : Term
+| unit : Term
+| unit_rec : Term -> Term -> Term
 
-@[reducible]
-def beqfn : Term -> Term -> Bool
-| .bound c1 n1, .bound c2 n2 => c1 == c2 && n1 == n2
-| .none, .none => true
-| .const c1, .const c2 => c1 == c2
-| .lam m1 x1 x2, .lam m2 y1 y2 => m1 == m2 && beqfn x1 y1 && beqfn x2 y2
-| .app m1 x1 x2, .app m2 y1 y2 => m1 == m2 && beqfn x1 y1 && beqfn x2 y2
-| .all m1 x1 x2, .all m2 y1 y2 => m1 == m2 && beqfn x1 y1 && beqfn x2 y2
-| .pair n1 x1 x2 x3, .pair n2 y1 y2 y3 => n1 == n2 && beqfn x1 y1 && beqfn x2 y2 && beqfn x3 y3
-| .spair x1 x2, .spair y1 y2 => beqfn x1 y1 && beqfn x2 y2
-| .fst x1, .fst y1 => beqfn x1 y1
-| .snd x1, .snd y1 => beqfn x1 y1
-| .sprod x1 x2, .sprod y1 y2 => beqfn x1 y1 && beqfn x2 y2
-| .prod x1 x2, .prod y1 y2 => beqfn x1 y1 && beqfn x2 y2
-| .refl x1, .refl y1 => beqfn x1 y1
-| .subst x1 x2, .subst y1 y2 => beqfn x1 y1 && beqfn x2 y2
-| .phi x1 x2 x3, .phi y1 y2 y3 => beqfn x1 y1 && beqfn x2 y2 && beqfn x3 y3
-| .eq x1 x2 x3, .eq y1 y2 y3 => beqfn x1 y1 && beqfn x2 y2 && beqfn x3 y3
-| .conv n1 x1 x2, .conv n2 y1 y2 => n1 == n2 && beqfn x1 y1 && beqfn x2 y2
-| .id x1, .id y1 => beqfn x1 y1
-| _, _ => false
+-- @[reducible]
+-- def beqfn : Term -> Term -> Bool
+-- | .bound c1 n1, .bound c2 n2 => c1 == c2 && n1 == n2
+-- | .none, .none => true
+-- | .const c1, .const c2 => c1 == c2
+-- | .lam m1 x1 x2, .lam m2 y1 y2 => m1 == m2 && beqfn x1 y1 && beqfn x2 y2
+-- | .app m1 x1 x2, .app m2 y1 y2 => m1 == m2 && beqfn x1 y1 && beqfn x2 y2
+-- | .all m1 x1 x2, .all m2 y1 y2 => m1 == m2 && beqfn x1 y1 && beqfn x2 y2
+-- | .inter n1 x1 x2 x3, .inter n2 y1 y2 y3 => n1 == n2 && beqfn x1 y1 && beqfn x2 y2 && beqfn x3 y3
+-- | .pair x1 x2, .pair y1 y2 => beqfn x1 y1 && beqfn x2 y2
+-- | .fst x1, .fst y1 => beqfn x1 y1
+-- | .snd x1, .snd y1 => beqfn x1 y1
+-- | .times x1 x2, .times y1 y2 => beqfn x1 y1 && beqfn x2 y2
+-- | .inter_ty x1 x2, .inter_ty y1 y2 => beqfn x1 y1 && beqfn x2 y2
+-- | .refl x1, .refl y1 => beqfn x1 y1
+-- | .subst x1 x2, .subst y1 y2 => beqfn x1 y1 && beqfn x2 y2
+-- | .phi x1 x2 x3, .phi y1 y2 y3 => beqfn x1 y1 && beqfn x2 y2 && beqfn x3 y3
+-- | .eq x1 x2 x3, .eq y1 y2 y3 => beqfn x1 y1 && beqfn x2 y2 && beqfn x3 y3
+-- | .conv n1 x1 x2, .conv n2 y1 y2 => n1 == n2 && beqfn x1 y1 && beqfn x2 y2
+-- | .unit, .unit => true
+-- | .unit_ty, .unit_ty => true
+-- | .unit_rec x1 x2, .unit_rec y1 y2 => beqfn x1 y1 && beqfn x2 y2
+-- | _, _ => false
 
-namespace Term
+-- namespace Term
 
-  theorem eq_of_beq : {t1 t2 : Term} -> beqfn t1 t2 = true -> t1 = t2 := by
-  intro t1 t2 h
-  induction t1 generalizing t2
-  all_goals (cases t2 <;> simp at *)
-  case bound => rw [@LawfulBEq.eq_of_beq Const _ _ _ _ h.1, h.2]; simp
-  case const => rw [h]
-  case lam ih1 ih2 _ _ _ => rw [@LawfulBEq.eq_of_beq Mode _ _ _ _ h.1.1, ih1 h.1.2, ih2 h.2]; simp
-  case app ih1 ih2 _ _ _ => rw [@LawfulBEq.eq_of_beq Mode _ _ _ _ h.1.1, ih1 h.1.2, ih2 h.2]; simp
-  case all ih1 ih2 _ _ _ => rw [@LawfulBEq.eq_of_beq Mode _ _ _ _ h.1.1, ih1 h.1.2, ih2 h.2]; simp
-  case pair ih1 ih2 ih3 _ _ _ _ => rw [ih1 h.1.1.2, ih2 h.1.2, ih3 h.2, h.1.1.1]; simp
-  case spair ih1 ih2 _ _ => rw [ih1 h.1, ih2 h.2]; simp
-  case fst ih _ => rw [ih h]
-  case snd ih _ => rw [ih h]
-  case sprod ih1 ih2 _ _ => rw [ih1 h.1, ih2 h.2]; simp
-  case prod ih1 ih2 _ _ => rw [ih1 h.1, ih2 h.2]; simp
-  case refl ih _ => rw [ih h]
-  case subst ih1 ih2 _ _ => rw [ih1 h.1, ih2 h.2]; simp
-  case phi ih1 ih2 ih3 _ _ _ => rw [ih1 h.1.1, ih2 h.1.2, ih3 h.2]; simp
-  case eq ih1 ih2 ih3 _ _ _ => rw [ih1 h.1.1, ih2 h.1.2, ih3 h.2]; simp
-  case conv ih1 ih2 _ _ _ => rw [h.1.1, ih1 h.1.2, ih2 h.2]; simp
-  case id ih _ => rw [ih h]
+--   theorem eq_of_beq : {t1 t2 : Term} -> beqfn t1 t2 = true -> t1 = t2 := by
+--   intro t1 t2 h
+--   induction t1 generalizing t2
+--   all_goals (cases t2 <;> simp at *)
+--   case bound => rw [@LawfulBEq.eq_of_beq Const _ _ _ _ h.1, h.2]; simp
+--   case const => rw [h]
+--   case lam ih1 ih2 _ _ _ => rw [@LawfulBEq.eq_of_beq Mode _ _ _ _ h.1.1, ih1 h.1.2, ih2 h.2]; simp
+--   case app ih1 ih2 _ _ _ => rw [@LawfulBEq.eq_of_beq Mode _ _ _ _ h.1.1, ih1 h.1.2, ih2 h.2]; simp
+--   case all ih1 ih2 _ _ _ => rw [@LawfulBEq.eq_of_beq Mode _ _ _ _ h.1.1, ih1 h.1.2, ih2 h.2]; simp
+--   case pair ih1 ih2 ih3 _ _ _ _ => rw [ih1 h.1.1.2, ih2 h.1.2, ih3 h.2, h.1.1.1]; simp
+--   case spair ih1 ih2 _ _ => rw [ih1 h.1, ih2 h.2]; simp
+--   case fst ih _ => rw [ih h]
+--   case snd ih _ => rw [ih h]
+--   case sprod ih1 ih2 _ _ => rw [ih1 h.1, ih2 h.2]; simp
+--   case prod ih1 ih2 _ _ => rw [ih1 h.1, ih2 h.2]; simp
+--   case refl ih _ => rw [ih h]
+--   case subst ih1 ih2 _ _ => rw [ih1 h.1, ih2 h.2]; simp
+--   case phi ih1 ih2 ih3 _ _ _ => rw [ih1 h.1.1, ih2 h.1.2, ih3 h.2]; simp
+--   case eq ih1 ih2 ih3 _ _ _ => rw [ih1 h.1.1, ih2 h.1.2, ih3 h.2]; simp
+--   case conv ih1 ih2 _ _ _ => rw [h.1.1, ih1 h.1.2, ih2 h.2]; simp
+--   case id ih _ => rw [ih h]
 
-  theorem beq_rfl : {t : Term} -> beqfn t t = true := by
-  intro t; induction t <;> simp at * <;> simp [*]
+--   theorem beq_rfl : {t : Term} -> beqfn t t = true := by
+--   intro t; induction t <;> simp at * <;> simp [*]
 
-end Term
+-- end Term
 
-@[reducible, simp]
-instance Term_inst_Beq : BEq Term where
-  beq t1 t2 := beqfn t1 t2
+-- @[reducible, simp]
+-- instance Term_inst_Beq : BEq Term where
+--   beq t1 t2 := beqfn t1 t2
 
-instance Term_inst_LawfulBEq : LawfulBEq Term where
-  eq_of_beq := Term.eq_of_beq
-  rfl := Term.beq_rfl
+-- instance Term_inst_LawfulBEq : LawfulBEq Term where
+--   eq_of_beq := Term.eq_of_beq
+--   rfl := Term.beq_rfl
 
 
 notation "★" => Term.const Const.type
@@ -163,6 +167,11 @@ notation "λ0[" A "]" t:50 => Term.lam m0 A t
 notation "∀f[" A "]" B:50 => Term.all mf A B
 notation "∀τ[" A "]" B:50 => Term.all mt A B
 notation "∀0[" A "]" B:50 => Term.all m0 A B
+
+notation "[" A "]∩" B:50 => Term.inter_ty A B
+
+postfix:100 "!" => Term.bound Const.type
+postfix:100 "!!" => Term.bound Const.kind
 
 instance instInhabitedTerm : Inhabited Term where
   default := Term.none
@@ -231,18 +240,20 @@ namespace Term
   | lam _ t1 t2 => size t1 + size t2 + 1
   | app _ t1 t2 => size t1 + size t2 + 1
   | all _ t1 t2 => size t1 + size t2 + 1
-  | pair _ t1 t2 t3 => size t1 + size t2 + size t3 + 1
-  | spair t1 t2 => size t1 + size t2 + 1
+  | inter _ t1 t2 t3 => size t1 + size t2 + size t3 + 1
+  | pair t1 t2 => size t1 + size t2 + 1
   | fst t => size t + 1
   | snd t => size t + 1
-  | sprod t1 t2 => size t1 + size t2 + 1
-  | prod t1 t2 => size t1 + size t2 + 1
-  | refl t => size t + 1
+  | times t1 t2 => size t1 + size t2 + 1
+  | inter_ty t1 t2 => size t1 + size t2 + 1
+  | refl t1 t2 => size t1 + size t2 + 1
   | subst t1 t2 => size t1 + size t2 + 1
-  | phi t1 t2 t3 => size t1 + size t2 + size t3 + 1
+  | phi t1 t2 t3 t4 => size t1 + size t2 + size t3 + size t4 + 1
   | eq t1 t2 t3 => size t1 + size t2 + size t3 + 1
   | conv _ t1 t2 => size t1 + size t2 + 1
-  | id t => size t + 1
+  | unit => 0
+  | unit_ty => 0
+  | unit_rec t1 t2 => size t1 + size t2 + 1
 
   -- inductive IsFreeVar : Nat -> Term -> Prop where
   -- | bound : IsFreeVar n (.bound K n)

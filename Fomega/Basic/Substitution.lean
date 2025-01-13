@@ -91,8 +91,13 @@ namespace Fomega.Proof
     simp; constructor; apply ih h2 h3 j2
   case snd ih =>
     simp; constructor; apply ih h2 h3 j2
-  case id ih =>
-    simp; apply Judgment.id; apply ih h2 h3 j2
+  case unit ih =>
+    simp; constructor; apply ih h2 h3 j2
+  case unit_ty ih =>
+    simp; constructor; apply ih h2 h3 j2
+  case unit_rec ih1 ih2 ih3 =>
+    simp; constructor; apply ih1 h2 h3 j2
+    apply ih2 h2 h3 j2; apply ih3 h2 h3 j2
   case conv Γ' t' A' B K _j1 _j2 j3 ih1 ih2 =>
     constructor; apply ih1 h2 h3 j2; apply ih2 h2 h3 j2
     apply RedConv.subst _ j3

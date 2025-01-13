@@ -40,32 +40,40 @@ namespace Fomega
   | app :
     Judgment .prf Γ (f, .all mf A B) ->
     Judgment .prf Γ (a, A) ->
-    B' = (B β[a]) ->
+    B' = B β[a] ->
     Judgment .prf Γ (.app mf f a, B')
   | prod :
     Judgment .prf Γ (A, ★) ->
     Judgment .prf Γ (B, ★) ->
-    Judgment .prf Γ (.sprod A B, ★)
+    Judgment .prf Γ (.times A B, ★)
   | pair :
     Judgment .prf Γ (a, A) ->
     Judgment .prf Γ (b, B) ->
     Judgment .prf Γ (A, ★) ->
     Judgment .prf Γ (B, ★) ->
-    Judgment .prf Γ (.spair a b, .sprod A B)
+    Judgment .prf Γ (.pair a b, .times A B)
   | fst :
-    Judgment .prf Γ (t, .sprod A B) ->
+    Judgment .prf Γ (t, .times A B) ->
     Judgment .prf Γ (.fst t, A)
   | snd :
-    Judgment .prf Γ (t, .sprod A B) ->
+    Judgment .prf Γ (t, .times A B) ->
     Judgment .prf Γ (.snd t, B)
+  | unit_ty :
+    Judgment .wf Γ () ->
+    Judgment .prf Γ (.unit_ty, ★)
+  | unit :
+    Judgment .wf Γ () ->
+    Judgment .prf Γ (.unit, .unit_ty)
+  | unit_rec :
+    Judgment .prf Γ (u, .unit_ty) ->
+    Judgment .prf Γ (t, A) ->
+    Judgment .prf Γ (A, ★) ->
+    Judgment .prf Γ (.unit_rec u t, A)
   | conv :
     Judgment .prf Γ (t, A) ->
     Judgment .prf Γ (B, .const K) ->
     A =β= B ->
     Judgment .prf Γ (t, B)
-  | id :
-    Judgment .prf Γ (t, A) ->
-    Judgment .prf Γ (.id t, A)
 
   notation:170 Γ:170 " ⊢ " t:170 " : " A:170 => Judgment JudgmentVariant.prf Γ (t, A)
   notation:170 "⊢ " Γ:170 => Judgment JudgmentVariant.wf Γ ()

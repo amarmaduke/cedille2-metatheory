@@ -17,11 +17,13 @@ namespace Fomega
   | all : IsPreProof A -> IsPreProof B -> IsPreProof (.all mf A B)
   | lam : IsPreProof A -> IsPreProof t -> IsPreProof (.lam mf A t)
   | app : IsPreProof f -> IsPreProof a -> IsPreProof (.app mf f a)
-  | prod : IsPreProof A -> IsPreProof B -> IsPreProof (.sprod A B)
-  | pair : IsPreProof a -> IsPreProof b -> IsPreProof (.spair a b)
+  | times : IsPreProof A -> IsPreProof B -> IsPreProof (.times A B)
+  | pair : IsPreProof a -> IsPreProof b -> IsPreProof (.pair a b)
   | fst : IsPreProof t -> IsPreProof (.fst t)
   | snd : IsPreProof t -> IsPreProof (.snd t)
-  | id : IsPreProof t -> IsPreProof (.id t)
+  | unit_ty : IsPreProof .unit_ty
+  | unit : IsPreProof .unit
+  | unit_rec : IsPreProof t1 -> IsPreProof t2 -> IsPreProof (.unit_rec t1 t2)
 
   namespace IsPreProof
     theorem from_subst : IsPreProof ([σ]t) -> IsPreProof t := by
@@ -41,7 +43,10 @@ namespace Fomega
     case _ ih j => constructor; apply ih j
     case _ ih1 ih2 j1 j2 =>
       constructor; apply ih1 j1; apply ih2 j2
-    case _ ih j => constructor; apply ih j
+    case _ => constructor
+    case _ => constructor
+    case _ ih1 ih2 j1 j2 =>
+      constructor; apply ih1 j1; apply ih2 j2
 
     theorem ren : IsPreProof t -> IsPreProof ([r#r]t) := by
     intro j
@@ -58,13 +63,16 @@ namespace Fomega
       simp at ih2; exact ih2
     case app _j1 _j2 ih1 ih2 =>
       constructor; apply ih1; apply ih2
-    case prod ih1 ih2 =>
+    case times ih1 ih2 =>
       constructor; apply ih1; apply ih2
     case pair ih1 ih2 =>
       constructor; apply ih1; apply ih2
     case fst ih => constructor; apply ih
     case snd ih => constructor; apply ih
-    case id ih => constructor; apply ih
+    case unit => constructor
+    case unit_ty => constructor
+    case unit_rec ih1 ih2 =>
+      constructor; apply ih1; apply ih2
 
     theorem lift : (∀ n s, σ n = .replace s -> IsPreProof s) -> ∀ n s, ^σ n = .replace s -> IsPreProof s := by
     intro h n s eq; simp at *
@@ -97,13 +105,16 @@ namespace Fomega
       simp at ih2; exact ih2
     case app _j1 _j2 ih1 ih2 =>
       constructor; apply ih1 h; apply ih2 h
-    case prod ih1 ih2 =>
+    case times ih1 ih2 =>
       constructor; apply ih1 h; apply ih2 h
     case pair ih1 ih2 =>
       constructor; apply ih1 h; apply ih2 h
     case fst ih => constructor; apply ih h
     case snd ih => constructor; apply ih h
-    case id ih => constructor; apply ih h
+    case unit => constructor
+    case unit_ty => constructor
+    case unit_rec ih1 ih2 =>
+      constructor; apply ih1 h; apply ih2 h
 
     theorem beta : IsPreProof b -> IsPreProof t -> IsPreProof (b β[t]) := by
     simp; intro j1 j2

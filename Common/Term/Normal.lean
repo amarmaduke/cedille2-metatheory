@@ -10,80 +10,89 @@ namespace Term
   def WN (t : Term) := ∃ t', NormalForm t t'
 
   theorem reducible_decidable : ∀ t, (Reducible t) ∨ ¬ (Reducible t) := by
-  intro t
-  induction t
-  case bound =>
-    apply Or.inr; intro h
-    cases h; case _ _ r => cases r
-  case none =>
-    apply Or.inr; intro h
-    cases h; case _ _ r => cases r
-  case const =>
-    apply Or.inr; intro h
-    cases h; case _ _ r => cases r
-  case lam m A t ih1 ih2 =>
-    cases ih1
-    case _ h =>
-      apply Or.inl
-      cases h
-      case _ A' r =>
-        exists (.lam m A' t)
-        apply Red.lam_congr1 r
-    case _ h1 =>
-      cases ih2
-      case _ h =>
-        apply Or.inl
-        cases h
-        case _ t' r =>
-          exists (.lam m A t')
-          apply Red.lam_congr2 r
-      case _ h2 =>
-        apply Or.inr; intro h
-        cases h; case _ w r =>
-          cases r
-          case _ f' r => apply h1; exists f'
-          case _ a' r => apply h2; exists a'
-  case app m f a ih1 ih2 =>
-    cases ih1
-    case _ h =>
-      cases h; case _ f' r =>
-        apply Or.inl; exists (.app m f' a)
-        apply Red.app_congr1 r
-    case _ h1 =>
-      cases ih2
-      case _ h =>
-        cases h; case _ a' r =>
-          apply Or.inl; exists .app m f a'
-          apply Red.app_congr2 r
-      case _ h2 =>
-        cases f
-        case lam m2 A t =>
-          apply Or.inl; exists (t β[a])
-          apply Red.beta
-        case conv => sorry
-        all_goals (
-          apply Or.inr; intro h
-          cases h; case _ w r =>
-          cases r
-          case _ w r => apply h1; exists w
-          case _ w r => apply h2; exists w
-        )
-  case all => sorry
-  case spair => sorry
-  case pair => sorry
-  case fst => sorry
-  case snd => sorry
-  case prod => sorry
-  case sprod => sorry
-  case refl => sorry
-  case subst => sorry
-  case phi => sorry
-  case eq => sorry
-  case conv => sorry
-  case id => sorry
+  sorry
+  -- intro t
+  -- induction t
+  -- case bound =>
+  --   apply Or.inr; intro h
+  --   cases h; case _ _ r => cases r
+  -- case none =>
+  --   apply Or.inr; intro h
+  --   cases h; case _ _ r => cases r
+  -- case const =>
+  --   apply Or.inr; intro h
+  --   cases h; case _ _ r => cases r
+  -- case lam m A t ih1 ih2 =>
+  --   cases ih1
+  --   case _ h =>
+  --     apply Or.inl
+  --     cases h
+  --     case _ A' r =>
+  --       exists (.lam m A' t)
+  --       apply Red.lam_congr1 r
+  --   case _ h1 =>
+  --     cases ih2
+  --     case _ h =>
+  --       apply Or.inl
+  --       cases h
+  --       case _ t' r =>
+  --         exists (.lam m A t')
+  --         apply Red.lam_congr2 r
+  --     case _ h2 =>
+  --       apply Or.inr; intro h
+  --       cases h; case _ w r =>
+  --         cases r
+  --         case _ f' r => apply h1; exists f'
+  --         case _ a' r => apply h2; exists a'
+  -- case app m f a ih1 ih2 =>
+  --   cases ih1
+  --   case _ h =>
+  --     cases h; case _ f' r =>
+  --       apply Or.inl; exists (.app m f' a)
+  --       apply Red.app_congr1 r
+  --   case _ h1 =>
+  --     cases ih2
+  --     case _ h =>
+  --       cases h; case _ a' r =>
+  --         apply Or.inl; exists .app m f a'
+  --         apply Red.app_congr2 r
+  --     case _ h2 =>
+  --       cases f
+  --       case lam m2 A t =>
+  --         apply Or.inl; exists (t β[a])
+  --         apply Red.beta
+  --       case conv => sorry
+  --       all_goals (
+  --         apply Or.inr; intro h
+  --         cases h; case _ w r =>
+  --         cases r
+  --         case _ w r => apply h1; exists w
+  --         case _ w r => apply h2; exists w
+  --       )
+  -- case all => sorry
+  -- case spair => sorry
+  -- case pair => sorry
+  -- case fst => sorry
+  -- case snd => sorry
+  -- case prod => sorry
+  -- case sprod => sorry
+  -- case refl => sorry
+  -- case subst => sorry
+  -- case phi => sorry
+  -- case eq => sorry
+  -- case conv => sorry
+  -- case id => sorry
 
   inductive SN : Term -> Prop where
   | sn : (∀ y, x -β> y -> SN y) -> SN x
+
+  inductive SNPlus : Term -> Prop where
+  | sn : (∀ y, x -β>+ y -> SNPlus y) -> SNPlus x
+
+  theorem snplus_impies_sn : SNPlus t -> SN t := by
+  intro h; induction h; case _ t' _ ih =>
+    constructor; intro t'' r
+    apply ih t'' (RedPlus.start r)
 
   theorem sn_preimage (f : Term -> Term) x :
     (∀ x y, x -β> y -> (f x) -β> (f y)) ->
@@ -118,6 +127,23 @@ namespace Term
   intro y r
   apply h y (RedStar.step r Red.refl)
 
+  theorem snplus_preservation_step : SNPlus t -> t -β> t' -> SNPlus t' := by
+  intro h r; induction h; case _ z h _ =>
+    apply h _ (RedPlus.start r)
+
+  theorem snplus_preservation : SNPlus t -> t -β>* t' -> SNPlus t' := by
+  intro h r; induction r
+  case _ => apply h
+  case _ r1 _ ih =>
+    apply ih; apply snplus_preservation_step h r1
+
+  theorem sn_implies_snplus : SN t -> SNPlus t := by
+  intro h; induction h; case _ t' _ ih =>
+    constructor; intro t'' r
+    have lem := RedPlus.destruct r
+    cases lem; case _ z lem =>
+      have lem2 := ih z lem.1
+      apply snplus_preservation lem2 lem.2
 
   theorem sn_conv : SN t -> t =β= t' -> SN t' := by sorry
   -- intro h cv
@@ -183,27 +209,27 @@ namespace Term
   -- theorem normal_eq : Normal (.eq A a b) -> Normal A ∧ Normal a ∧ Normal b := by sorry
   -- theorem normal_conv : Normal (.conv B t n) -> Normal B ∧ Normal t := by sorry
 
-  inductive ValueVariant where
-  | nf : ValueVariant
-  | ne : ValueVariant
+  -- inductive ValueVariant where
+  -- | nf : ValueVariant
+  -- | ne : ValueVariant
 
-  inductive Value : ValueVariant -> Term -> Prop where
-  -- Neutral Forms
-  | bound : Value .ne (.bound c k)
-  | app : Value .ne f -> Value .nf a -> Value .ne (.app m f a)
-  | fst : Value .ne t -> Value .ne (.fst t)
-  | snd : Value .ne t -> Value .ne (.snd t)
-  | subst : Value .nf Pr -> Value .ne e -> Value .ne (.subst Pr e)
-  | phi : Value .nf a -> Value .nf b -> Value .ne e -> Value .ne (.phi a b e)
-  -- Normal Forms
-  | const : Value .nf (.const K)
-  | lam : Value .nf A -> Value .nf t -> Value .nf (.lam m A t)
-  | all : Value .nf A -> Value .nf B -> Value .nf (.all m A B)
-  | pair : Value .nf T -> Value .nf t -> Value .nf s -> Value .nf (.pair n T t s)
-  | prod : Value .nf A -> Value .nf B -> Value .nf (.prod A B)
-  | refl : Value .nf t -> Value .nf (.refl t)
-  | eq : Value .nf A -> Value .nf a -> Value .nf b -> Value .nf (.eq A a b)
-  | conv : Value .nf B -> Value .nf t -> Value .nf (.conv n B t)
-  | neutral : Value .ne t -> Value .nf t
+  -- inductive Value : ValueVariant -> Term -> Prop where
+  -- -- Neutral Forms
+  -- | bound : Value .ne (.bound c k)
+  -- | app : Value .ne f -> Value .nf a -> Value .ne (.app m f a)
+  -- | fst : Value .ne t -> Value .ne (.fst t)
+  -- | snd : Value .ne t -> Value .ne (.snd t)
+  -- | subst : Value .nf Pr -> Value .ne e -> Value .ne (.subst Pr e)
+  -- | phi : Value .nf a -> Value .nf b -> Value .ne e -> Value .ne (.phi a b e)
+  -- -- Normal Forms
+  -- | const : Value .nf (.const K)
+  -- | lam : Value .nf A -> Value .nf t -> Value .nf (.lam m A t)
+  -- | all : Value .nf A -> Value .nf B -> Value .nf (.all m A B)
+  -- | pair : Value .nf T -> Value .nf t -> Value .nf s -> Value .nf (.pair n T t s)
+  -- | prod : Value .nf A -> Value .nf B -> Value .nf (.prod A B)
+  -- | refl : Value .nf t -> Value .nf (.refl t)
+  -- | eq : Value .nf A -> Value .nf a -> Value .nf b -> Value .nf (.eq A a b)
+  -- | conv : Value .nf B -> Value .nf t -> Value .nf (.conv n B t)
+  -- | neutral : Value .ne t -> Value .nf t
 
 end Term

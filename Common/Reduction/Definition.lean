@@ -4,13 +4,13 @@ import Common.Term.Substitution
 inductive Red : Term -> Term -> Prop where
 -- Basic reduction Steps
 | beta : Red (.app m1 (.lam m2 A b) t) (b β[t])
-| proj1 : Red (.fst (.pair n B t s)) t
-| proj2 : Red (.snd (.pair n B t s)) s
-| sproj1 : Red (.fst (.spair t s)) t
-| sproj2 : Red (.snd (.spair t s)) s
-| substelim : Red (.subst Pr (.refl t)) (.lam mf (Pr `@τ t `@τ .refl t) (.bound .type 0))
-| phi : Red (.phi a b (.refl t)) b
-| id : Red (.id t) t
+| iproj1 : Red (.fst (.inter n B t s)) t
+| iproj2 : Red (.snd (.inter n B t s)) s
+| proj1 : Red (.fst (.pair t s)) t
+| proj2 : Red (.snd (.pair t s)) s
+| substelim : Red (.subst Pr (.refl A t)) (λf[Pr `@τ t `@τ (.refl A t)] 0!)
+| phi : Red (.phi A1 a b (.refl A2 t)) b
+| unit_rec : Red (.unit_rec .unit t) t
 -- Weak conversion passthrough reduction steps
 -- .app m (.conv n (.all m A1 B1) (.all m A2 B2) b) t -β>
 --   .conv n (B1 β[t]) (B2 β[.conv n A2 t]) (.app m b (.conv n A2 t))
@@ -28,14 +28,14 @@ inductive Red : Term -> Term -> Prop where
 
 -- .phi B a' b' (.conv n (.eq A1 a1 b1) (.eq A2 a2 b2) t) -β>
 --   .conv n (.prod A1 B) (.prod A2 B) (.phi a' b' t)
-| conv_beta : Red (.app m (.conv n (.all m A1 B) (.lam m A2 b)) t) (.conv n (B β[t]) (b β[.conv n A2 t]))
-| conv_fst : Red (.fst (.conv n (.prod A B1) (.pair n2 B2 t s))) (.conv n A t)
-| conv_snd : Red (.snd (.conv n (.prod A B1) (.pair n2 B2 t s))) (.conv n (B1 β[.conv n A t]) s)
+| conv_beta : Red (.app m1 (.conv n (.all m2 A1 B) (.lam m3 A2 b)) t) (.conv n (B β[t]) (b β[.conv n A2 t]))
+| conv_fst : Red (.fst (.conv n ([A]∩ B1) (.inter n2 B2 t s))) (.conv n A t)
+| conv_snd : Red (.snd (.conv n ([A]∩ B1) (.inter n2 B2 t s))) (.conv n (B1 β[.conv n A t]) s)
 | conv_subst :
-  Red (.subst Pr (.conv n (.eq A a b) (.refl t)))
-    (.conv n (.all mf (Pr `@τ a `@τ .refl a) (Pr `@τ b `@τ (.conv n (.eq A a b) (.refl t))))
-      (.lam mf (Pr `@τ t `@τ .refl t) (.bound .type 0)))
-| conv_phi : Red (.phi a b (.conv n (.eq A x y) (.refl t))) b
+  Red (.subst Pr (.conv n (.eq A1 a b) (.refl A2 t)))
+    (.conv n (∀f[Pr `@τ a `@τ .refl A1 a] (Pr `@τ b `@τ (.conv n (.eq A a b) (.refl A2 t))))
+      (λf[Pr `@τ t `@τ .refl A2 t] 0!))
+| conv_phi : Red (.phi A1 a b (.conv n (.eq A2 x y) (.refl A3 t))) b
 | conv_conv : Red (.conv n1 A (.conv n2 B t)) (.conv (n1 + n2) A t)
 -- Congruences
 | lam_congr1 : Red A A' -> Red (.lam m A t) (.lam m A' t)
@@ -44,33 +44,40 @@ inductive Red : Term -> Term -> Prop where
 | app_congr2 : Red t t' -> Red (.app m f t) (.app m f t')
 | all_congr1 : Red A A' -> Red (.all m A B) (.all m A' B)
 | all_congr2 : Red B B' -> Red (.all m A B) (.all m A B')
-| pair_congr1 : Red B B' -> Red (.pair n B t s) (.pair n B' t s)
-| pair_congr2 : Red t t' -> Red (.pair n B t s) (.pair n B t' s)
-| pair_congr3 : Red s s' -> Red (.pair n B t s) (.pair n B t s')
-| spair_congr1 : Red t t' -> Red (.spair t s) (.spair t' s)
-| spair_congr2 : Red s s' -> Red (.spair t s) (.spair t s')
+| inter_congr1 : Red B B' -> Red (.inter n B t s) (.inter n B' t s)
+| inter_congr2 : Red t t' -> Red (.inter n B t s) (.inter n B t' s)
+| inter_congr3 : Red s s' -> Red (.inter n B t s) (.inter n B t s')
+| pair_congr1 : Red t t' -> Red (.pair t s) (.pair t' s)
+| pair_congr2 : Red s s' -> Red (.pair t s) (.pair t s')
 | fst_congr : Red t t' -> Red (.fst t) (.fst t')
 | snd_congr : Red t t' -> Red (.snd t) (.snd t')
-| prod_congr1 : Red A A' -> Red (.prod A B) (.prod A' B)
-| prod_congr2 : Red B B' -> Red (.prod A B) (.prod A B')
-| sprod_congr1 : Red A A' -> Red (.sprod A B) (.sprod A' B)
-| sprod_congr2 : Red B B' -> Red (.sprod A B) (.sprod A B')
-| refl_congr : Red t t' -> Red (.refl t) (.refl t')
+| inter_ty_congr1 : Red A A' -> Red (.inter_ty A B) (.inter_ty A' B)
+| inter_ty_congr2 : Red B B' -> Red (.inter_ty A B) (.inter_ty A B')
+| times_congr1 : Red A A' -> Red (.times A B) (.times A' B)
+| times_congr2 : Red B B' -> Red (.times A B) (.times A B')
+| refl_congr1 : Red A A' -> Red (.refl A t) (.refl A' t)
+| refl_congr2 : Red t t' -> Red (.refl A t) (.refl A t')
 | subst_congr1 : Red B B' -> Red (.subst B e) (.subst B' e)
 | subst_congr2 : Red e e' -> Red (.subst B e) (.subst B e')
-| phi_congr1 : Red a a' -> Red (.phi a b e) (.phi a' b e)
-| phi_congr2 : Red b b' -> Red (.phi a b e) (.phi a b' e)
-| phi_congr3 : Red e e' -> Red (.phi a b e) (.phi a b e')
+| phi_congr1 : Red A A' -> Red (.phi A a b e) (.phi A' a b e)
+| phi_congr2 : Red a a' -> Red (.phi A a b e) (.phi A a' b e)
+| phi_congr3 : Red b b' -> Red (.phi A a b e) (.phi A a b' e)
+| phi_congr4 : Red e e' -> Red (.phi A a b e) (.phi A a b e')
 | eq_congr1 : Red A A' -> Red (.eq A a b) (.eq A' a b)
 | eq_congr2 : Red a a' -> Red (.eq A a b) (.eq A a' b)
 | eq_congr3 : Red b b' -> Red (.eq A a b) (.eq A a b')
 | conv_congr1 : Red A A' -> Red (.conv n A t) (.conv n A' t)
 | conv_congr2 : Red t t' -> Red (.conv n A t) (.conv n A t')
-| id_congr : Red t t' -> Red (.id t) (.id t')
+| unit_rec_congr1 : Red t1 t1' -> Red (.unit_rec t1 t2) (.unit_rec t1' t2)
+| unit_rec_congr2 : Red t2 t2' -> Red (.unit_rec t1 t2) (.unit_rec t1 t2')
 
 inductive RedStar : Term -> Term -> Prop where
 | refl : RedStar t t
 | step : Red x y -> RedStar y z -> RedStar x z
+
+inductive RedPlus : Term -> Term -> Prop where
+| start : Red x y -> RedPlus x y
+| step : RedPlus x y -> RedPlus y z -> RedPlus x z
 
 inductive RedBounded : Nat -> Term -> Term -> Prop where
 | refl : RedBounded n t t
@@ -156,6 +163,7 @@ abbrev ParRedConv (A : Term) (B : Term) : Prop := ∃ C, ParRedStar A C ∧ ParR
 
 infix:40 " -β> " => Red
 infix:39 " -β>* " => RedStar
+infix:39 " -β>+ " => RedPlus
 notation:39 t:39 " -β>{" n "} " s:39 => RedBounded n t s
 infix:38 " =β= " => RedConv
 notation:38 t:38 " =β{" n "}= " s:38 => RedConvBounded n t s

@@ -32,7 +32,7 @@ namespace Fomega.Proof
 
   @[simp]
   abbrev PairDestructLemmaType (Γ : Ctx) : (v : JudgmentVariant) -> JudgmentIndex v -> Prop
-  | .prf => λ (t, T) => ∀ c d A B, t = .spair c d -> T =β= .sprod A B ->
+  | .prf => λ (t, T) => ∀ c d A B, t = .pair c d -> T =β= .times A B ->
     (∃ C, A =β= C ∧ Γ ⊢ c : C ∧ Γ ⊢ C : ★)
     ∧ (∃ D, B =β= D ∧ Γ ⊢ d : D ∧ Γ ⊢ D : ★)
   | .wf => λ () => True
@@ -41,7 +41,7 @@ namespace Fomega.Proof
   intro j; induction j <;> simp at *
   case pair Γ a A b B j1 j2 j3 j4 _ _ _ _ =>
     intro c d A' B' h1 h2 x r1 r2; subst h1; subst h2
-    have lem := @RedConv.sprod_congr A' B' A B (by exists x)
+    have lem := @RedConv.times_congr A' B' A B (by exists x)
     apply And.intro; exists A; apply And.intro; apply lem.1
     apply And.intro; apply j1; apply j3
     exists B; apply And.intro; apply lem.2
@@ -243,7 +243,7 @@ namespace Fomega.Proof
       case _ s =>
         replace ih := ih (Or.inl rfl) r2
         have lem := pair_destruct_lemma ih; simp at lem
-        replace lem := lem t' s A B rfl rfl (.sprod A B) Red.refl Red.refl
+        replace lem := lem t' s A B rfl rfl (.times A B) Red.refl Red.refl
         have lem2 := classification ih; simp at lem2
         cases lem2; case _ K lem2 =>
         cases lem.1; case _ C lem =>
@@ -263,7 +263,7 @@ namespace Fomega.Proof
       case _ s =>
         replace ih := ih (Or.inl rfl) r2
         have lem := pair_destruct_lemma ih; simp at lem
-        replace lem := lem s t' A B rfl rfl (.sprod A B) Red.refl Red.refl
+        replace lem := lem s t' A B rfl rfl (.times A B) Red.refl Red.refl
         have lem2 := classification ih; simp at lem2
         cases lem2; case _ K lem2 =>
         cases lem.2; case _ C lem =>
@@ -273,14 +273,31 @@ namespace Fomega.Proof
           apply RedConv.sym; apply lem.1
       case _ => have lem := IsPreProof.from_proof j; cases lem
       case _ t' r1 => constructor; apply ih (Or.inr r1) r2
-  case id Γ t A j ih =>
+  case unit Γ j ih =>
     intro t' Γ' r1 r2
     cases r1
-    case _ r1 => rw [<-r1]; apply Judgment.id; apply ih (Or.inl rfl) r2
+    case _ r1 => rw [<-r1]; constructor; apply ih r2
+    case _ r1 => cases r1
+  case unit_ty Γ j ih =>
+    intro t' Γ' r1 r2
+    cases r1
+    case _ r1 => rw [<-r1]; constructor; apply ih r2
+    case _ r1 => cases r1
+  case unit_rec Γ u t A j1 j2 j3 ih1 ih2 ih3 =>
+    intro t' Γ' r1 r2
+    cases r1
+    case _ r1 =>
+      rw [<-r1]; constructor; apply ih1 (Or.inl rfl) r2
+      apply ih2 (Or.inl rfl) r2; apply ih3 (Or.inl rfl) r2
     case _ r1 =>
       cases r1
-      case _ r1 => apply ih (Or.inl rfl) r2
-      case _ t' r1 => apply Judgment.id; apply ih (Or.inr r1) r2
+      case _ => apply ih2 (Or.inl rfl) r2
+      case _ u' r1 =>
+        constructor; apply ih1 (Or.inr r1) r2
+        apply ih2 (Or.inl rfl) r2; apply ih3 (Or.inl rfl) r2
+      case _ t' r1 =>
+        constructor; apply ih1 (Or.inl rfl) r2
+        apply ih2 (Or.inr r1) r2; apply ih3 (Or.inl rfl) r2
   case conv j1 j2 j3 ih1 ih2 =>
     intro t' Γ' r1 r2
     constructor; apply ih1 r1 r2; apply ih2 (Or.inl rfl) r2

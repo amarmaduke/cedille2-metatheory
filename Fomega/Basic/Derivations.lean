@@ -8,16 +8,11 @@ import Fomega.Basic.Classification
 
 namespace Fomega
 
-  -- ⊢ (X : ★) -> X -> X
   @[simp]
-  def IdTy : Term := .all mf ★ (.all mf (.bound .kind 0) (.bound .kind 1))
-
-  -- ⊢ λ X:★. λ x:X. x
-  @[simp]
-  def id : Term := .lam mf ★ (.lam mf (.bound .kind 0) (.bound .type 0))
+  def uid (t : Term) : Term := .unit_rec .unit t
 
   -- ⊢ (X : ★) -> X
   @[simp]
-  def Bot : Term := .all mf ★ (.bound .kind 0)
+  def Bot : Term := ∀f[★] 0!!
 
 end Fomega

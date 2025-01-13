@@ -40,18 +40,18 @@ namespace WCCC
   | prod :
     Judgment .prf Γ (A, ★) ->
     Judgment .prf (A::Γ) (B, ★) ->
-    Judgment .prf Γ (.prod A B, ★)
+    Judgment .prf Γ ([A]∩ B, ★)
   | pair :
     Judgment .prf (A::Γ) (B, ★) ->
     Judgment .prf Γ (t, A) ->
     Judgment .prf Γ (s, B β[t]) ->
     t.erase =β{n}= s.erase ->
-    Judgment .prf Γ (.pair n B t s, .prod A B)
+    Judgment .prf Γ (.inter n B t s, [A]∩ B)
   | fst :
-    Judgment .prf Γ (t, .prod A B) ->
+    Judgment .prf Γ (t, [A]∩ B) ->
     Judgment .prf Γ (.fst t, A)
   | snd :
-    Judgment .prf Γ (t, .prod A B) ->
+    Judgment .prf Γ (t, [A]∩ B) ->
     Judgment .prf Γ (.snd t, B β[.fst t])
   | eq :
     Judgment .prf Γ (A, ★) ->
@@ -59,17 +59,19 @@ namespace WCCC
     Judgment .prf Γ (b, A) ->
     Judgment .prf Γ (.eq A a b, ★)
   | refl :
+    Judgment .prf Γ (A, ★) ->
     Judgment .prf Γ (t, A) ->
-    Judgment .prf Γ (.refl t, .eq A t t)
-  | subst :
+    Judgment .prf Γ (.refl A t, .eq A t t)
+  | subst : -- TODO: fix rule is wrong (easy just not high prio)
     Judgment .prf Γ (e, .eq A a b) ->
-    Judgment .prf Γ (Pr, .all mt A ★) ->
+    Judgment .prf Γ (Pr, ∀τ[A] ★) ->
     Judgment .prf Γ (.subst Pr e, .all mf (.app mt Pr a) (.app mt Pr b))
   | phi :
+    Judgment .prf Γ (A, ★) ->
     Judgment .prf Γ (a, A) ->
-    Judgment .prf Γ (b, .prod A B) ->
+    Judgment .prf Γ (b, [A]∩ B) ->
     Judgment .prf Γ (e, .eq A a (.fst b)) ->
-    Judgment .prf Γ (.phi a b e, .prod A B)
+    Judgment .prf Γ (.phi A a b e, [A]∩ B)
   | iconv :
     Judgment .prf Γ (t, A) ->
     Judgment .prf Γ (B, .const K) ->

@@ -102,7 +102,7 @@ namespace Term
     case all m A B ihA ihB =>
       have lem : ∀ n, ((^σ) n).size = 0 := size_of_subst_lift σ h
       simp at lem; apply ihB lem
-    case prod A B ihA ihB =>
+    case inter_ty A B ihA ihB =>
       have lem : ∀ n, ((^σ) n).size = 0 := size_of_subst_lift σ h
       simp at lem; apply ihB lem
   }
@@ -190,34 +190,37 @@ namespace Term
     if classify A == .type && classify B == .type
     then .type
     else .none
-  | pair _ T a b =>
+  | inter _ T a b =>
     if classify T == .type && classify a == .term && classify b == .term
     then .term
     else .none
-  | spair a b =>
+  | pair a b =>
     if classify a == .term && classify b == .term
     then .term
     else .none
   | fst t => if classify t == .term then .term else .none
   | snd t => if classify t == .term then .term else .none
-  | prod A B =>
+  | inter_ty A B =>
     if classify A == .type && classify B == .type
     then .type
     else .none
-  | sprod A B =>
+  | times A B =>
     if classify A == .type && classify B == .type
     then .type
     else .none
-  | refl t =>
-    if classify t == .term
+  | refl A t =>
+    if classify A == .type && classify t == .term
     then .term
     else .none
   | subst P e =>
     if classify P == .type && classify e == .term
     then .term
     else .none
-  | phi a b e =>
-    if classify a == .term && classify b == .term && classify e == .term
+  | phi A a b e =>
+    if classify A == .type
+      && classify a == .term
+      && classify b == .term
+      && classify e == .term
     then .term
     else .none
   | eq A a b =>
@@ -225,7 +228,12 @@ namespace Term
     then .term
     else .none
   | conv _ _ t => classify t
-  | id t => classify t
+  | unit => .term
+  | unit_ty => .type
+  | unit_rec t1 t2 =>
+    if classify t1 == .term && classify t2 == .term
+    then .term
+    else .none
   termination_by t => size t
 
 end Term

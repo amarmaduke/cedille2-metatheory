@@ -345,6 +345,6 @@ namespace RedConv
         apply And.intro; exists A; apply And.intro; apply h1.1; apply h2.1
         exists B; apply And.intro; apply h1.2; apply h2.2
 
-  theorem sprod_congr : .sprod A1 B1 =β= .sprod A2 B2 -> A1 =β= A2 ∧ B1 =β= B2 := by sorry
+  theorem times_congr : .times A1 B1 =β= .times A2 B2 -> A1 =β= A2 ∧ B1 =β= B2 := by sorry
 
 end RedConv

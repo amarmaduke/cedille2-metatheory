@@ -25,7 +25,7 @@ namespace Fomega.Proof
 
   @[simp]
   abbrev ProdDestructLemmaType (Γ : Ctx) : (v : JudgmentVariant) -> JudgmentIndex v -> Prop
-  | .prf => λ (t, T) => ∀ A B K, t = .sprod A B -> T =β= .const K -> Γ ⊢ A : ★ ∧ Γ ⊢ B : ★
+  | .prf => λ (t, T) => ∀ A B K, t = .times A B -> T =β= .const K -> Γ ⊢ A : ★ ∧ Γ ⊢ B : ★
   | .wf => λ () => True
 
   theorem prod_destruct_lemma : Judgment v Γ ix -> ProdDestructLemmaType Γ v ix := by
@@ -86,7 +86,9 @@ namespace Fomega.Proof
       have lem := prod_destruct_lemma ih; simp at lem
       replace lem := lem A B K rfl rfl (.const K) Red.refl Red.refl
       apply Or.inr; exists .type; apply lem.2
-  case id j ih => apply ih
+  case unit j _ => exists .type; constructor; apply j
+  case unit_ty j _ => exists .kind; constructor; apply j
+  case unit_rec j _ _ _ => apply Or.inr; exists .type
   case conv K _h1 h2 _h3 _ih1 _ih2 =>
     apply Or.inr; exists K
 

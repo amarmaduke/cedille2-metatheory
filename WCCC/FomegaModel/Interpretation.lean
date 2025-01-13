@@ -4,6 +4,14 @@ import Fomega.Basic.Derivations
 
 namespace FomegaModel
 
+  notation:170 Γ:170 " ⊢c " t:170 " : " A:170 => WCCC.Judgment WCCC.JudgmentVariant.prf Γ (t, A)
+  notation:170 "⊢c " Γ:170 => WCCC.Judgment WCCC.JudgmentVariant.wf Γ ()
+
+  notation:170 Γ:170 " ⊢ω " t:170 " : " A:170 => Fomega.Judgment Fomega.JudgmentVariant.prf Γ (t, A)
+  notation:170 "⊢ω " Γ:170 => Fomega.Judgment Fomega.JudgmentVariant.wf Γ ()
+
+  def uid := Fomega.uid
+
   @[simp]
   def 𝒱 : Term -> Term
   | □ | ★ => ★
@@ -11,7 +19,6 @@ namespace FomegaModel
     if A.classify = .kind then .all mf (𝒱 A) (𝒱 B)
     else 𝒱 B
   | _ => .none
-
 
   def g0 (ℓ : Nat) : Term := .bound .kind (ℓ - 2)
   def gBot (ℓ : Nat) : Term := .bound .type (ℓ - 1)
@@ -29,8 +36,8 @@ namespace FomegaModel
   | .app .type f a =>
     if a.classify = .type then (𝒯 ℓ f) `@f (𝒯 ℓ a)
     else  𝒯 ℓ f
-  | .prod A B => .spair A B
-  | .eq _ _ _ => Fomega.IdTy
+  | .inter_ty A B => .times A B
+  | .eq _ _ _ => .unit_ty
   | _ => .none
 
   @[simp]
@@ -64,18 +71,22 @@ namespace FomegaModel
       (λf[zr] λf[𝒱 A] λf[𝒯 ℓ A] 𝓉 ℓ t) `@f 𝓉 ℓ A
     else
       (λf[zr] λf[★] λf[𝒯 ℓ A] 𝓉 ℓ t) `@f 𝓉 ℓ A
+  | .app _ (.conv n (.all _ A1 B) (.lam _ A2 b)) t => sorry
   | .app _ f a =>
     if a.classify = .type then 𝓉 ℓ f `@f 𝒯 ℓ a `@f 𝓉 ℓ a
     else 𝓉 ℓ f `@f zr `@f 𝓉 ℓ a
-  | .prod A B => c (∀f[zr] ∀f[zr] zr) `@f 𝓉 ℓ A `@f (𝓉 ℓ B) β[c (𝒯 ℓ A)]
-  | .pair _ B t s => (λf[zr] .spair (𝓉 ℓ t) (𝓉 ℓ s)) `@f (𝓉 ℓ B) β[𝓉 ℓ t]
+  | .inter_ty A B => c (∀f[zr] ∀f[zr] zr) `@f 𝓉 ℓ A `@f (𝓉 ℓ B) β[c (𝒯 ℓ A)]
+  | .inter _ B t s => (λf[zr] .pair (𝓉 ℓ t) (𝓉 ℓ s)) `@f (𝓉 ℓ B) β[𝓉 ℓ t]
   | .fst t => .fst (𝓉 ℓ t)
   | .snd t => .snd (𝓉 ℓ t)
   | .eq A a b => c (∀f[zr] ∀f[𝒯 ℓ A] ∀f[𝒯 ℓ A] zr) `@f 𝓉 ℓ A `@f 𝓉 ℓ a `@f 𝓉 ℓ b
-  | .refl t => sorry
+  | .refl A t => (λf[zr] λf[𝒯 ℓ A] .unit) `@f 𝓉 ℓ A `@f 𝓉 ℓ t
   | .subst Pr e => sorry
-  | .phi a b e => sorry
-  | .conv _ A t => (λf[zr] .id (𝓉 ℓ t)) `@f 𝓉 ℓ A
+  | .phi A a b e =>
+    (λf[zr] λf[𝒯 ℓ A] .unit_rec (𝓉 ℓ e) (𝓉 ℓ b))
+    `@f 𝓉 ℓ A
+    `@f 𝓉 ℓ a
+  | .conv _ A t => (λf[zr] uid (𝓉 ℓ t)) `@f 𝓉 ℓ A
   | _ => .none
   where
     c : Term -> Term

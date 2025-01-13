@@ -85,18 +85,20 @@ namespace Term
     | σ, lam m t1 t2 => lam m (apply σ t1) (apply (lift σ) t2)
     | σ, app m t1 t2 => app m (apply σ t1) (apply σ t2)
     | σ, all m t1 t2 => all m (apply σ t1) (apply (lift σ) t2)
-    | σ, pair n t1 t2 t3 => pair n (apply σ t1) (apply σ t2) (apply σ t3)
-    | σ, spair t1 t2 => spair (apply σ t1) (apply σ t2)
+    | σ, inter n t1 t2 t3 => inter n (apply σ t1) (apply σ t2) (apply σ t3)
+    | σ, pair t1 t2 => pair (apply σ t1) (apply σ t2)
     | σ, fst t => fst (apply σ t)
     | σ, snd t => snd (apply σ t)
-    | σ, sprod t1 t2 => sprod (apply σ t1) (apply σ t2)
-    | σ, prod t1 t2 => prod (apply σ t1) (apply (lift σ) t2)
-    | σ, refl t => refl (apply σ t)
+    | σ, times t1 t2 => times (apply σ t1) (apply σ t2)
+    | σ, inter_ty t1 t2 => inter_ty (apply σ t1) (apply (lift σ) t2)
+    | σ, refl t1 t2 => refl (apply σ t1) (apply σ t2)
     | σ, subst t1 t2 => subst (apply σ t1) (apply σ t2)
-    | σ, phi t1 t2 t3 => phi (apply σ t1) (apply σ t2) (apply σ t3)
+    | σ, phi t1 t2 t3 t4 => phi (apply σ t1) (apply σ t2) (apply σ t3) (apply σ t4)
     | σ, eq t1 t2 t3 => eq (apply σ t1) (apply σ t2) (apply σ t3)
     | σ, conv n t1 t2 => conv n (apply σ t1) (apply σ t2)
-    | σ, id t => id (apply σ t)
+    | _, unit => unit
+    | _, unit_ty => unit_ty
+    | σ, unit_rec t1 t2 => unit_rec (apply σ t1) (apply σ t2)
     -- | σ, conv t1 t2 c => conv (apply σ t1) (apply σ t2) (cvapply σ c)
   end Ren
 
@@ -162,18 +164,20 @@ namespace Term
     | σ, lam m t1 t2 => lam m (apply σ t1) (apply (lift σ) t2)
     | σ, app m t1 t2 => app m (apply σ t1) (apply σ t2)
     | σ, all m t1 t2 => all m (apply σ t1) (apply (lift σ) t2)
-    | σ, pair n t1 t2 t3 => pair n (apply σ t1) (apply σ t2) (apply σ t3)
-    | σ, spair t1 t2 => spair (apply σ t1) (apply σ t2)
+    | σ, inter n t1 t2 t3 => inter n (apply σ t1) (apply σ t2) (apply σ t3)
+    | σ, pair t1 t2 => pair (apply σ t1) (apply σ t2)
     | σ, fst t => fst (apply σ t)
     | σ, snd t => snd (apply σ t)
-    | σ, sprod t1 t2 => sprod (apply σ t1) (apply σ t2)
-    | σ, prod t1 t2 => prod (apply σ t1) (apply (lift σ) t2)
-    | σ, refl t => refl (apply σ t)
+    | σ, times t1 t2 => times (apply σ t1) (apply σ t2)
+    | σ, inter_ty t1 t2 => inter_ty (apply σ t1) (apply (lift σ) t2)
+    | σ, refl t1 t2 => refl (apply σ t1) (apply σ t2)
     | σ, subst t1 t2 => subst (apply σ t1) (apply σ t2)
-    | σ, phi t1 t2 t3 => phi (apply σ t1) (apply σ t2) (apply σ t3)
+    | σ, phi t1 t2 t3 t4 => phi (apply σ t1) (apply σ t2) (apply σ t3) (apply σ t4)
     | σ, eq t1 t2 t3 => eq (apply σ t1) (apply σ t2) (apply σ t3)
     | σ, conv n t1 t2 => conv n (apply σ t1) (apply σ t2)
-    | σ, id t => id (apply σ t)
+    | _, unit => unit
+    | _, unit_ty => unit_ty
+    | σ, unit_rec t1 t2 => unit_rec (apply σ t1) (apply σ t2)
     -- | σ, conv t1 t2 c => conv (apply σ t1) (apply σ t2) (cvapply ▸σ c)
 
     -- def cvcompose : Subst CvTerm -> Subst CvTerm -> Subst CvTerm
@@ -516,7 +520,7 @@ namespace Term
       case bound => unfold Subst.compose; simp
       case lam _ _ _ ih => rw [<-subst_lift_is_ren_lift, ih]
       case all _ _ _ ih => rw [<-subst_lift_is_ren_lift, ih]
-      case prod _ _ _ ih => rw [<-subst_lift_is_ren_lift, ih]
+      case inter_ty _ _ _ ih => rw [<-subst_lift_is_ren_lift, ih]
     }
     have lem4 σ τ : σ ⊙ τ ⊙ r#rS = σ ⊙ (τ ⊙ r#rS) := by {
       funext; case _ x =>
@@ -555,7 +559,7 @@ namespace Term
         cases τ k <;> simp at *
       case lam _ _ _ ih => rw [<-subst_lift_is_ren_lift, ih, <-lem6]; simp
       case all _ _ _ ih => rw [<-subst_lift_is_ren_lift, ih, <-lem6]; simp
-      case prod _ _ _ ih => rw [<-subst_lift_is_ren_lift, ih, <-lem6]; simp
+      case inter_ty _ _ _ ih => rw [<-subst_lift_is_ren_lift, ih, <-lem6]; simp
     }
     have lem8 σ τ : σ ⊙ (r#rS ⊙ τ) = σ ⊙ r#rS ⊙ τ := by {
       funext; case _ x =>
@@ -929,7 +933,7 @@ namespace Term
       unfold Subst.compose; simp
       have lem : [.rename 0 :: S]t2 = t2 := by simp
       unfold S at lem; rw [lem]
-    case prod t1 t2 ih1 _ih2 =>
+    case inter_ty t1 t2 ih1 _ih2 =>
       unfold Subst.compose; simp
       have lem : [.rename 0 :: S]t2 = t2 := by simp
       unfold S at lem; rw [lem]
@@ -954,7 +958,7 @@ namespace Term
   case all t1 t2 ih1 ih2 =>
     have ih2' := @ih2 (n + 1)
     simp at ih2'; rw [ih2']
-  case prod t1 t2 ih1 ih2 =>
+  case inter_ty t1 t2 ih1 ih2 =>
     have ih2' := @ih2 (n + 1)
     simp at ih2'; rw [ih2']
 
@@ -1162,11 +1166,11 @@ namespace Term
       have rlinj := rename_injective_lift r rinj
       replace ih2 := @ih2 r2 (Ren.lift r) rlinj
       simp at ih2; rw [ih2 h.2.2]
-  case pair t1 t2 t3 ih1 ih2 ih3 =>
+  case inter t1 t2 t3 ih1 ih2 ih3 =>
     cases s <;> simp at h
     case _ r1 r2 r3 =>
       rw [h.1, ih1 r rinj h.2.1, ih2 r rinj h.2.2.1, ih3 r rinj h.2.2.2]
-  case spair ih1 ih2 =>
+  case pair ih1 ih2 =>
     cases s <;> simp at h
     case _ r1 r2 =>
       rw [ih1 r rinj h.1, ih2 r rinj h.2]
@@ -1178,29 +1182,23 @@ namespace Term
     cases s <;> simp at h
     case _ r1 =>
       rw [ih r rinj h]
-  case prod t1 t2 ih1 ih2 =>
+  case inter_ty t1 t2 ih1 ih2 =>
     cases s <;> simp at h
     case _ r1 r2 =>
       rw [ih1 r rinj h.1]
       have rlinj := rename_injective_lift r rinj
       replace ih2 := @ih2 r2 (Ren.lift r) rlinj
       simp at ih2; rw [ih2 h.2]
-  case sprod t1 t2 ih1 ih2 =>
+  case times t1 t2 ih1 ih2 =>
     cases s <;> simp at h
     case _ r1 r2 =>
       rw [ih1 r rinj h.1, ih2 r rinj h.2]
-  case refl t ih =>
-    cases s <;> simp at h
-    case _ r1 =>
-      rw [ih r rinj h]
+  case refl t ih => sorry
   case subst t1 t2 ih1 ih2 =>
     cases s <;> simp at h
     case _ r1 r2 =>
       rw [ih1 r rinj h.1, ih2 r rinj h.2]
-  case phi t1 t2 t3 ih1 ih2 ih3 =>
-    cases s <;> simp at h
-    case _ r1 r2 r3 =>
-      rw [ih1 r rinj h.1, ih2 r rinj h.2.1, ih3 r rinj h.2.2]
+  case phi t1 t2 t3 ih1 ih2 ih3 => sorry
   case eq t1 t2 t3 ih1 ih2 ih3 =>
     cases s <;> simp at h
     case _ r1 r2 r3 =>
@@ -1209,10 +1207,12 @@ namespace Term
     cases s <;> simp at h
     case _ r1 r2 r3 =>
       rw [ih1 r rinj h.2.1, ih2 r rinj h.2.2, h.1]
-  case id ih =>
+  case unit => cases s <;> simp at h; simp [*]
+  case unit_ty => cases s <;> simp at h; simp [*]
+  case unit_rec ih1 ih2 =>
     cases s <;> simp at h
-    case _ => rw [ih r rinj h]
-
+    case _ r1 r2 r3 =>
+      rw [ih1 r rinj h.1, ih2 r rinj h.2]
   -- theorem rename_injective_liftn n r :
   --   (∀ x y, r x = r y -> x = y) ->
   --   [^{n}r#r]t = [^{n}r#r]s ->
