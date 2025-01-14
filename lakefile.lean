@@ -10,6 +10,9 @@ package «cedille2» {
 lean_lib Common where
   roots := #[`Common]
 
+lean_lib Untyped where
+  roots := #[`Untyped]
+
 lean_lib Fomega where
   roots := #[`Fomega]
 
