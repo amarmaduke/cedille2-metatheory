@@ -3,8 +3,12 @@ import Untyped.Subst
 inductive Term : Type where
 | var : Nat -> Term
 | app : Term -> Term -> Term
-| lam : Term -> Term -> Term
+| lam : Term -> Term
 deriving Repr
+
+infixl:15 " `@ " => Term.app
+notation "`λ" t:50 => Term.lam t
+prefix:max "#" => Term.var
 
 namespace Term
   @[simp]
@@ -14,7 +18,7 @@ namespace Term
     | .re y => var y
     | .su t => t
   | app t1 t2 => app (smap lf f t1) (smap lf f t2)
-  | lam t1 t2 => lam (smap lf f t1) (smap lf (lf f) t2)
+  | lam t => lam (smap lf (lf f) t)
 end Term
 
 @[simp]
@@ -42,7 +46,7 @@ namespace Term
   unfold Subst.apply; simp
 
   @[simp]
-  theorem subst_lam : [σ](lam t1 t2) = lam ([σ]t1) ([^σ]t2) := by
+  theorem subst_lam : [σ](lam t) = lam ([^σ]t) := by
   unfold Subst.apply; simp
 
   theorem apply_id {t : Term} : [I]t = t := by
@@ -65,7 +69,7 @@ namespace Term
       unfold Ren.fro; simp
 
   theorem apply_compose {s : Term} {σ τ : Subst Term} : [τ][σ]s = [τ ⊙ σ]s := by
-    solve_compose Term, apply_stable, s, σ, τ
+  solve_compose Term, apply_stable, s, σ, τ
 
 end Term
 
