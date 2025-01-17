@@ -1,5 +1,8 @@
 import Untyped.Subst
 
+instance instUnit_Inhabited : Inhabited Unit where
+  default := Unit.unit
+
 inductive Term : Type where
 | var : Nat -> Term
 | app : Term -> Term -> Term
@@ -19,27 +22,47 @@ namespace Term
     | .su t => t
   | app t1 t2 => app (smap lf f t1) (smap lf f t2)
   | lam t => lam (smap lf (lf f) t)
+
+  @[simp]
+  def beq : Term -> Term -> Bool
+  | #x, #y => x == y
+  | f1 `@ a1, f2 `@ a2 => beq f1 f2 && beq a1 a2
+  | `λt1, `λt2 => beq t1 t2
+  | _, _ => false
 end Term
 
 @[simp]
 instance substType_Term : SubstitutionType Term where
   smap := Term.smap
 
+@[simp]
+instance instBEq_Term : BEq Term where
+  beq := Term.beq
+
+instance instlawfulBEq_Term : LawfulBEq Term where
+  rfl := by intro x; induction x <;> simp at * <;> simp [*]
+  eq_of_beq := by
+    intro a b h; simp at h
+    induction a, b using Term.beq.induct <;> simp at *
+    case _ => simp [*]
+    case _ ih1 ih2 => apply And.intro; apply ih1 h.1; apply ih2 h.2
+    case _ ih => apply ih h
+
 namespace Term
+
+  @[simp↓]
+  theorem subst_var : [σ]#x = match σ x with | .re y => #y | .su t => t := by
+  unfold Subst.apply; simp
 
   @[simp] -- 0[s.σ ] = s
   theorem subst_var_replace
     : [.su s :: σ]var 0 = s
-  := by
-  unfold seq_cons; unfold Subst.apply
-  unfold SubstitutionType.smap; simp
+  := by simp
 
   @[simp] -- 0[s.σ ] = s
   theorem subst_var_rename
     : [.re k :: σ]var 0 = var k
-  := by
-  unfold seq_cons; unfold Subst.apply
-  unfold SubstitutionType.smap; simp
+  := by simp
 
   @[simp]
   theorem subst_app : [σ](app t1 t2) = app ([σ]t1) ([σ]t2) := by
@@ -55,14 +78,15 @@ namespace Term
     cases x; all_goals (unfold Subst.lift; unfold I; simp)
   induction t
   all_goals (simp at * <;> try simp [*])
-  unfold Subst.apply; unfold I; simp
 
-  theorem apply_stable {r : Ren} {σ : Subst Term} : r.to = σ -> r.apply = σ.apply := by
+  theorem apply_stable {r : Ren} {σ : Subst Term}
+    : r.to = σ -> Ren.apply r = Subst.apply σ
+  := by
   intro h; funext; case _ x =>
     unfold Ren.apply; simp at *
     unfold Ren.to; simp
     induction x generalizing r σ <;> simp at *
-    case _ x => unfold Subst.apply; simp; rw [<-h]; unfold Ren.to; simp
+    case _ x => rw [<-h]; unfold Ren.to; simp
     case _ => simp [*]
     case _ =>
       simp [*]; rw [Subst.lift_lemma, <-h]
