@@ -1,7 +1,6 @@
 
 import Common
 import Fomega.Proof
-import Fomega.PreProof
 import Fomega.Basic.Weaken
 
 namespace Fomega.Proof

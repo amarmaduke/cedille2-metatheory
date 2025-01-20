@@ -74,7 +74,7 @@ section
   prefix:max "^" => Subst.lift
   notation:90 "[" σ "]" t:89 => Subst.apply σ t
   notation:90 τ:90 " ⊙ " σ:91 => Subst.compose σ τ
-  notation:90 s:90 "β[" t "]" => [(Subst.Action.su t) :: I]s
+  notation:90 s:90 "β[" t "]" => Subst.apply ((Subst.Action.su t) :: I) s
 end
 
 section
@@ -82,11 +82,10 @@ section
   class SubstitutionTypeLaws (T : Type) [SubstitutionType T] where
     apply_id {t : T} : [I]t = t
     apply_compose {s : T} {σ τ : Subst T} : [τ][σ]s = [τ ⊙ σ]s
-    apply_stable {σ : Subst T} : r.to = σ -> Ren.apply r = Subst.apply  σ
+    apply_stable {σ : Subst T} : r.to = σ -> Ren.apply r = Subst.apply σ
 end
 
 namespace Subst
-
   @[simp] theorem cons_zero {σ : Subst T} : (s :: σ) 0 = s := by
   unfold seq_cons; simp
 
@@ -197,6 +196,10 @@ section
     cases x
     case _ => simp
     case _ => simp; unfold S; unfold Subst.compose; simp
+
+  omit [SubstitutionType T] in
+  theorem to_S : Ren.to (λ x => x + 1) = @S T := by
+  unfold Ren.to; simp; unfold S; simp
 
   theorem lift_rename {σ τ : Subst T} :
     (∀ n k, σ n = .re k -> τ n = .re k) ->

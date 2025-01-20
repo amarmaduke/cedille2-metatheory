@@ -1,5 +1,7 @@
 
 import Common
+import Fomega.Term
+import Fomega.Reduction
 
 namespace Fomega
 
@@ -15,7 +17,7 @@ namespace Fomega
   | .prf => Term × Term
   | .wf => Unit
 
-  inductive Judgment : (v : JudgmentVariant) -> Ctx -> JudgmentIndex v -> Prop
+  inductive Judgment : (v : JudgmentVariant) -> Ctx Term -> JudgmentIndex v -> Prop where
   | nil : Judgment .wf [] ()
   | cons :
     Judgment .wf Γ () ->
@@ -25,47 +27,47 @@ namespace Fomega
     Judgment .wf Γ () ->
     Judgment .prf Γ (★, □)
   | var :
-    Judgment .prf Γ (Γ d@ x, .const K) ->
+    Judgment .wf Γ () ->
     T = Γ d@ x ->
-    Judgment .prf Γ (.bound K x, T)
+    Judgment .prf Γ (#x, T)
   | pi :
     Judgment .prf Γ (A, .const (dom K1 K2)) ->
     Judgment .prf (A::Γ) (B, .const K2) ->
-    Judgment .prf Γ (.all mf A B, .const K2)
+    Judgment .prf Γ (Π[A] B, .const K2)
   | lam :
     Judgment .prf Γ (A, .const (dom K1 K2)) ->
     Judgment .prf (A::Γ) (B, .const K2) ->
     Judgment .prf (A::Γ) (t, B) ->
-    Judgment .prf Γ (.lam mf A t, .all mf A B)
+    Judgment .prf Γ (`λ t, Π[A] B)
   | app :
-    Judgment .prf Γ (f, .all mf A B) ->
+    Judgment .prf Γ (f, Π[A] B) ->
     Judgment .prf Γ (a, A) ->
     B' = B β[a] ->
-    Judgment .prf Γ (.app mf f a, B')
+    Judgment .prf Γ (f `@ a, B')
   | prod :
     Judgment .prf Γ (A, ★) ->
     Judgment .prf Γ (B, ★) ->
-    Judgment .prf Γ (.times A B, ★)
+    Judgment .prf Γ (A ⊗ B, ★)
   | pair :
     Judgment .prf Γ (a, A) ->
     Judgment .prf Γ (b, B) ->
     Judgment .prf Γ (A, ★) ->
     Judgment .prf Γ (B, ★) ->
-    Judgment .prf Γ (.pair a b, .times A B)
+    Judgment .prf Γ (.pair a b, A ⊗ B)
   | fst :
-    Judgment .prf Γ (t, .times A B) ->
-    Judgment .prf Γ (.fst t, A)
+    Judgment .prf Γ (t, A ⊗ B) ->
+    Judgment .prf Γ (t.fst, A)
   | snd :
-    Judgment .prf Γ (t, .times A B) ->
-    Judgment .prf Γ (.snd t, B)
+    Judgment .prf Γ (t, A ⊗ B) ->
+    Judgment .prf Γ (t.snd, B)
   | unit_ty :
     Judgment .wf Γ () ->
-    Judgment .prf Γ (.unit_ty, ★)
+    Judgment .prf Γ ((U), ★)
   | unit :
     Judgment .wf Γ () ->
-    Judgment .prf Γ (.unit, .unit_ty)
+    Judgment .prf Γ ((u), (U))
   | unit_rec :
-    Judgment .prf Γ (u, .unit_ty) ->
+    Judgment .prf Γ (u, (U)) ->
     Judgment .prf Γ (t, A) ->
     Judgment .prf Γ (A, ★) ->
     Judgment .prf Γ (.unit_rec u t, A)
@@ -77,5 +79,12 @@ namespace Fomega
 
   notation:170 Γ:170 " ⊢ " t:170 " : " A:170 => Judgment JudgmentVariant.prf Γ (t, A)
   notation:170 "⊢ " Γ:170 => Judgment JudgmentVariant.wf Γ ()
+
+  theorem judgment_ctx_wf : Judgment v Γ idx -> ⊢ Γ := by
+  intro j
+  induction j
+  case nil => constructor
+  case cons j1 j2 _ _ => constructor; apply j1; apply j2
+  all_goals try simp [*]
 
 end Fomega
