@@ -15,12 +15,12 @@ namespace Fomega.Proof
   case pi K1 K2 _ j1 j2 _ _ =>
     intro A B K h1 h2 h3; subst h2; subst h1
     cases h3; case _ T r =>
-    have lem := Red.const_conv_implies_eq K2 K (by exists T); subst lem
+    have lem := Red.Conv.const_conv_implies_eq K2 K (by exists T); subst lem
     apply j2
   case conv A' B' _ _ _ cv ih1 _ih2 =>
     intro A B K h1 h2
     cases h2; case _ T h2 =>
-    have lem : A' =β= .const K := by apply Red.trans cv (by exists T)
+    have lem : A' =β= .const K := by apply Red.Conv.trans cv (by exists T)
     cases lem; case _ q r =>
       apply ih1 _ _ _ h1 (by exists q)
 
@@ -34,11 +34,11 @@ namespace Fomega.Proof
   case prod j1 j2 _ _ =>
     intro A B K h1 h2 h3; subst h1; subst h2
     cases h3; case _ T h3 =>
-      have lem := Red.const_conv_implies_eq .type K (by exists T)
+      have lem := Red.Conv.const_conv_implies_eq .type K (by exists T)
       subst lem; apply And.intro; apply j1; apply j2
   case conv A' B' _ _ _ cv ih1 _ih2 =>
     intro A B K h1 h2
-    have lem : A' =β= .const K := by apply Red.trans cv h2
+    have lem : A' =β= .const K := by apply Red.Conv.trans cv h2
     cases lem; case _ q r =>
       apply ih1 _ _ _ h1 (by exists q)
 
@@ -82,7 +82,7 @@ namespace Fomega.Proof
   case app Γ f A B a B' j1 j2 j3 _ ih2 =>
     cases ih2; case _ K ih2 =>
       have lem := all_destruct_lemma ih2; simp at lem
-      replace lem := lem A B K rfl rfl Red.refl
+      replace lem := lem A B K rfl rfl Red.Conv.refl
       replace lem := Proof.beta lem j2; simp at lem
       apply Or.inr; exists K
       rw [j3]; apply lem
@@ -91,12 +91,12 @@ namespace Fomega.Proof
   case fst t A B j ih =>
     cases ih; case _ K ih =>
       have lem := times_destruct_lemma ih; simp at lem
-      replace lem := lem A B K rfl rfl Red.refl
+      replace lem := lem A B K rfl rfl Red.Conv.refl
       apply Or.inr; exists .type; apply lem.1
   case snd t A B j ih =>
     cases ih; case _ K ih =>
       have lem := times_destruct_lemma ih; simp at lem
-      replace lem := lem A B K rfl rfl Red.refl
+      replace lem := lem A B K rfl rfl Red.Conv.refl
       apply Or.inr; exists .type; apply lem.2
   case unit j _ => exists .type; constructor; apply j
   case unit_ty j _ => exists .kind; constructor; apply j

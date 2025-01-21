@@ -181,15 +181,34 @@ namespace Red
 
   theorem subst_same : t =β= s -> ([σ]t) =β= ([σ]s) := by sorry
 
-  theorem const_conv_implies_eq K1 K2 : (.const K1) =β= (.const K2) -> K1 = K2 := by sorry
+  theorem red_subst (σ τ : Subst Term) :
+    (∀ n t, σ n = .su t -> ∃ t', τ n = .su t' ∧ t -β> t') ->
+    (∀ n k, σ n = .re k -> τ n = .re k) ->
+    s -β> t -> [σ]s -β> [τ]t
+  := by sorry
 
-  theorem refl : t =β= t := by sorry
+  theorem red_const_forces_const : .const K -β>* t -> t = .const K := by sorry
 
-  theorem sym : t =β= s -> s =β= t := by sorry
+  namespace Conv
+    theorem subst (σ τ : Subst Term) :
+      (∀ n t, σ n = .su t -> ∃ t', τ n = .su t' ∧ t =β= t') ->
+      (∀ n k, σ n = .re k -> τ n = .re k) ->
+      s =β= t -> [σ]s =β= [τ]t
+    := by sorry
 
-  theorem trans : x =β= y -> y =β= z -> x =β= z := by sorry
+    theorem beta : b =β= b' -> t =β= t' -> b β[t] =β= b' β[t'] := by sorry
 
-  theorem all_congr : Π[A] B =β= Π[A'] B' -> A =β= A' ∧ B =β= B' := by sorry
+    theorem const_conv_implies_eq K1 K2 : (.const K1) =β= (.const K2) -> K1 = K2 := by sorry
 
-  theorem times_congr : (A ⊗ B) =β= (A' ⊗ B') -> A =β= A' ∧ B =β= B' := by sorry
+    theorem refl : t =β= t := by sorry
+
+    theorem sym : t =β= s -> s =β= t := by sorry
+
+    theorem trans : x =β= y -> y =β= z -> x =β= z := by sorry
+
+    theorem all_congr : Π[A] B =β= Π[A'] B' -> A =β= A' ∧ B =β= B' := by sorry
+
+    theorem times_congr : (A ⊗ B) =β= (A' ⊗ B') -> A =β= A' ∧ B =β= B' := by sorry
+
+  end Conv
 end Red
