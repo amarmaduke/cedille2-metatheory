@@ -99,7 +99,7 @@ namespace Fomega.Proof
     apply ih2 h2 h3 j2; apply ih3 h2 h3 j2
   case conv Γ' t' A' B K _j1 _j2 j3 ih1 ih2 =>
     constructor; apply ih1 h2 h3 j2; apply ih2 h2 h3 j2
-    apply Red.subst_same j3
+    apply Red.Conv.subst_same j3
 
   theorem beta : (A::Γ) ⊢ b : B -> Γ ⊢ t : A -> Γ ⊢ (b β[t]) : (B β[t]) := by
   simp; intro j1 j2

@@ -4,8 +4,8 @@ import Common.Reduction
 inductive Red : Term -> Term -> Prop where
 -- Steps
 | beta : Red ((`λ b) `@ t) (b β[t])
-| proj1 : Red ((Term.pair t s).fst) t
-| proj2 : Red ((Term.pair t s).snd) s
+| fst : Red ((Term.pair t s).fst) t
+| snd : Red ((Term.pair t s).snd) s
 | unit_rec : Red (.unit_rec (u) t) t
 -- Congruences
 | lam_congr : Red t t' -> Red (.lam t) (.lam t')
@@ -25,8 +25,8 @@ inductive Red : Term -> Term -> Prop where
 inductive ParRed : Term -> Term -> Prop where
 -- Steps
 | beta : ParRed b b' -> ParRed t t' -> ParRed ((`λ b) `@ t) (b' β[t'])
-| proj1 : ParRed t t' -> ParRed s s' -> ParRed ((Term.pair t s).fst) t'
-| proj2 : ParRed t t' -> ParRed s s' -> ParRed ((Term.pair t s).snd) s'
+| fst : ParRed t t' -> ParRed s s' -> ParRed ((Term.pair t s).fst) t'
+| snd : ParRed t t' -> ParRed s s' -> ParRed ((Term.pair t s).snd) s'
 | unit_rec : ParRed t t' -> ParRed (.unit_rec (u) t) t'
 -- Congruences
 | lam_congr : ParRed t t' -> ParRed (.lam t) (.lam t')
@@ -86,8 +86,8 @@ namespace ParRed
     have lem : (`λ([^σ]b) `@ ([σ]t)) =β> ([^σ]b') β[[σ]t'] := by
       apply ParRed.beta (ih1 ^σ) (ih2 _)
     simp at lem; apply lem
-  case _ => sorry
-  case _ => sorry
+  case _ ih1 ih2 => apply ParRed.fst; apply ih1; apply ih2
+  case _ ih1 ih2 => apply ParRed.snd; apply ih1; apply ih2
 
   theorem red_subst (σ τ : Subst Term) :
     (∀ n t, σ n = .su t -> ∃ t', τ n = .su t' ∧ t =β> t') ->
@@ -96,40 +96,32 @@ namespace ParRed
   := by
   intro h1 h2 r
   induction r generalizing σ τ <;> simp
+  any_goals (solve | constructor)
+  any_goals (solve | try case _ ih => constructor; apply ih _ _ h1 h2)
+  any_goals (solve | try case _ ih1 ih2 => constructor; apply ih1 _ _ h1 h2; apply ih2 _ _ h1 h2)
   case _ b b' t t' _ _ ih1 ih2 =>
     have lem : (`λ([^σ]b) `@ ([σ]t)) =β> ([^τ]b') β[[τ]t'] := by
       apply ParRed.beta
       replace ih1 := ih1 (^σ) (^τ) (Subst.lift_replace red_subst_same h1) (Subst.lift_rename h2)
       apply ih1; apply ih2 _ _ h1 h2
     simp at lem; apply lem
-  case _ => sorry
-  case _ => sorry
-  case _ => sorry
-  case _ => sorry
-  case _ => sorry
-  case _ => sorry
-  case _ => sorry
-  case _ => sorry
-  case _ => sorry
-  case _ => sorry
-  case _ => sorry
-  case _ => sorry
-  case _ => sorry
-  case _ => sorry
-  case _ => sorry
-  -- case _ ih1 ih2 =>
-  --   apply ParRed.app; apply ih1 _ _ h1 h2; apply ih2 _ _ h1 h2
-  -- case _ _ ih =>
-  --   constructor
-  --   replace ih := ih (^σ) (^τ) (Subst.lift_replace red_subst_same h1) (Subst.lift_rename h2)
-  --   simp at ih; apply ih
-  -- case _ x =>
-  --   generalize udef : σ x = u
-  --   cases u <;> simp at *
-  --   case _ y => rw [h2 x y udef]; simp; constructor
-  --   case _ t =>
-  --     cases (h1 x t udef); case _ v lem =>
-  --       rw [lem.1]; simp; apply lem.2
+  case _ t t' _ ih =>
+    have lem : `λ[^σ]t =β> `λ[^τ]t' := by
+      constructor
+      apply ih (^σ) (^τ) (Subst.lift_replace red_subst_same h1) (Subst.lift_rename h2)
+    simp at lem; apply lem
+  case _ A A' B B' _ _ ih1 ih2 =>
+    have lem : Π[[σ]A][^σ]B =β> Π[[τ]A'][^τ]B' := by
+      constructor; apply ih1 _ _ h1 h2
+      apply ih2 (^σ) (^τ) (Subst.lift_replace red_subst_same h1) (Subst.lift_rename h2)
+    simp at lem; apply lem
+  case _ x =>
+    generalize udef : σ x = u
+    cases u <;> simp at *
+    case _ y => rw [h2 x y udef]; simp; constructor
+    case _ t =>
+      cases (h1 x t udef); case _ v lem =>
+        rw [lem.1]; simp; apply lem.2
 
   theorem red_beta : b =β> b' -> t =β> t' -> b β[t] =β> b' β[t'] := by
   intro r1 r2; apply red_subst
@@ -142,22 +134,41 @@ namespace ParRed
 
   theorem triangle : t =β> s -> s =β> Term.compl t := by
   intro h; induction h <;> simp at * <;> try (constructor <;> simp [*])
-  case _ b b' t t' r1 r2 ih1 ih2 => apply red_beta ih1 ih2
-  case _ => sorry
-  case _ => sorry
-  case _ => sorry
-  case _ a a' f f' _ r2 ih1 ih2 => sorry
-    -- cases f <;> simp at * <;> try (constructor <;> simp [*])
-    -- case _ t =>
-    --   cases f'
-    --   case _ => cases ih2
-    --   case _ => cases r2
-    --   case _ b =>
-    --     cases ih2; case _ ih2 =>
-    --       apply ParRed.beta ih2 ih1
-  case _ => sorry
-  case _ => sorry
-  case _ => sorry
+  case _ ih1 ih2 => apply red_beta ih1 ih2
+  case _ ih _ => apply ih
+  case _ ih => apply ih
+  case _ ih => apply ih
+  case _ f f' a a' r1 _ ih1 ih2 =>
+    cases f <;> simp at * <;> try (constructor <;> simp [*])
+    case _ t =>
+      cases f'
+      any_goals (try cases r1)
+      case _ b =>
+        cases ih1; case _ ih1 =>
+          apply ParRed.beta ih1 ih2
+  case _ t t' r ih =>
+    cases t <;> simp at * <;> try (constructor <;> simp [*])
+    case _ s1 s2 =>
+      cases t'
+      any_goals (try cases r)
+      case _ r1 r2 =>
+        cases ih; case _ ih1 ih2 =>
+          apply ParRed.fst; apply ih1; apply ih2
+  case _ t t' r ih =>
+    cases t <;> simp at * <;> try (constructor <;> simp [*])
+    case _ s1 s2 =>
+      cases t'
+      any_goals (try cases r)
+      case _ r1 r2 =>
+        cases ih; case _ ih1 ih2 =>
+          apply ParRed.snd; apply ih1; apply ih2
+  case _ t1 t1' t2 t2' r1 _ ih1 ih2 =>
+    cases t1 <;> simp at * <;> try (constructor <;> simp [*])
+    case _ =>
+      cases t1'
+      any_goals (try cases r1)
+      case _ =>
+        apply ParRed.unit_rec; apply ih2
 
 end ParRed
 
@@ -179,7 +190,6 @@ namespace Red
 
   theorem from_conv : t ≡β≡ s -> t =β= s := by sorry
 
-  theorem subst_same : t =β= s -> ([σ]t) =β= ([σ]s) := by sorry
 
   theorem red_subst (σ τ : Subst Term) :
     (∀ n t, σ n = .su t -> ∃ t', τ n = .su t' ∧ t -β> t') ->
@@ -190,6 +200,8 @@ namespace Red
   theorem red_const_forces_const : .const K -β>* t -> t = .const K := by sorry
 
   namespace Conv
+    theorem subst_same : t =β= s -> ([σ]t) =β= ([σ]s) := by sorry
+
     theorem subst (σ τ : Subst Term) :
       (∀ n t, σ n = .su t -> ∃ t', τ n = .su t' ∧ t =β= t') ->
       (∀ n k, σ n = .re k -> τ n = .re k) ->

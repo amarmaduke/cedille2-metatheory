@@ -84,7 +84,7 @@ namespace Fomega.Proof
     constructor
     case _ => apply ih1 r h1 h2
     case _ => apply ih2 r h1 h2
-    case _ => apply Red.subst_same; apply j3
+    case _ => apply Red.Conv.subst_same; apply j3
 
   theorem weaken :
     Γ ⊢ B : .const K ->

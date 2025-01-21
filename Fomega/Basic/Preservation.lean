@@ -199,7 +199,7 @@ namespace Fomega.Proof
             replace lem6 := lem6 A B K3 rfl rfl Red.Conv.refl
             replace lem6 := Proof.beta lem6 ih2; simp at lem6
             apply Judgment.conv; apply lem4; apply lem6
-            apply Red.subst_same; apply Red.Conv.sym; apply lem3.1
+            apply Red.Conv.subst_same; apply Red.Conv.sym; apply lem3.1
       case _ f' r1 =>
         constructor; apply ih1 (Or.inr r1) r2
         apply ih2 (Or.inl rfl) r2; apply j3
