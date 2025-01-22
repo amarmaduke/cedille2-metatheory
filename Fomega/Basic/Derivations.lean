@@ -8,8 +8,9 @@ import Fomega.Basic.Classification
 
 namespace Fomega
 
-  @[simp]
-  def uid (t : Term) : Term := .unit_rec (u) t
+  def uid (t : Term) : Term := .unit_rec (u) (u) t
+
+  def uid2 (t1 t2 : Term) : Term := .unit_rec t2 (u) t1
 
   -- ⊢ (X : ★) -> X
   @[simp]

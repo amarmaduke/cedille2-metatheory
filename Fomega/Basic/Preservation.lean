@@ -8,23 +8,23 @@ namespace Fomega.Proof
 
   @[simp]
   abbrev LamDestructLemmaType (Γ : Ctx Term) : (v : JudgmentVariant) -> JudgmentIndex v -> Prop
-  | .prf => λ (t, T) => ∀ A b B, t = `λ b -> T =β= Π[A] B ->
-    ∃ C, ((∃ K, A =β= C ∧ Γ ⊢ C : .const K)
-    ∧ (∃ K D, B =β= D ∧ (C::Γ) ⊢ D : .const K ∧ (C::Γ) ⊢ b : D))
+  | .prf => λ (t, T) => ∀ C A b B, t = `λ[C] b -> T =β= Π[A] B ->
+    (∃ K, A =β= C ∧ Γ ⊢ C : .const K)
+    ∧ (∃ K D, B =β= D ∧ (C::Γ) ⊢ D : .const K ∧ (C::Γ) ⊢ b : D)
   | .wf => λ () => True
 
   theorem lam_destruct_lemma : Judgment v Γ ix -> LamDestructLemmaType Γ v ix := by
   intro j; induction j <;> simp at *
   case lam A' K1 K2 B' t j1 j2 j3 _ _ _ =>
-    intro A b B h1 h2; subst h1
-    have lem := Red.Conv.all_congr h2; exists A'
+    intro C A b B h1 h2 h3; subst h1; subst h2
+    have lem := Red.Conv.all_congr h3
     apply And.intro; apply And.intro; apply Red.Conv.sym lem.1
     exists (dom K1 K2); exists K2; exists B'; apply And.intro
     apply Red.Conv.sym lem.2; apply And.intro; apply j2; apply j3
   case conv A' B' _ _ _ cv ih1 _ih2 =>
-    intro A b B h1 h2; subst h1
+    intro C A b B h1 h2; subst h1
     have lem := Red.Conv.trans cv h2
-    apply ih1 A b B rfl lem
+    apply ih1 C A b B rfl lem
 
   @[simp]
   abbrev PairDestructLemmaType (Γ : Ctx Term) : (v : JudgmentVariant) -> JudgmentIndex v -> Prop
@@ -167,6 +167,18 @@ namespace Fomega.Proof
       apply ih3 (Or.inl rfl) (.tail r2)
     case _ r1 =>
       cases r1
+      case _ A' r1 =>
+        have lem1 := ih1 (Or.inr r1) r2
+        have lem2 := ih1 (Or.inl rfl) r2
+        apply Judgment.conv
+        constructor; apply lem1
+        apply ih2 (Or.inl rfl) (.head r1 r2)
+        apply ih3 (Or.inl rfl) (.head r1 r2)
+        constructor; apply lem2
+        apply ih2 (Or.inl rfl) (.tail r2)
+        exists Π[A']B; apply And.intro
+        apply Star.refl; apply Star.step Star.refl
+        apply Red.all_congr1 r1
       case _ t' r1 =>
         constructor; apply ih1 (Or.inl rfl) r2
         apply ih2 (Or.inl rfl) (.tail r2)
@@ -183,8 +195,7 @@ namespace Fomega.Proof
         replace ih1 := ih1 (Or.inl rfl) r2
         replace ih2 := ih2 (Or.inl rfl) r2
         have lem := lam_destruct_lemma ih1; simp at lem
-        replace lem := lem A b B rfl Red.Conv.refl
-        cases lem; case _ A' lem =>
+        replace lem := lem A' A b B rfl rfl Red.Conv.refl
         cases lem.1.2; case _ K1 lem2 =>
         cases lem.2; case _ k2 lem3 =>
         cases lem3; case _ D lem3 =>
@@ -292,21 +303,28 @@ namespace Fomega.Proof
     cases r1
     case _ r1 => rw [<-r1]; constructor; apply (ih r2).1
     case _ r1 => cases r1
-  case unit_rec Γ u t A j1 j2 j3 ih1 ih2 ih3 =>
+  case unit_rec Γ d D u t A j1 j2 j3 j4 ih1 ih2 ih3 ih4 =>
     intro t' Γ' r1 r2
     cases r1
     case _ r1 =>
       rw [<-r1]; constructor; apply ih1 (Or.inl rfl) r2
       apply ih2 (Or.inl rfl) r2; apply ih3 (Or.inl rfl) r2
+      apply ih4 (Or.inl rfl) r2
     case _ r1 =>
       cases r1
-      case _ => apply ih2 (Or.inl rfl) r2
-      case _ u' r1 =>
+      case _ => apply ih3 (Or.inl rfl) r2
+      case _ C' r1 =>
         constructor; apply ih1 (Or.inr r1) r2
         apply ih2 (Or.inl rfl) r2; apply ih3 (Or.inl rfl) r2
-      case _ t' r1 =>
+        apply ih4 (Or.inl rfl) r2
+      case _ d' r1 =>
         constructor; apply ih1 (Or.inl rfl) r2
         apply ih2 (Or.inr r1) r2; apply ih3 (Or.inl rfl) r2
+        apply ih4 (Or.inl rfl) r2
+      case _ u' r1 =>
+        constructor; apply ih1 (Or.inl rfl) r2
+        apply ih2 (Or.inl rfl) r2; apply ih3 (Or.inr r1) r2
+        apply ih4 (Or.inl rfl) r2
   case conv j1 j2 j3 ih1 ih2 =>
     intro t' Γ' r1 r2
     constructor; apply ih1 r1 r2; apply ih2 (Or.inl rfl) r2

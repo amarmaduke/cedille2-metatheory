@@ -38,7 +38,7 @@ namespace Fomega
     Judgment .prf Γ (A, .const (dom K1 K2)) ->
     Judgment .prf (A::Γ) (B, .const K2) ->
     Judgment .prf (A::Γ) (t, B) ->
-    Judgment .prf Γ (`λ t, Π[A] B)
+    Judgment .prf Γ (`λ[A] t, Π[A] B)
   | app :
     Judgment .prf Γ (f, Π[A] B) ->
     Judgment .prf Γ (a, A) ->
@@ -67,10 +67,11 @@ namespace Fomega
     Judgment .wf Γ () ->
     Judgment .prf Γ ((u), (U))
   | unit_rec :
+    Judgment .prf Γ (d, D) ->
     Judgment .prf Γ (u, (U)) ->
     Judgment .prf Γ (t, A) ->
     Judgment .prf Γ (A, ★) ->
-    Judgment .prf Γ (.unit_rec u t, A)
+    Judgment .prf Γ (.unit_rec d u t, A)
   | conv :
     Judgment .prf Γ (t, A) ->
     Judgment .prf Γ (B, .const K) ->

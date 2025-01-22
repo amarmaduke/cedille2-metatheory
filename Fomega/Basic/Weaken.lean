@@ -77,9 +77,10 @@ namespace Fomega.Proof
     simp; constructor; apply ih r h1 h2
   case unit_ty ih =>
     simp; constructor; apply ih r h1 h2
-  case unit_rec ih1 ih2 ih3 =>
+  case unit_rec ih1 ih2 ih3 ih4 =>
     simp; constructor; apply ih1 r h1 h2
     apply ih2 r h1 h2; apply ih3 r h1 h2
+    apply ih4 r h1 h2
   case conv Γ' t A' B K _j1 _j2 j3 ih1 ih2 =>
     constructor
     case _ => apply ih1 r h1 h2

@@ -4,11 +4,27 @@ inductive Const : Type where
 | kind | type
 deriving Repr
 
+namespace Const
+  @[simp]
+  def beq : Const -> Const -> Bool
+  | .kind, .kind => true
+  | .type, .type => true
+  | _, _ => false
+end Const
+
+@[simp]
+instance instBEq_Const : BEq Const where
+  beq := Const.beq
+
+instance instLawfulBEq_Const : LawfulBEq Const where
+  eq_of_beq := by intro a b h; cases a <;> cases b <;> simp at * <;> simp [*]
+  rfl := by intro a; cases a <;> simp
+
 inductive Term : Type where
 | var : Nat -> Term
 | const : Const -> Term
 | app : Term -> Term -> Term
-| lam : Term -> Term
+| lam : Term -> Term -> Term
 | all : Term -> Term -> Term
 | pair : Term -> Term -> Term
 | fst : Term -> Term
@@ -16,13 +32,13 @@ inductive Term : Type where
 | times : Term -> Term -> Term
 | unit : Term
 | unit_ty : Term
-| unit_rec : Term -> Term -> Term
+| unit_rec : Term -> Term -> Term -> Term
 deriving Repr
 
 notation "★" => Term.const Const.type
 notation "□" => Term.const Const.kind
 infixl:15 " `@ " => Term.app
-notation "`λ" t:50 => Term.lam t
+notation "`λ[" A "]" t:50 => Term.lam A t
 notation "Π[" A "]" t:50 => Term.all A t
 infixl:15 "⊗" => Term.times
 notation "(u)" => Term.unit
@@ -41,7 +57,7 @@ namespace Term
     | .su t => t
   | const k => const k
   | app t1 t2 => app (smap lf f t1) (smap lf f t2)
-  | lam t => lam (smap lf (lf f) t)
+  | lam A t => lam (smap lf f A) (smap lf (lf f) t)
   | all t1 t2 => all (smap lf f t1) (smap lf (lf f) t2)
   | pair t1 t2 => pair (smap lf f t1) (smap lf f t2)
   | fst t => fst (smap lf f t)
@@ -49,7 +65,13 @@ namespace Term
   | times t1 t2 => times (smap lf f t1) (smap lf f t2)
   | unit => unit
   | unit_ty => unit_ty
-  | unit_rec t1 t2 => unit_rec (smap lf f t1) (smap lf f t2)
+  | unit_rec t1 t2 t3 => unit_rec (smap lf f t1) (smap lf f t2) (smap lf f t3)
+
+  def beq : Term -> Term -> Bool
+  | .var x, .var y => x == y
+  | .const k1, .const k2 => k1 == k2
+  | .app x1 x2, .app y1 y2 => sorry
+  | _, _ => false
 end Term
 
 @[simp↓]
@@ -74,7 +96,7 @@ namespace Term
   theorem subst_app : [σ](app t1 t2) = app ([σ]t1) ([σ]t2) := by unfold Subst.apply; simp
 
   @[simp]
-  theorem subst_lam : [σ](lam t) = lam ([^σ]t) := by unfold Subst.apply; simp
+  theorem subst_lam : [σ](lam A t) = lam ([σ]A) ([^σ]t) := by unfold Subst.apply; simp
 
   @[simp]
   theorem subst_all : [σ]all t1 t2 = all ([σ]t1) ([^σ]t2) := by unfold Subst.apply; simp
@@ -98,7 +120,9 @@ namespace Term
   theorem subst_unit_ty : [σ]unit_ty = unit_ty := by unfold Subst.apply; simp
 
   @[simp]
-  theorem subst_unit_rec : [σ]unit_rec t1 t2 = unit_rec ([σ]t1) ([σ]t2) := by unfold Subst.apply; simp
+  theorem subst_unit_rec :
+    [σ]unit_rec t1 t2 t3 = unit_rec ([σ]t1) ([σ]t2) ([σ]t3)
+  := by unfold Subst.apply; simp
 
   theorem apply_id {t : Term} : [I]t = t := by
   have lem : ^I = @I Term := by

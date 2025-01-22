@@ -100,7 +100,7 @@ namespace Fomega.Proof
       apply Or.inr; exists .type; apply lem.2
   case unit j _ => exists .type; constructor; apply j
   case unit_ty j _ => exists .kind; constructor; apply j
-  case unit_rec j _ _ _ => apply Or.inr; exists .type
+  case unit_rec => apply Or.inr; exists .type
   case conv K _h1 h2 _h3 _ih1 _ih2 =>
     apply Or.inr; exists K
 
