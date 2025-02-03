@@ -1,2 +1,0 @@
-
-import Cedille.Theorem.ObjectNorm

@@ -1,5 +1,7 @@
 import Common.Substitution
 
+namespace Fomega
+
 inductive Const : Type where
 | kind | type
 deriving Repr
@@ -153,3 +155,5 @@ instance substTypeLaws_Term : SubstitutionTypeLaws Term where
   apply_id := Term.apply_id
   apply_compose := Term.apply_compose
   apply_stable := Term.apply_stable
+
+end Fomega

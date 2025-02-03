@@ -1,6 +1,4 @@
 
-import Common.Mathlib
-
 def contra {A B} : (A -> B) -> Not B -> Not A := by
   intros h1 h2 h3
   exact (h2 (h1 h3))

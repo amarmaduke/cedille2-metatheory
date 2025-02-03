@@ -10,17 +10,14 @@ package «cedille2» {
 lean_lib Common where
   roots := #[`Common]
 
-lean_lib Untyped where
-  roots := #[`Untyped]
+lean_lib Erased where
+  roots := #[`Erased]
 
 lean_lib Fomega where
   roots := #[`Fomega]
 
-lean_lib FomegaMut where
-  roots := #[`FomegaMut]
-
-lean_lib Cedille where
-  roots := #[`Cedille]
+lean_lib Cedille2 where
+  roots := #[`Cedille2]
 
 lean_lib WCCC where
   roots := #[`WCCC]

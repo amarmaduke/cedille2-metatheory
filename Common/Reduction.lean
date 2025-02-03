@@ -12,6 +12,10 @@ inductive Star : T -> T -> Prop where
 | refl : Star t t
 | step : Star x y -> R y z -> Star x z
 
+inductive Plus : T -> T -> Prop where
+| start : R t t' -> Plus t t'
+| step : Plus x y -> R y z -> Plus x z
+
 inductive StarB : Nat -> T -> T -> Prop where
 | refl : StarB n t t
 | step : StarB n x y -> R y z -> StarB (n + 1) x z
@@ -35,6 +39,17 @@ namespace Star
   case _ => constructor
   case _ _ r ih => constructor; apply ih; apply Rprm r
 end Star
+
+namespace Plus
+  theorem destruct : @Plus T R x z -> ∃ y, R x y ∧ @Star T R y z := by
+  intro r; induction r
+  case _ b r =>
+    exists b; apply And.intro r Star.refl
+  case _ r1 r2 ih =>
+    cases ih; case _ u ih =>
+      exists u; apply And.intro ih.1
+      apply Star.step ih.2 r2
+end Plus
 
 namespace StarB
   @[simp]
@@ -98,6 +113,96 @@ namespace ConvB
 end ConvB
 
 namespace Star
+  theorem congr3_1 t2 t3 (f : T -> T -> T -> T) :
+    (∀ {t1 t2 t3 t1'}, R t1 t1' -> R (f t1 t2 t3) (f t1' t2 t3)) ->
+    @Star T R t1 t1' ->
+    @Star T R (f t1 t2 t3) (f t1' t2 t3)
+  := by
+  intro fh h2
+  induction h2
+  case _ => apply refl
+  case _ _h3 h4 ih =>
+    have h5 := @fh _ t2 t3 _ h4
+    apply trans ih (Star.step Star.refl h5)
+
+  -- theorem congr3_2 t1 t3 (f : Term -> Term -> Term -> Term) :
+  --   (∀ {t1 t2 t3 t2'}, t2 -β> t2' -> f t1 t2 t3 -β> f t1 t2' t3) ->
+  --   t2 -β>* t2' ->
+  --   f t1 t2 t3 -β>* f t1 t2' t3
+  -- := by
+  -- intro fh h2
+  -- induction h2
+  -- case _ => apply refl
+  -- case _ h3 _h4 ih =>
+  --   have h5 := @fh t1 _ t3 _ h3
+  --   apply trans (RedStar.step h5 refl) ih
+
+  -- theorem congr3_3 t1 t2 (f : Term -> Term -> Term -> Term) :
+  --   (∀ {t1 t2 t3 t3'}, t3 -β> t3' -> f t1 t2 t3 -β> f t1 t2 t3') ->
+  --   t3 -β>* t3' ->
+  --   f t1 t2 t3 -β>* f t1 t2 t3'
+  -- := by
+  -- intro fh h2
+  -- induction h2
+  -- case _ => apply refl
+  -- case _ h3 _h4 ih =>
+  --   have h5 := @fh t1 t2 _ _ h3
+  --   apply trans (RedStar.step h5 refl) ih
+
+  -- theorem congr3 (f : Term -> Term -> Term -> Term) :
+  --   (∀ {t1 t2 t3 t1'}, t1 -β> t1' -> f t1 t2 t3 -β> f t1' t2 t3) ->
+  --   (∀ {t1 t2 t3 t2'}, t2 -β> t2' -> f t1 t2 t3 -β> f t1 t2' t3) ->
+  --   (∀ {t1 t2 t3 t3'}, t3 -β> t3' -> f t1 t2 t3 -β> f t1 t2 t3') ->
+  --   t1 -β>* t1' -> t2 -β>* t2' -> t3 -β>* t3' ->
+  --   f t1 t2 t3 -β>* f t1' t2' t3'
+  -- := by
+  -- intro f1 f2 f3 h1 h2 h3
+  -- have r1 := congr3_1 t2 t3 f f1 h1
+  -- have r2 := congr3_2 t1' t3 f f2 h2
+  -- have r3 := congr3_3 t1' t2' f f3 h3
+  -- apply trans r1; apply trans r2; apply trans r3; apply refl
+
+  -- theorem congr2_1 t2 (f : Term -> Term -> Term) :
+  --   (∀ {t1 t2 t1'}, t1 -β> t1' -> f t1 t2 -β> f t1' t2) ->
+  --   t1 -β>* t1' ->
+  --   f t1 t2 -β>* f t1' t2
+  -- := by
+  -- intro fh h
+  -- apply congr3_1 t2 .none (λ t1 t2 _t3 => f t1 t2)
+  -- intro t1 t2 _t3 t1' h; apply fh h
+  -- exact h
+
+  -- theorem congr2_2 t1 (f : Term -> Term -> Term) :
+  --   (∀ {t1 t2 t2'}, t2 -β> t2' -> f t1 t2 -β> f t1 t2') ->
+  --   t2 -β>* t2' ->
+  --   f t1 t2 -β>* f t1 t2'
+  -- := by
+  -- intro fh h
+  -- apply congr3_2 t1 .none (λ t1 t2 _t3 => f t1 t2)
+  -- intro t1 t2 _t3 t1' h; apply fh h
+  -- exact h
+
+  -- theorem congr2 (f : Term -> Term -> Term) :
+  --   (∀ {t1 t2 t1'}, t1 -β> t1' -> f t1 t2 -β> f t1' t2) ->
+  --   (∀ {t1 t2 t2'}, t2 -β> t2' -> f t1 t2 -β> f t1 t2') ->
+  --   t1 -β>* t1' -> t2 -β>* t2' ->
+  --   f t1 t2 -β>* f t1' t2'
+  -- := by
+  -- intro f1 f2 h1 h2
+  -- have r1 := congr2_1 t2 f f1 h1
+  -- have r2 := congr2_2 t1' f f2 h2
+  -- apply trans r1; apply trans r2; apply refl
+
+  -- theorem congr1 (f : Term -> Term) :
+  --   (∀ {t1 t1'}, t1 -β> t1' -> f t1 -β> f t1') ->
+  --   t1 -β>* t1' ->
+  --   f t1 -β>* f t1'
+  -- := by
+  -- intro fh h
+  -- apply congr2_1 .none (λ t1 _t2 => f t1)
+  -- intro t1 _t2 t1' h; apply fh h
+  -- exact h
+
   variable [ReductionCompletion T R] [ReductionTriangle T R]
 
   theorem strip : R s t1 -> @Star T R s t2 -> ∃ t, @Star T R t1 t ∧ R t2 t := by
@@ -200,3 +305,98 @@ namespace ConvB
       apply StarB.trans h1.1 lem.1
       apply StarB.trans h2.2 lem.2
 end ConvB
+
+def Reducible (t : T) := ∃ t', R t t'
+def Normal (t : T) := ¬ (@Reducible T R t)
+abbrev NormalForm (t : T) (t' : T) := @Star T R t t' ∧ @Normal T R t'
+def WN (t : T) := ∃ t', @NormalForm T R t t'
+
+inductive SN : T -> Prop where
+| sn : (∀ y, R x y -> SN y) -> SN x
+
+inductive SNPlus : T -> Prop where
+| sn : (∀ y, @Plus T R x y -> SNPlus y) -> SNPlus x
+
+theorem snplus_impies_sn : @SNPlus T R t -> @SN T R t := by
+intro h; induction h; case _ t' _ ih =>
+  constructor; intro t'' r
+  apply ih t'' (Plus.start r)
+
+theorem sn_preimage (f : T -> T) x :
+  (∀ x y, R x y -> R (f x) (f y)) ->
+  @SN T R (f x) ->
+  @SN T R x
+:= by
+intro h sh
+generalize zdef : f x = z at sh
+induction sh generalizing f x
+case _ x' h' ih =>
+  subst zdef; constructor
+  intro y r
+  apply ih (f y) (h _ _ r) f y h rfl
+
+theorem sn_preservation_step : @SN T R t -> R t t' -> @SN T R t' := by
+intro h red
+induction h
+case _ z h1 _h2 =>
+  apply h1 _ red
+
+theorem sn_preservation : @SN T R t -> @Star T R t t' -> @SN T R t' := by
+intro h red
+induction red
+case _ => simp [*]
+case _ _ r2 ih => apply sn_preservation_step ih r2
+
+theorem sn_star : (∀ y, @Star T R t y -> @SN T R y) -> @SN T R t := by
+intro h
+constructor
+intro y r
+apply h y (Star.step Star.refl r)
+
+theorem snplus_preservation_step : @SNPlus T R t -> R t t' -> @SNPlus T R t' := by
+intro h r; induction h; case _ z h _ =>
+  apply h _ (Plus.start r)
+
+theorem snplus_preservation : @SNPlus T R t -> @Star T R t t' -> @SNPlus T R t' := by
+intro h r; induction r
+case _ => apply h
+case _ _ r2 ih =>
+  apply snplus_preservation_step ih r2
+
+theorem sn_implies_snplus : @SN T R t -> @SNPlus T R t := by
+intro h; induction h; case _ t' _ ih =>
+  constructor; intro t'' r
+  have lem := Plus.destruct r
+  cases lem; case _ z lem =>
+    have lem2 := ih z lem.1
+    apply snplus_preservation lem2 lem.2
+
+-- theorem sn_expansion_step : @SN T R t' -> R t t' -> @SN T R t := by
+-- intro h red
+-- induction h generalizing t
+-- case _ z h ih =>
+--   have lem := reducible_decidable z
+--   sorry
+
+-- theorem sn_subst : SN ([σ]t) -> SN t := by
+-- apply sn_preimage (Subst.apply σ)
+-- intro x y r; apply Red.subst1_same σ r
+
+-- theorem sn_implies_wn : SN t -> WN t := by
+-- intro h
+-- induction h
+-- case sn t' _ ih =>
+--   have lem : Reducible t' ∨ Normal t' := reducible_decidable t'
+--   cases lem
+--   case _ h' =>
+--     cases h'
+--     case _ t'' h' =>
+--       have lem := ih _ h'
+--       cases lem
+--       case _ z lem =>
+--         exists z; apply And.intro
+--         apply RedStar.step; apply h'; apply lem.1
+--         apply lem.2
+--   case _ h' =>
+--     exists t'; apply And.intro; apply Red.refl
+--     apply h'

@@ -1,6 +1,8 @@
 import Fomega.Term
 import Common.Reduction
 
+namespace Fomega
+
 inductive Red : Term -> Term -> Prop where
 -- Steps
 | beta : Red ((`λ[A] b) `@ t) (b β[t])
@@ -234,3 +236,5 @@ namespace Red
 
   end Conv
 end Red
+
+end Fomega
