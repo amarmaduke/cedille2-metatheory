@@ -1,7 +1,7 @@
 import Common
 import Cedille2.Term
 
-namespace Cedille2
+namespace Cedille2.Term
   inductive Class : Type where
   | term : Class
   | type : Class
@@ -217,4 +217,4 @@ namespace Cedille2
     else .none
   termination_by t => Term.size t
 
-end Cedille2
+end Cedille2.Term

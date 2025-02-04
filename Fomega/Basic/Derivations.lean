@@ -6,7 +6,7 @@ import Fomega.Basic.Substitution
 import Fomega.Basic.Inversion
 import Fomega.Basic.Classification
 
-namespace Fomega
+namespace Fomega.Term
 
   def uid (t : Term) : Term := .unit_rec (u) (u) t
 
@@ -16,4 +16,4 @@ namespace Fomega
   @[simp]
   def Bot : Term := Π[★] #0
 
-end Fomega
+end Fomega.Term

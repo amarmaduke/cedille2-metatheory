@@ -1,11 +1,12 @@
 
-import WCCC.Proof
+import Cedille2.Proof
+import Cedille2.Term.Classify
 import Fomega.Basic.Derivations
 
 namespace FomegaModel
 
-  notation:170 Γ:170 " ⊢c " t:170 " : " A:170 => WCCC.Judgment WCCC.JudgmentVariant.prf Γ (t, A)
-  notation:170 "⊢c " Γ:170 => WCCC.Judgment WCCC.JudgmentVariant.wf Γ ()
+  notation:170 Γ:170 " ⊢c " t:170 " : " A:170 => Cedille2.Judgment Cedille2.JudgmentVariant.prf Γ (t, A)
+  notation:170 "⊢c " Γ:170 => Cedille2.Judgment Cedille2.JudgmentVariant.wf Γ ()
 
   notation:170 Γ:170 " ⊢ω " t:170 " : " A:170 => Fomega.Judgment Fomega.JudgmentVariant.prf Γ (t, A)
   notation:170 "⊢ω " Γ:170 => Fomega.Judgment Fomega.JudgmentVariant.wf Γ ()
@@ -13,85 +14,76 @@ namespace FomegaModel
   def uid := Fomega.uid
 
   @[simp]
-  def 𝒱 : Term -> Term
+  def 𝒱 : Cedille2.Term -> Fomega.Term
   | □ | ★ => ★
   | .all _ A B =>
-    if A.classify = .kind then .all mf (𝒱 A) (𝒱 B)
+    if A.classify = .kind then .all (𝒱 A) (𝒱 B)
     else 𝒱 B
-  | _ => .none
-
-  def g0 (ℓ : Nat) : Term := .bound .kind (ℓ - 2)
-  def gBot (ℓ : Nat) : Term := .bound .type (ℓ - 1)
+  | _ => □
 
   @[simp]
-  def 𝒯 (ℓ : Nat) : Term -> Term
-  | □ | ★ => .bound .kind 0
-  | .bound .kind x => .bound .kind x
+  def 𝒯 : Cedille2.Term -> Fomega.Term
+  | □ | ★ => (U)
+  | .var .kind x => #x
   | .all _ A B =>
-    if A.classify = .kind then ∀f[𝒱 A] ∀f[𝒯 (ℓ + 1) A] 𝒯 (ℓ + 2) B
-    else ∀f[★] ∀f[𝒯 (ℓ + 1) A] 𝒯 (ℓ + 2) B
+    if A.classify = .kind then Π[𝒱 A] Π[𝒯 A] 𝒯 B
+    else Π[★] Π[𝒯 A] 𝒯 B
   | .lam .type A t =>
-    if A.classify = .kind then λf[𝒱 A] 𝒯 (ℓ + 1) t
-    else 𝒯 ℓ t
+    if A.classify = .kind then `λ[𝒱 A] 𝒯 t
+    else 𝒯 t
   | .app .type f a =>
-    if a.classify = .type then (𝒯 ℓ f) `@f (𝒯 ℓ a)
-    else  𝒯 ℓ f
-  | .inter_ty A B => .times A B
-  | .eq _ _ _ => .unit_ty
-  | _ => .none
+    if a.classify = .type then (𝒯 f) `@ (𝒯 a)
+    else  𝒯 f
+  | .inter_ty A B => (𝒯 A) ⊗ (𝒯 B)
+  | .eq _ _ => (U)
+  | _ => □
 
   @[simp]
-  def γ : Ctx -> Ctx
-  | [] => ★ :: Fomega.Bot :: []
+  def γ : Ctx Cedille2.Term -> Ctx Fomega.Term
+  | [] => []
   | .cons A Γ =>
-    let ℓ := Γ.length
-    if A.classify = .kind then (𝒯 ℓ A) :: (𝒱 A) :: (γ Γ)
-    else (𝒯 ℓ A) :: (𝒯 ℓ A) :: (γ Γ)
+    if A.classify = .kind then (𝒯 A) :: (𝒱 A) :: (γ Γ)
+    else (𝒯 A) :: (𝒯 A) :: (γ Γ)
 
   @[simp]
-  def canon (ℓ : Nat) : Term -> Term
-  | ★ => g0 ℓ
+  def canon : Cedille2.Term -> Fomega.Term
+  | ★ => (U)
   | .all mf A B =>
-    if B.classify = .kind then λf[A] (canon ℓ B)
-    else (gBot ℓ) `@τ (.all mf A B)
-  | B => (gBot ℓ) `@τ B
+    if B.classify = .kind then `λ[𝒯 A] (canon B)
+    else .unit_rec (𝒯 (.all mf A B)) (u) (u)
+  | B => .unit_rec (𝒯 B) (u) (u)
 
   @[simp]
-  def 𝓉 (ℓ : Nat) : Term -> Term
-  | ★ => c zr
-  | .bound .type x => .bound .kind (2*x)
-  | .bound .kind x => .bound .type (2*x + 1)
+  def 𝓉 : Cedille2.Term -> Fomega.Term
+  | ★ => (u)
+  | .var .type x => #(2*x)
+  | .var .kind x => #(2*x + 1)
   | .all _ A B =>
     if A.classify = .kind then
-      c (∀f[zr] ∀f[zr] zr) `@f 𝓉 ℓ A `@f (𝓉 ℓ B) β[c (𝒯 ℓ A)] β[c (𝒱 A)]
+      .uid2 (𝓉 A) (.uid2 ((𝓉 B) β[.uid2 (𝒯 A) (u)] β[.uid2 (𝒱 A) (u)]) (u))
     else
-      c (∀f[zr] ∀f[zr] zr) `@f 𝓉 ℓ A `@f (𝓉 ℓ B) β[c (𝒯 ℓ A)] β[zr]
+      c (∀f[zr] ∀f[zr] zr) `@f 𝓉 A `@f (𝓉 B) β[c (𝒯 A)] β[zr]
   | .lam _ A t =>
     if A.classify = .kind then
-      (λf[zr] λf[𝒱 A] λf[𝒯 ℓ A] 𝓉 ℓ t) `@f 𝓉 ℓ A
+      (λf[zr] λf[𝒱 A] λf[𝒯 A] 𝓉 t) `@f 𝓉 A
     else
-      (λf[zr] λf[★] λf[𝒯 ℓ A] 𝓉 ℓ t) `@f 𝓉 ℓ A
+      (λf[zr] λf[★] λf[𝒯 A] 𝓉 t) `@f 𝓉 A
   | .app _ (.conv n (.all _ A1 B) (.lam _ A2 b)) t => sorry
   | .app _ f a =>
-    if a.classify = .type then 𝓉 ℓ f `@f 𝒯 ℓ a `@f 𝓉 ℓ a
-    else 𝓉 ℓ f `@f zr `@f 𝓉 ℓ a
-  | .inter_ty A B => c (∀f[zr] ∀f[zr] zr) `@f 𝓉 ℓ A `@f (𝓉 ℓ B) β[c (𝒯 ℓ A)]
-  | .inter _ B t s => (λf[zr] .pair (𝓉 ℓ t) (𝓉 ℓ s)) `@f (𝓉 ℓ B) β[𝓉 ℓ t]
-  | .fst t => .fst (𝓉 ℓ t)
-  | .snd t => .snd (𝓉 ℓ t)
-  | .eq A a b => c (∀f[zr] ∀f[𝒯 ℓ A] ∀f[𝒯 ℓ A] zr) `@f 𝓉 ℓ A `@f 𝓉 ℓ a `@f 𝓉 ℓ b
-  | .refl A t => (λf[zr] λf[𝒯 ℓ A] .unit) `@f 𝓉 ℓ A `@f 𝓉 ℓ t
+    if a.classify = .type then 𝓉 f `@f 𝒯 a `@f 𝓉 a
+    else 𝓉 f `@f zr `@f 𝓉 a
+  | .inter_ty A B => c (∀f[zr] ∀f[zr] zr) `@f 𝓉 A `@f (𝓉 B) β[c (𝒯 A)]
+  | .inter _ B t s => (λf[zr] .pair (𝓉 t) (𝓉 s)) `@f (𝓉 B) β[𝓉 t]
+  | .fst t => .fst (𝓉 t)
+  | .snd t => .snd (𝓉 t)
+  | .eq A a b => c (∀f[zr] ∀f[𝒯 A] ∀f[𝒯 A] zr) `@f 𝓉 A `@f 𝓉 a `@f 𝓉 b
+  | .refl A t => (λf[zr] λf[𝒯 A] .unit) `@f 𝓉 A `@f 𝓉 t
   | .subst Pr e => sorry
   | .phi A a b e =>
-    (λf[zr] λf[𝒯 ℓ A] .unit_rec (𝓉 ℓ e) (𝓉 ℓ b))
-    `@f 𝓉 ℓ A
-    `@f 𝓉 ℓ a
-  | .conv _ A t => (λf[zr] uid (𝓉 ℓ t)) `@f 𝓉 ℓ A
+    (λf[zr] λf[𝒯 A] .unit_rec (𝓉 e) (𝓉 b))
+    `@f 𝓉 A
+    `@f 𝓉 a
+  | .conv _ A t => (λf[zr] uid (𝓉 t)) `@f 𝓉 A
   | _ => .none
-  where
-    c : Term -> Term
-    | t => canon ℓ t
-    zr := g0 ℓ
-    bot := gBot ℓ
 
 end FomegaModel
