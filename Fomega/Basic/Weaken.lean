@@ -11,8 +11,11 @@ namespace Fomega.Proof
   := by
   intro h x; simp
   cases x <;> simp at *
-  case _ => rw [Subst.lift_lemma]; simp
-  case _ x => rw [Subst.lift_lemma, <-h x]; simp
+  case _ =>
+    rw [Subst.lift_lemma]; unfold Ren.lift; simp
+  case _ x =>
+    rw [Subst.lift_lemma]; unfold Ren.lift; simp
+    rw [<-h x]; simp
 
   @[simp]
   abbrev idx_ren (r : Ren) : JudgmentIndex v -> JudgmentIndex v :=

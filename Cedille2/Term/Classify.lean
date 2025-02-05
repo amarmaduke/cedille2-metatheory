@@ -2,6 +2,10 @@ import Common
 import Cedille2.Term
 
 namespace Cedille2.Term
+  def action_size : Subst.Action Term -> Nat
+  | .su t => t.size
+  | .re _ => 0
+
   inductive Class : Type where
   | term : Class
   | type : Class
@@ -52,69 +56,73 @@ namespace Cedille2.Term
   @[simp]
   theorem size_of_subst_rename {t : Term} (r : Ren)
     : Term.size ([r.to]t) = Term.size t
-  := by {
-    have lem (r : Ren) :
-      .re 0::(@S Term) ⊙ r.to = (size_of_subst_rename_renamer r).to
-    := by
-      sorry
-    sorry
-  }
+  := by
+  have lem (r : Ren) :
+    .re 0::(@S Term) ⊙ r.to = (size_of_subst_rename_renamer r).to
+  := by
+    unfold Ren.to; simp
+    funext; case _ x =>
+      cases x <;> simp
+      case _ n => unfold Subst.compose; simp
+  induction t generalizing r <;> simp [*]
+  case _ => unfold Ren.to; simp
 
-  -- theorem size_of_subst_lift (σ : Subst Term)
-  --   : (∀ n, (σ n).size = 0) -> ∀ n, ((^σ) n).size = 0
-  -- := by {
-  --   intro h n; simp
-  --   cases n
-  --   case _ => simp [SubstAction.size]
-  --   case _ n =>
-  --     simp [Subst.compose]
-  --     generalize ψdef : σ n = ψ
-  --     cases ψ
-  --     case _ m => simp [SubstAction.size]
-  --     case _ t =>
-  --       have lem := h n
-  --       simp [SubstAction.size]
-  --       rw [ψdef] at lem
-  --       simp [SubstAction.size] at lem
-  --       rw [Term.S_to_rS, size_of_subst_rename]
-  --       apply lem
-  -- }
+  theorem size_of_subst_lift (σ : Subst Term)
+    : (∀ n, action_size (σ n) = 0) -> ∀ n, action_size ((^σ) n) = 0
+  := by
+  intro h n; simp
+  cases n
+  case _ => simp [action_size]
+  case _ n =>
+    simp [Subst.compose]
+    generalize ψdef : σ n = ψ
+    cases ψ
+    case _ m => simp [action_size]
+    case _ t =>
+      have lem := h n
+      simp [action_size]
+      rw [ψdef] at lem
+      simp [action_size] at lem
+      have lem2 : @S Term = Ren.to (λ x => x + 1) := by
+        unfold S; unfold Ren.to; simp
+      rw [lem2, size_of_subst_rename]
+      apply lem
 
-  -- theorem size_of_subst {σ : Subst Term} {t : Term}
-  --   : (∀ n, (σ n).size = 0) -> ([σ]t).size = t.size
-  -- := by {
-  --   intro h
-  --   induction t generalizing σ <;> simp [*]
-  --   case bound w k =>
-  --     generalize ψdef : σ k = ψ
-  --     cases ψ <;> simp at *
-  --     case _ t =>
-  --       have lem := h k
-  --       rw [ψdef] at lem; simp [SubstAction.size] at lem
-  --       apply lem
-  --   case lam m t A iht ihA =>
-  --     have lem : ∀ n, ((^σ) n).size = 0 := size_of_subst_lift σ h
-  --     simp at lem; apply ihA lem
-  --   case all m A B ihA ihB =>
-  --     have lem : ∀ n, ((^σ) n).size = 0 := size_of_subst_lift σ h
-  --     simp at lem; apply ihB lem
-  --   case inter_ty A B ihA ihB =>
-  --     have lem : ∀ n, ((^σ) n).size = 0 := size_of_subst_lift σ h
-  --     simp at lem; apply ihB lem
-  -- }
+  theorem size_of_subst {σ : Subst Term} {t : Term}
+    : (∀ n, action_size (σ n) = 0) -> ([σ]t).size = t.size
+  := by
+  intro h
+  induction t generalizing σ <;> simp [*]
+  case var w k =>
+    generalize ψdef : σ k = ψ
+    cases ψ <;> simp at *
+    case _ t =>
+      have lem := h k
+      rw [ψdef] at lem; simp [action_size] at lem
+      apply lem
+  case lam m t A iht ihA =>
+    have lem : ∀ n, action_size ((^σ) n) = 0 := size_of_subst_lift σ h
+    simp at lem; apply ihA lem
+  case all m A B ihA ihB =>
+    have lem : ∀ n, action_size ((^σ) n) = 0 := size_of_subst_lift σ h
+    simp at lem; apply ihB lem
+  case inter _ _ B t s ihB iht ihs =>
+    have lem : ∀ n, action_size ((^σ) n) = 0 := size_of_subst_lift σ h
+    simp at lem; apply ihB lem
+  case inter_ty A B ihA ihB =>
+    have lem : ∀ n, action_size ((^σ) n) = 0 := size_of_subst_lift σ h
+    simp at lem; apply ihB lem
 
   @[simp]
   theorem size_of_witness
     : Term.size (t β[witness c]) = Term.size t
   := by
-  sorry
-    -- have lem : ∀ n : Nat, ((.replace (witness c) :: I) n).size = 0 := by {
-    --   intro n; cases n
-    --   case _ => cases c <;> simp [SubstAction.size, witness]
-    --   case _ => simp [SubstAction.size]
-    -- }
-    -- simp at lem
-    -- rw [size_of_subst lem]
+  have lem : ∀ n : Nat, action_size ((.su (witness c) :: I) n) = 0 := by
+    intro n; cases n
+    case _ => cases c <;> simp [action_size, witness]
+    case _ => simp [action_size]
+  simp at lem
+  rw [size_of_subst lem]
 
   def classify : Term -> Class
   | .var .type _ => .term
