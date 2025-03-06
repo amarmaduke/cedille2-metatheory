@@ -77,6 +77,7 @@ instance instReductionCompletion_Term : ReductionCompletion Term ParRed where
 
 infix:40 " -β> " => Red
 infix:39 " -β>* " => @Star Term Red
+infix:39 " -β>+ " => @Plus Term Red
 infix:38 " =β= " => @Conv Term Red
 infix:40 " =β> " => ParRed
 infix:39 " =β>* " => @Star Term ParRed

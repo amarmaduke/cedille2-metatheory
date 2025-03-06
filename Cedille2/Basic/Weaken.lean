@@ -2,6 +2,7 @@
 import Common
 import Cedille2.Proof
 import Cedille2.Reduction
+import Erased
 
 namespace Cedille2.Proof
 
@@ -67,28 +68,35 @@ namespace Cedille2.Proof
     -- simp; constructor
     -- case _ => apply ih1 r h1 h2
     -- case _ => apply ih2 r h1 h2
-  case inter ih1 ih2 ih3 ih4 => sorry
-    -- simp; constructor
-    -- case _ => apply ih1 r h1 h2
-    -- case _ => apply ih2 r h1 h2
-    -- case _ => apply ih3 r h1 h2
-    -- case _ => apply ih4 r h1 h2
+  case inter t A B s g1 g2 j1 j2 j3 j4 j5 ih1 ih2 ih3 ih4 =>
+    simp at *
+    have lem : ⊢ ([r.to]A :: Δ) := by constructor; apply h1; apply ih2 r h1 h2
+    replace ih3 := @ih3 ([r.to]A :: Δ) (Ren.lift r) lem (rename_lift r A h2)
+    rw [Subst.lift_lemma] at ih3; simp at ih3
+    constructor; apply ih1 r h1 h2
+    apply ih2 r h1 h2; apply ih3
+    simp; apply ih4 r h1 h2
+    rw [erase_subst, erase_subst]
+    apply Erased.convb_subst; apply j5
   case fst ih =>
     simp; constructor; apply ih r h1 h2
-  case snd ih => sorry
-    -- simp; constructor; apply ih r h1 h2
-  case eq => sorry
-  case refl => sorry
-  case subst => sorry
-  case phi => sorry
-  -- case unit ih =>
-  --   simp; constructor; apply ih r h1 h2
-  -- case unit_ty ih =>
-  --   simp; constructor; apply ih r h1 h2
-  -- case unit_rec ih1 ih2 ih3 ih4 =>
-  --   simp; constructor; apply ih1 r h1 h2
-  --   apply ih2 r h1 h2; apply ih3 r h1 h2
-  --   apply ih4 r h1 h2
+  case snd A B B' j1 j2 ih =>
+    simp; apply @Judgment.snd _ _ _ ([^r.to]B)
+    apply ih r h1 h2; simp [*]
+  case eq ih1 ih2 ih3 =>
+    simp; constructor; apply ih1 r h1 h2
+    apply ih2 r h1 h2; apply ih3 r h1 h2
+  case refl ih1 ih2 =>
+    simp; constructor; apply ih1 r h1 h2
+    apply ih2 r h1 h2
+  case subst ih1 ih2 ih3 ih4 => sorry
+    -- replace ih3 := ih3 r h1 h2; simp at ih3
+    -- simp; constructor; apply ih1 r h1 h2
+    -- apply ih2 r h1 h2; sorry
+  case phi ih1 ih2 ih3 =>
+    replace ih2 := ih2 r h1 h2; simp at ih2
+    simp; constructor; apply ih1 r h1 h2
+    apply ih2; apply ih3 r h1 h2
   case iconv Γ' t A' B K _j1 _j2 j3 ih1 ih2 =>
     constructor
     case _ => apply ih1 r h1 h2

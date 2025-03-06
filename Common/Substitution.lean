@@ -62,6 +62,7 @@ section
 
   def I : Subst T := λ n => .re n
   def S : Subst T := λ n => .re (n + 1)
+  def P : Subst T := λ n => .re (n - 1)
 
   omit [SubstitutionType T] in
   @[simp]
@@ -71,10 +72,32 @@ section
   @[simp]
   theorem S_action : @S T n = .re (n + 1) := by unfold S; simp
 
+  omit [SubstitutionType T] in
+  @[simp]
+  theorem P_action : @P T n = .re (n - 1) := by unfold P; simp
+
+  omit [SubstitutionType T] in
+  theorem to_I : Ren.to (λ x => x) = @I T := by
+  unfold Ren.to; simp; unfold I; simp
+
+  omit [SubstitutionType T] in
+  theorem to_S : Ren.to (λ x => x + 1) = @S T := by
+  unfold Ren.to; simp; unfold S; simp
+
+  omit [SubstitutionType T] in
+  theorem to_P : Ren.to (λ x => x - 1) = @P T := by
+  unfold Ren.to; simp; unfold P; simp
+
   prefix:max "^" => Subst.lift
   notation:90 "[" σ "]" t:89 => Subst.apply σ t
   notation:90 τ:90 " ⊙ " σ:91 => Subst.compose σ τ
   notation:90 s:90 "β[" t "]" => Subst.apply ((Subst.Action.su t) :: I) s
+
+  @[simp]
+  theorem P_after_S : (P ⊙ S) = @I T := by
+  unfold P; unfold S; unfold Subst.compose; simp
+  have lem : @I T = fun x => .re x := by unfold I; simp
+  rw [<-lem]
 end
 
 section
@@ -327,5 +350,81 @@ end
       unfold Subst.apply; simp; split <;> simp [*]
     )
   })
+
+end Subst
+
+namespace Subst
+
+  @[simp]
+  def map (f : A -> B) : Subst A -> Subst B
+  | σ, n =>
+    match (σ n) with
+    | .su t => .su (f t)
+    | .re k => .re k
+
+  @[simp]
+  theorem map_rename_seq : map f (.re k :: σ) = .re k :: map f σ := by
+  funext; case _ x =>
+    cases x <;> simp
+
+  @[simp]
+  theorem map_replace_seq : map f (.su t :: σ) = .su (f t) :: map f σ := by
+  funext; case _ x =>
+    cases x <;> simp
+
+  @[simp]
+  theorem map_rename_noop {r : Ren} : map f r.to = r.to := by
+  funext; case _ x =>
+    unfold Ren.to
+    cases x <;> simp
+
+  @[simp]
+  theorem map_I_noop : map f I = I := by apply map_rename_noop
+
+  @[simp]
+  theorem map_S_noop : map f S = S := by apply map_rename_noop
+
+  theorem map_rename_compose_left [SubstitutionType A] [SubstitutionType B] {f : A -> B} {r : Ren}
+    : (∀ t, f ([r.to]t) = [r.to](f t)) -> map f (r.to ⊙ τ) = r.to ⊙ (map f τ)
+  := by
+  intro h
+  unfold Subst.compose; simp
+  funext; case _ x =>
+    simp; generalize zdef : τ x = z at *
+    cases z <;> simp
+    case _ k => unfold Ren.to; simp
+    case _ t => apply h
+
+  @[simp]
+  theorem map_rename_compose_right [SubstitutionType A] [SubstitutionType B] {f : A -> B} {r : Ren}
+    : map f (σ ⊙ r.to) = (map f σ) ⊙ r.to
+  := by
+  unfold Subst.compose; simp
+  funext; case _ x =>
+    unfold Ren.to; simp
+
+  theorem map_I_compose_left [SubstitutionType A] [SubstitutionType B] {f : A -> B}
+    : (∀ t, f ([I]t) = [I](f t)) -> map f (I ⊙ τ) = I ⊙ (map f τ)
+  := by
+  intro h
+  apply map_rename_compose_left h
+
+  @[simp]
+  theorem map_I_compose_right [SubstitutionType A] [SubstitutionType B] {f : A -> B}
+    : map f (σ ⊙ I) = map f σ
+  := by
+  apply map_rename_compose_right
+
+  theorem map_S_compose_left [SubstitutionType A] [SubstitutionType B] {f : A -> B}
+    : (∀ t, f ([S]t) = [S](f t)) -> map f (S ⊙ τ) = S ⊙ (map f τ)
+  := by
+  intro h
+  apply map_rename_compose_left h
+
+  @[simp]
+  theorem map_S_compose_right [SubstitutionType A] [SubstitutionType B] {f : A -> B}
+    : map f (σ ⊙ S) = (map f σ) ⊙ S
+  := by
+  apply map_rename_compose_right
 
 end Subst

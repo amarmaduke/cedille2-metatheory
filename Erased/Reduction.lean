@@ -103,6 +103,19 @@ namespace Erased
           rw [lem.1]; simp; apply lem.2
     case _ => apply red_refl
 
+    theorem starb_subst (σ : Subst Term) : s =β[g]>* t -> [σ]s =β[g]>* [σ]t := by
+    intro r
+    induction r
+    case _ n t' => apply StarB.refl
+    case _ j1 j2 ih =>
+      constructor; apply ih
+      apply red_subst σ σ _ _ j2
+      case _ =>
+        intro n t h; exists t
+        apply And.intro h ParRed.red_refl
+      case _ =>
+        intro n k h; apply h
+
     theorem red_beta : b =β> b' -> t =β> t' -> b β[t] =β> b' β[t'] := by
     intro r1 r2; apply red_subst
     case _ =>
@@ -184,5 +197,13 @@ namespace Erased
     theorem par_sound : x =β[g1;g2]= y -> x ≡β[g1;g2]≡ y := by
     apply ConvB.promote to_par_red
   end Red
+
+  theorem convb_subst (σ : Subst Term) : s ≡β[g1;g2]≡ t -> [σ]s ≡β[g1;g2]≡ [σ]t := by
+  intro j
+  cases j; case _ w r =>
+    have lem1 := ParRed.starb_subst σ r.1
+    have lem2 := ParRed.starb_subst σ r.2
+    apply Exists.intro ([σ]w)
+    apply And.intro lem1 lem2
 
 end Erased

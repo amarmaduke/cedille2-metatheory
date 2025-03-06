@@ -8,7 +8,7 @@ inductive Red : Term -> Term -> Prop where
 | beta : Red ((`λ(m)[A] b) `@(m2) t) (b β[t])
 | fst : Red ((Term.inter g1 g2 B t s).!1) t
 | snd : Red ((Term.inter g1 g2 B t s).!2) s
-| subst : Red (.subst P (.refl v) t) t
+| subst : Red (.subst Pr (.refl v) t) t
 | phi : Red (.phi a b (.refl t)) b
 -- Conv steps
 | conv_beta : Red

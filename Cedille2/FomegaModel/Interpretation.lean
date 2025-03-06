@@ -11,7 +11,13 @@ namespace FomegaModel
   notation:170 Γ:170 " ⊢ω " t:170 " : " A:170 => Fomega.Judgment Fomega.JudgmentVariant.prf Γ (t, A)
   notation:170 "⊢ω " Γ:170 => Fomega.Judgment Fomega.JudgmentVariant.wf Γ ()
 
-  def uid := Fomega.uid
+  @[simp]
+  def drop1 : Fomega.Term -> Fomega.Term -> Fomega.Term
+  | d, t => .unit_rec d (u) t
+
+  @[simp]
+  def drop2 : Fomega.Term -> Fomega.Term -> Fomega.Term -> Fomega.Term
+  | d1, d2, t => drop1 d1 (drop1 d2 t)
 
   @[simp]
   def 𝒱 : Cedille2.Term -> Fomega.Term
@@ -58,32 +64,28 @@ namespace FomegaModel
   | ★ => (u)
   | .var .type x => #(2*x)
   | .var .kind x => #(2*x + 1)
-  | .all _ A B =>
-    if A.classify = .kind then
-      .uid2 (𝓉 A) (.uid2 ((𝓉 B) β[.uid2 (𝒯 A) (u)] β[.uid2 (𝒱 A) (u)]) (u))
-    else
-      c (∀f[zr] ∀f[zr] zr) `@f 𝓉 A `@f (𝓉 B) β[c (𝒯 A)] β[zr]
-  | .lam _ A t =>
-    if A.classify = .kind then
-      (λf[zr] λf[𝒱 A] λf[𝒯 A] 𝓉 t) `@f 𝓉 A
-    else
-      (λf[zr] λf[★] λf[𝒯 A] 𝓉 t) `@f 𝓉 A
-  | .app _ (.conv n (.all _ A1 B) (.lam _ A2 b)) t => sorry
+  | .all _ A B => □
+    -- if A.classify = .kind then
+    --   uid2 (𝓉 A) (uid2 ((𝓉 B) β[uid2 (𝒯 A) (u)] β[uid2 (𝒱 A) (u)]) (u))
+    -- else
+    --   c (∀f[zr] ∀f[zr] zr) `@f 𝓉 A `@f (𝓉 B) β[c (𝒯 A)] β[zr]
+  | .lam _ A t => □
+    -- if A.classify = .kind then
+    --   (λf[zr] λf[𝒱 A] λf[𝒯 A] 𝓉 t) `@f 𝓉 A
+    -- else
+    --   (λf[zr] λf[★] λf[𝒯 A] 𝓉 t) `@f 𝓉 A
   | .app _ f a =>
-    if a.classify = .type then 𝓉 f `@f 𝒯 a `@f 𝓉 a
-    else 𝓉 f `@f zr `@f 𝓉 a
-  | .inter_ty A B => c (∀f[zr] ∀f[zr] zr) `@f 𝓉 A `@f (𝓉 B) β[c (𝒯 A)]
-  | .inter _ B t s => (λf[zr] .pair (𝓉 t) (𝓉 s)) `@f (𝓉 B) β[𝓉 t]
+    if a.classify = .type then 𝓉 f `@ 𝒯 a `@ 𝓉 a
+    else 𝓉 f `@ (U) `@ 𝓉 a
+  | .inter_ty A B => □
+  | .inter _ _ B t s => □
   | .fst t => .fst (𝓉 t)
   | .snd t => .snd (𝓉 t)
-  | .eq A a b => c (∀f[zr] ∀f[𝒯 A] ∀f[𝒯 A] zr) `@f 𝓉 A `@f 𝓉 a `@f 𝓉 b
-  | .refl A t => (λf[zr] λf[𝒯 A] .unit) `@f 𝓉 A `@f 𝓉 t
-  | .subst Pr e => sorry
-  | .phi A a b e =>
-    (λf[zr] λf[𝒯 A] .unit_rec (𝓉 e) (𝓉 b))
-    `@f 𝓉 A
-    `@f 𝓉 a
-  | .conv _ A t => (λf[zr] uid (𝓉 t)) `@f 𝓉 A
-  | _ => .none
+  | .eq a b => □
+  | .refl t => drop1 (𝓉 t) (u)
+  | .subst Pr e t => □
+  | .phi a b e => □
+  | .conv _ _ A t => □
+  | _ => □
 
 end FomegaModel

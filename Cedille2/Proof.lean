@@ -63,6 +63,7 @@ namespace Cedille2
     Judgment .prf Γ ([A]∩ B, ★)
   | inter :
     Judgment .prf Γ (t, A) ->
+    Judgment .prf Γ (A, ★) ->
     Judgment .prf (A::Γ) (B, ★) ->
     Judgment .prf Γ (s, B β[t]) ->
     t.erase ≡β[g1;g2]≡ s.erase ->
@@ -72,7 +73,8 @@ namespace Cedille2
     Judgment .prf Γ (t.!1, A)
   | snd :
     Judgment .prf Γ (t, [A]∩ B) ->
-    Judgment .prf Γ (t.!2, B β[t.!1])
+    B' = B β[t.!1] ->
+    Judgment .prf Γ (t.!2, B')
   | eq :
     Judgment .prf Γ (a, A) ->
     Judgment .prf Γ (b, A) ->

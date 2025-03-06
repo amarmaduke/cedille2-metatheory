@@ -56,14 +56,15 @@ namespace Cedille2.Proof
   case nil => apply j2
   case cons => apply j2
   case ax Γ _j _ih => simp; constructor; apply j2
-  case var x _ h ih => sorry
-    -- simp; generalize zdef : σ x = z
-    -- cases z
-    -- case _ y =>
-    --   simp at *; subst h; rw [h2 _ _ zdef]
-    --   constructor; apply j2; rfl
-    -- case _ t =>
-    --   simp at *; subst h; apply h3 _ _ zdef
+  case var Γ x K T j1 j3 ih =>
+    simp; generalize zdef : σ x = z
+    cases z
+    case _ y =>
+      simp at *; subst j3; rw [h2 _ _ zdef]
+      replace ih := ih h2 h3 j2; rw [h2 _ _ zdef] at ih
+      constructor; apply ih; rfl
+    case _ t =>
+      simp at *; subst j3; apply h3 _ _ zdef
   case pi Γ A K1 K2 B _j1 _j2 ih1 ih2 =>
     have lem1 := ih1 h2 h3 j2
     have lem2 : ⊢ ([σ]A :: Δ) := by constructor; apply j2; apply lem1
