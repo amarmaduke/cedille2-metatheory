@@ -41,33 +41,41 @@ namespace Cedille2.Proof
     simp at *; constructor
     replace ih := ih r h1 h2; rw [h2 _] at ih
     apply ih; rw [j2, h2 _]
-  case pi Γ A K1 K2 B _j1 _j2 ih1 ih2 =>
+  case pi Γ A _ _  B _j1 _j2 ih1 ih2 =>
     simp; constructor
     case _ => apply ih1 r h1 h2
     case _ =>
       have lem : ⊢ ([r.to]A :: Δ) := by constructor; apply h1; apply ih1 r h1 h2
       replace ih2 := @ih2 ([r.to]A :: Δ) (Ren.lift r) lem (rename_lift r A h2)
       simp at ih2; rw [Subst.lift_lemma] at ih2; simp at ih2; exact ih2
-  case lam Γ A K1 K2 B t _j1 _j2 _j3 ih1 ih2 ih3 => sorry
-    -- have lem : ⊢ ([r.to]A :: Δ) := by
-    --   constructor; apply h1; apply ih1 r h1 h2
-    -- simp; constructor
-    -- case _ => apply ih1 r h1 h2
-    -- case _ =>
-    --   replace ih2 := @ih2 ([r.to]A :: Δ) (Ren.lift r) lem (rename_lift r A h2)
-    --   simp at ih2; rw [Subst.lift_lemma] at ih2; simp at ih2; exact ih2
-    -- case _ =>
-    --   replace ih3 := @ih3 ([r.to]A :: Δ) (Ren.lift r) lem (rename_lift r A h2)
-    --   simp at ih3; rw [Subst.lift_lemma] at ih3; simp at ih3; exact ih3
+  case lam Γ A m K B t j1 j2 j3 j4 ih1 ih2 ih3 =>
+    have lem : ⊢ ([r.to]A :: Δ) := by
+      constructor; apply h1; apply ih1 r h1 h2
+    simp; constructor
+    case _ => apply ih1 r h1 h2
+    case _ =>
+      replace ih2 := @ih2 ([r.to]A :: Δ) (Ren.lift r) lem (rename_lift r A h2)
+      simp at ih2; rw [Subst.lift_lemma] at ih2; simp at ih2; exact ih2
+    case _ =>
+      replace ih3 := @ih3 ([r.to]A :: Δ) (Ren.lift r) lem (rename_lift r A h2)
+      simp at ih3; rw [Subst.lift_lemma] at ih3; simp at ih3; exact ih3
+    case _ =>
+      intro h v σ; simp
+      have lem2 := j4 h
+      rw [erase_subst]; simp
+      rw [lem2 v _]
   case app Γ' f A' B a B' _j1 _j2 j3 ih1 ih2 =>
     simp; constructor
     case _ => simp at ih1; apply ih1 r h1 h2
     case _ => apply ih2 r h1 h2
     case _ => subst j3; simp
-  case inter_ty ih1 ih2 => sorry
-    -- simp; constructor
-    -- case _ => apply ih1 r h1 h2
-    -- case _ => apply ih2 r h1 h2
+  case inter_ty A B _j1 _j2 ih1 ih2 =>
+    simp; constructor
+    case _ => apply ih1 r h1 h2
+    case _ =>
+      have lem : ⊢ ([r.to]A :: Δ) := by constructor; apply h1; apply ih1 r h1 h2
+      replace ih2 := @ih2 ([r.to]A :: Δ) (Ren.lift r) lem (rename_lift r A h2)
+      simp at ih2; rw [Subst.lift_lemma] at ih2; simp at ih2; exact ih2
   case inter t A B s g1 g2 j1 j2 j3 j4 j5 ih1 ih2 ih3 ih4 =>
     simp at *
     have lem : ⊢ ([r.to]A :: Δ) := by constructor; apply h1; apply ih2 r h1 h2
@@ -89,10 +97,11 @@ namespace Cedille2.Proof
   case refl ih1 ih2 =>
     simp; constructor; apply ih1 r h1 h2
     apply ih2 r h1 h2
-  case subst ih1 ih2 ih3 ih4 => sorry
-    -- replace ih3 := ih3 r h1 h2; simp at ih3
-    -- simp; constructor; apply ih1 r h1 h2
-    -- apply ih2 r h1 h2; sorry
+  case subst Γ e a b A Pr t j1 j2 j3 j4 ih1 ih2 ih3 ih4 =>
+    replace lem := ih3 r h1 h2; simp at *
+    constructor; apply ih1 r h1 h2
+    apply ih2 r h1 h2; simp; apply lem
+    apply ih4 r h1 h2
   case phi ih1 ih2 ih3 =>
     replace ih2 := ih2 r h1 h2; simp at ih2
     simp; constructor; apply ih1 r h1 h2
@@ -102,7 +111,11 @@ namespace Cedille2.Proof
     case _ => apply ih1 r h1 h2
     case _ => apply ih2 r h1 h2
     case _ => apply Red.Conv.subst_same; apply j3
-  case econv => sorry
+  case econv j1 j2 j3 ih1 ih2 =>
+    simp; apply Judgment.econv
+    apply ih1 r h1 h2; apply ih2 r h1 h2
+    rw [erase_subst, erase_subst]
+    apply Erased.convb_subst; apply j3
 
   theorem weaken :
     Γ ⊢ B : .const K ->

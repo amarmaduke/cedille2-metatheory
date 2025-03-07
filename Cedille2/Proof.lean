@@ -50,7 +50,7 @@ namespace Cedille2
     Judgment .prf Γ (A, .const (dom m K)) ->
     Judgment .prf (A::Γ) (B, .const (codom m)) ->
     Judgment .prf (A::Γ) (t, B) ->
-    (m = m0 -> ∀ v, t.erase = (t β[v]).erase) ->
+    (m = m0 -> ∀ v1 v2 σ, [v1 :: σ]t.erase = [v2 :: σ]t.erase) ->
     Judgment .prf Γ (`λ(m)[A] t, `∀(m)[A] B)
   | app :
     Judgment .prf Γ (f, `∀(m)[A] B) ->
@@ -87,7 +87,7 @@ namespace Cedille2
   | subst :
     Judgment .prf Γ (e, .eq a b) ->
     Judgment .prf Γ (a, A) ->
-    Judgment .prf Γ (Pr, ∀τ[A] ∀τ[.eq #0 b] ★) ->
+    Judgment .prf Γ (Pr, ∀τ[A] ∀τ[.eq #0 ([S]b)] ★) ->
     Judgment .prf Γ (t, Pr `@τ a `@τ (.refl a)) ->
     Judgment .prf Γ (.subst Pr e t, Pr `@τ b `@τ e)
   | phi :
