@@ -1,5 +1,6 @@
 import Common
 import Cedille2.Term
+import Cedille2.Reduction
 
 namespace Cedille2.Term
   def action_size : Subst.Action Term -> Nat
@@ -124,105 +125,180 @@ namespace Cedille2.Term
   simp at lem
   rw [size_of_subst lem]
 
+  @[simp]
   def classify : Term -> Class
   | .var .type _ => .term
   | .var .kind _ => .type
   | .const .type => .kind
   | .const .kind => .none
-  | .lam mt A t =>
-    let cA := classify A
-    if (cA == .kind || cA == .type) && classify t == .type
-    then .type
-    else .none
-  | .lam m0 A t =>
-    let cA := classify A
-    if (cA == .kind || cA == .type) && classify t == .term
-    then .term
-    else .none
-  | .lam mf A t =>
-    if classify A == .type && classify t == .term
-    then .term
-    else .none
-  | .app mt (.lam mt A t) a =>
-    let cA := classify A
+  | .lam _ _ t => classify t
+  | .app _ (.lam _ _ t) a =>
+    let ct := classify t
     let ca := classify a
-    let clam := (cA == .kind && ca == .type) || (cA == .type && ca == .term)
-    if clam && classify t == .type && classify (t β[ witness ca ]) == .type
-    then .type
+    let cw := classify (t β[witness ca])
+    if ct != .none && ca != .none && ct == cw
+    then ct
     else .none
-  | .app mt f a =>
-    let ca := classify a
-    if (ca == .type || ca == .term) && classify f = .type
-    then .type
-    else .none
-  | .app m0 (.lam m0 A t) a =>
-    let cA := classify A
-    let ca := classify a
-    let clam := (cA == .kind && ca == .type) || (cA == .type && ca == .term)
-    if clam && classify t == .term && classify (t β[ witness ca ]) == .term
+  | .app _ f _ => classify f
+  | .all _ _ B => classify B
+  | .inter _ _ _ t s =>
+    if t.classify == .term && s.classify == .term
     then .term
     else .none
-  | .app m0 f a =>
-    let ca := classify a
-    if (ca == .type || ca == .term) && classify f = .term
-    then .term
+  | .fst t =>
+    if t.classify == .term then .term
     else .none
-  | .app mf (.lam mf A t) a =>
-    let ca := classify a
-    if classify A == .type
-      && classify t == .term
-      && ca == .term
-      && classify (t β[ witness ca ]) == .term
-    then .term
+  | .snd t =>
+    if t.classify == .term then .term
     else .none
-  | .app mf f a =>
-    if classify f == .term && classify a == .term
-    then .term
-    else .none
-  | .all mt A B =>
-    let cA := classify A
-    if (cA == .kind || cA == .type) && classify B == .kind
-    then .kind
-    else .none
-  | .all m0 A B =>
-    let cA := classify A
-    if (cA == .kind || cA == .type) && classify B == .type
-    then .type
-    else .none
-  | .all mf A B =>
-    if classify A == .type && classify B == .type
-    then .type
-    else .none
-  | .inter _ _ T a b =>
-    if classify T == .type && classify a == .term && classify b == .term
-    then .term
-    else .none
-  | .fst t => if classify t == .term then .term else .none
-  | .snd t => if classify t == .term then .term else .none
-  | .inter_ty A B =>
-    if classify A == .type && classify B == .type
-    then .type
-    else .none
+  | .inter_ty _ _ => .type
   | .refl t =>
-    if classify t == .term
-    then .term
+    if t.classify == .term then .term
     else .none
-  | .subst P e t =>
-    if classify P == .type && classify e == .term && classify t == .term
+  | .subst _ e t =>
+    if e.classify == .term && t.classify == .term
     then .term
     else .none
   | .phi a b e =>
-    if classify a == .term && classify b == .term && classify e == .term
+    if a.classify == .term && b.classify == .term && e.classify == .term
     then .term
     else .none
-  | .eq a b =>
-    if classify a == .term && classify b == .term
-    then .type
-    else .none
-  | .conv _ _ A t =>
-    if classify A == .type && classify t == .term
-    then .term
-    else .none
-  termination_by t => Term.size t
+  | .eq _ _ => .type
+  | .conv _ _ _ t => t.classify
+
+  theorem classify_red {t t' : Term} : t -β> t' -> t.classify = t'.classify := by
+  intro r; induction r <;> simp at *
+  all_goals try simp [*]
+  case _ =>
+    split <;> simp at *
+    case _ e1 e2 =>
+      split
+      case _ h =>
+        rw [<-e2] at e1; rw [e1]
+        sorry
+      case _ h => sorry
+    case _ e1 e2 => sorry
+    case _ e1 e2 => sorry
+    case _ e1 e2 => sorry
+    case _ e1 e2 => sorry
+  case _ =>
+    split <;> simp at *
+    case _ e1 e2 =>
+      split at e1 <;> simp at *
+      simp [*]
+    case _ e _ _ _ =>
+      sorry
+  case _ => sorry
+  case _ => sorry
+  case _ => sorry
+  case _ => sorry
+  case _ => sorry
+  case _ => sorry
+  case _ => sorry
+  case _ => sorry
+  case _ => sorry
+  case _ => sorry
+
+
+  -- def classify2 : Term -> Class
+  -- | .var .type _ => .term
+  -- | .var .kind _ => .type
+  -- | .const .type => .kind
+  -- | .const .kind => .none
+  -- | .lam mt A t =>
+  --   let cA := classify A
+  --   if (cA == .kind || cA == .type) && classify t == .type
+  --   then .type
+  --   else .none
+  -- | .lam m0 A t =>
+  --   let cA := classify A
+  --   if (cA == .kind || cA == .type) && classify t == .term
+  --   then .term
+  --   else .none
+  -- | .lam mf A t =>
+  --   if classify A == .type && classify t == .term
+  --   then .term
+  --   else .none
+  -- | .app mt (.lam mt A t) a =>
+  --   let cA := classify A
+  --   let ca := classify a
+  --   let clam := (cA == .kind && ca == .type) || (cA == .type && ca == .term)
+  --   if clam && classify t == .type && classify (t β[ witness ca ]) == .type
+  --   then .type
+  --   else .none
+  -- | .app mt f a =>
+  --   let ca := classify a
+  --   if (ca == .type || ca == .term) && classify f = .type
+  --   then .type
+  --   else .none
+  -- | .app m0 (.lam m0 A t) a =>
+  --   let cA := classify A
+  --   let ca := classify a
+  --   let clam := (cA == .kind && ca == .type) || (cA == .type && ca == .term)
+  --   if clam && classify t == .term && classify (t β[ witness ca ]) == .term
+  --   then .term
+  --   else .none
+  -- | .app m0 f a =>
+  --   let ca := classify a
+  --   if (ca == .type || ca == .term) && classify f = .term
+  --   then .term
+  --   else .none
+  -- | .app mf (.lam mf A t) a =>
+  --   let ca := classify a
+  --   if classify A == .type
+  --     && classify t == .term
+  --     && ca == .term
+  --     && classify (t β[ witness ca ]) == .term
+  --   then .term
+  --   else .none
+  -- | .app mf f a =>
+  --   if classify f == .term && classify a == .term
+  --   then .term
+  --   else .none
+  -- | .all mt A B =>
+  --   let cA := classify A
+  --   if (cA == .kind || cA == .type) && classify B == .kind
+  --   then .kind
+  --   else .none
+  -- | .all m0 A B =>
+  --   let cA := classify A
+  --   if (cA == .kind || cA == .type) && classify B == .type
+  --   then .type
+  --   else .none
+  -- | .all mf A B =>
+  --   if classify A == .type && classify B == .type
+  --   then .type
+  --   else .none
+  -- | .inter _ _ T a b =>
+  --   if classify T == .type && classify a == .term && classify b == .term
+  --   then .term
+  --   else .none
+  -- | .fst t => if classify t == .term then .term else .none
+  -- | .snd t => if classify t == .term then .term else .none
+  -- | .inter_ty A B =>
+  --   if classify A == .type && classify B == .type
+  --   then .type
+  --   else .none
+  -- | .refl t =>
+  --   if classify t == .term
+  --   then .term
+  --   else .none
+  -- | .subst P e t =>
+  --   if classify P == .type && classify e == .term && classify t == .term
+  --   then .term
+  --   else .none
+  -- | .phi a b e =>
+  --   if classify a == .term && classify b == .term && classify e == .term
+  --   then .term
+  --   else .none
+  -- | .eq a b =>
+  --   if classify a == .term && classify b == .term
+  --   then .type
+  --   else .none
+  -- | .conv _ _ A t =>
+  --   if classify A == .type && classify t == .term
+  --   then .term
+  --   else .none
+  -- termination_by t => Term.size t
 
 end Cedille2.Term
