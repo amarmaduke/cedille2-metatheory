@@ -3,6 +3,7 @@ import Common
 import Cedille2.Proof
 import Fomega.Basic.Derivations
 import Cedille2.FomegaModel.Interpretation
+import Cedille2.FomegaModel.Soundness
 
 namespace FomegaModel
 
@@ -24,7 +25,7 @@ namespace FomegaModel
 
   theorem sn_term : Γ ⊢c t : A -> @SN _ Cedille2.Red t := by
   intro j; apply fomega_sn_implies_sn j
-  have lem1 : (γ Γ) ⊢ω (𝓉 t) : (𝒯 A) := by sorry
+  have lem1 : (γ Γ) ⊢ω (𝓉 t) : (𝒯 A) := term_soundness j
   have lem2 := fomega_sn lem1
   apply sn_implies_snplus; apply lem2
 

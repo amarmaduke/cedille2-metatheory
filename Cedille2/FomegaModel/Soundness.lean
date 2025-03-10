@@ -2,7 +2,6 @@
 import Cedille2.Proof
 import Fomega.Basic.Derivations
 import Cedille2.FomegaModel.Interpretation
-import Cedille2.FomegaModel.Normalization
 
 namespace FomegaModel
 

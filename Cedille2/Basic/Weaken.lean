@@ -60,10 +60,10 @@ namespace Cedille2.Proof
       replace ih3 := @ih3 ([r.to]A :: Δ) (Ren.lift r) lem (rename_lift r A h2)
       simp at ih3; rw [Subst.lift_lemma] at ih3; simp at ih3; exact ih3
     case _ =>
-      intro h v σ; simp
+      intro h v1 v2 σ; simp
       have lem2 := j4 h
       rw [erase_subst]; simp
-      rw [lem2 v _]
+      rw [lem2 v1 v2 _]
   case app Γ' f A' B a B' _j1 _j2 j3 ih1 ih2 =>
     simp; constructor
     case _ => simp at ih1; apply ih1 r h1 h2
