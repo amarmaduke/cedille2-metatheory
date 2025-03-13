@@ -20,7 +20,8 @@ namespace Cedille2.Proof
   | snd : ConstSubExpr sub t -> ConstSubExpr sub (.snd t)
   | inter_ty1 : ConstSubExpr sub A -> ConstSubExpr sub (.inter_ty A B)
   | inter_ty2 : ConstSubExpr sub B -> ConstSubExpr sub (.inter_ty A B)
-  | refl : ConstSubExpr sub t -> ConstSubExpr sub (.refl t)
+  | refl1 : ConstSubExpr sub a -> ConstSubExpr sub (.refl g1 g2 a b)
+  | refl2 : ConstSubExpr sub b -> ConstSubExpr sub (.refl g1 g2 a b)
   | eq1 : ConstSubExpr sub a -> ConstSubExpr sub (.eq a b)
   | eq2 : ConstSubExpr sub b -> ConstSubExpr sub (.eq a b)
   | subst1 : ConstSubExpr sub Pr -> ConstSubExpr sub (.subst Pr e t)
@@ -74,9 +75,10 @@ namespace Cedille2.Proof
     intro h; cases h
     case _ h => apply ih1 h
     case _ h => apply ih2 h
-  case _ ih1 ih2 =>
+  case _ ih1 ih2 ih3 =>
     intro h; cases h
     case _ h => apply ih1 h
+    case _ h => apply ih2 h
   case _ ih1 ih2 ih3 ih4 =>
     intro h; cases h
     case _ h => apply ih3 h

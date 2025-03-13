@@ -81,14 +81,16 @@ namespace Cedille2
     Judgment .prf Γ (A, ★) ->
     Judgment .prf Γ (.eq a b, ★)
   | refl :
-    Judgment .prf Γ (t, A) ->
+    Judgment .prf Γ (a, A) ->
+    Judgment .prf Γ (b, A) ->
     Judgment .prf Γ (A, ★) ->
-    Judgment .prf Γ (.refl t, .eq t t)
+    a.erase ≡β[g1;g2]≡ b.erase ->
+    Judgment .prf Γ (.refl g1 g2 a b, .eq a b)
   | subst :
     Judgment .prf Γ (e, .eq a b) ->
     Judgment .prf Γ (a, A) ->
     Judgment .prf Γ (Pr, ∀τ[A] ∀τ[.eq #0 ([S]b)] ★) ->
-    Judgment .prf Γ (t, Pr `@τ a `@τ (.refl a)) ->
+    Judgment .prf Γ (t, Pr `@τ a `@τ (.refl 0 0 a a)) ->
     Judgment .prf Γ (.subst Pr e t, Pr `@τ b `@τ e)
   | phi :
     Judgment .prf Γ (a, A) ->

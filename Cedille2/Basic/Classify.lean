@@ -23,24 +23,24 @@ namespace Cedille2.Proof
     all_goals
       intro h; replace ih1 := ih1 h; subst ih1
       apply kind_not_proof j2
-  case app f m A B a B' j1 j2 j3 ih1 ih2 =>
-    cases f <;> simp at *
-    case var K _ => cases K <;> simp at *
-    case const K => cases K <;> simp at *
-    case lam m f t =>
-      split <;> simp at *
-      all_goals
-        case _ e1 e2 =>
-          split <;> try simp
-          case _ h1 =>
-            intro h2; exfalso
-            apply ih2 h2
-    case app =>
-      intro h; exfalso
-      apply ih2 h
-    case all =>
-      intro h; exfalso
-      apply ih2 h
+  case app f m A B a B' j1 j2 j3 ih1 ih2 => sorry
+    -- cases f <;> simp at *
+    -- case var K _ => cases K <;> simp at *
+    -- case const K => cases K <;> simp at *
+    -- case lam m f t =>
+    --   split <;> simp at *
+    --   all_goals
+    --     case _ e1 e2 =>
+    --       split <;> try simp
+    --       case _ h1 =>
+    --         intro h2; exfalso
+    --         apply ih2 h2
+    -- case app =>
+    --   intro h; exfalso
+    --   apply ih2 h
+    -- case all =>
+    --   intro h; exfalso
+    --   apply ih2 h
   case iconv t A B K j1 j2 j3 ih1 ih2 =>
     intro h; replace ih1 := ih1 h; subst ih1
     cases j3; case _ w r =>
@@ -49,10 +49,13 @@ namespace Cedille2.Proof
       exfalso; apply kind_not_proof j2
   all_goals
     intro h; try simp at h
+  all_goals sorry
 
   theorem classify_kind : Γ ⊢ t : A -> t.classify = .kind -> A = □ := by
   intro h1 h2; have lem := classify_kind_lemma h1; simp at lem
   apply lem h2
+
+  theorem is_kind_forces_classify : Γ ⊢ t : A -> A = □ -> t.classify = .kind := by sorry
 
   @[simp]
   abbrev ClassifyTypeLemmaType (Γ : Ctx Term) : (v : JudgmentVariant) -> JudgmentIndex v -> Prop
@@ -87,27 +90,20 @@ namespace Cedille2.Proof
       have lem := @Judgment.pi Γ A mt K B
       intro h; simp at lem
       apply lem j1 j2
-  case _ Γ f m A B a B' j1 j2 j3 ih1 ih2 =>
-    intro h; cases f <;> simp at *
-    case _ => sorry
-    case _ => sorry
-    case _ => sorry
-    case _ => sorry
-    case _ => sorry
-    case _ => sorry
-    case _ => sorry
+  case _ Γ f m A B a B' j1 j2 j3 ih1 ih2 => sorry
   case _ j _ _ _ =>
     constructor
     apply judgment_ctx_wf j
-  case _ j _ _ _ =>
-    constructor
-    apply judgment_ctx_wf j
+  case _ j _ _ _ => sorry
   case _ j1 j2 j3 ih1 ih2 =>
     sorry
+  all_goals sorry
 
   theorem classify_type : Γ ⊢ t : A -> t.classify = .type -> Γ ⊢ A : □ := by
   intro h1 h2; have lem := classify_type_lemma h1; simp at lem
   apply lem h2
+
+  theorem is_type_forces_classify : Γ ⊢ t : A -> Γ ⊢ A : □ -> t.classify = .type := by sorry
 
   @[simp]
   abbrev ClassifyTermLemmaType (Γ : Ctx Term) : (v : JudgmentVariant) -> JudgmentIndex v -> Prop
@@ -137,12 +133,10 @@ namespace Cedille2.Proof
       apply lem j1 j2
     case _ => sorry
   case _ => sorry
-  case _ j1 j2 j3 j4 j5 ih1 ih2 ih3 ih4 =>
-    apply Judgment.inter_ty j2 j3
+  case _ j1 j2 j3 j4 j5 ih1 ih2 ih3 ih4 => sorry
   case _ => sorry
   case _ => sorry
-  case _ j1 j2 ih1 ih2 =>
-    apply Judgment.eq j1 j1 j2
+  case _ j1 j2 ih1 ih2 => sorry
   case _ => sorry
   case _ => sorry
   case _ j1 j2 j3 ih1 ih2 =>
@@ -154,5 +148,9 @@ namespace Cedille2.Proof
   theorem classify_term : Γ ⊢ t : A -> t.classify = .term -> Γ ⊢ A : ★ := by
   intro h1 h2; have lem := classify_term_lemma h1; simp at lem
   apply lem h2
+
+
+  theorem is_term_forces_classify : Γ ⊢ t : A -> Γ ⊢ A : ★ -> t.classify = .term := by sorry
+
 
 end Cedille2.Proof

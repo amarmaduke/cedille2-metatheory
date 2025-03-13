@@ -11,7 +11,7 @@ namespace Cedille2
   | fst : Term -> Term
   | snd : Term -> Term
   | inter_ty : Term -> Term -> Term
-  | refl : Term -> Term
+  | refl : Nat -> Nat -> Term -> Term -> Term
   | eq : Term -> Term -> Term
   | subst : Term -> Term -> Term -> Term
   | phi : Term -> Term -> Term -> Term
@@ -58,7 +58,7 @@ namespace Cedille2
     | fst t => (size t) + 1
     | snd t => (size t) + 1
     | inter_ty t1 t2 => (size t1) + (size t2) + 1
-    | refl t => (size t) + 1
+    | refl _ _ t1 t2 => (size t1) + (size t2) + 1
     | eq t1 t2 => (size t1) + (size t2) + 1
     | phi t1 t2 t3 => (size t1) + (size t2) + (size t3) + 1
     | subst t1 t2 t3 => (size t1) + (size t2) + (size t3) + 1
@@ -78,7 +78,7 @@ namespace Cedille2
     | fst t => fst (smap lf f t)
     | snd t => snd (smap lf f t)
     | inter_ty t1 t2 => inter_ty (smap lf f t1) (smap lf (lf f) t2)
-    | refl t => refl (smap lf f t)
+    | refl g1 g2 a b => refl g1 g2 (smap lf f a) (smap lf f b)
     | eq t1 t2 => eq (smap lf f t1) (smap lf f t2)
     | phi t1 t2 t3 => phi (smap lf f t1) (smap lf f t2) (smap lf f t3)
     | subst t1 t2 t3 => subst (smap lf f t1) (smap lf f t2) (smap lf f t3)
@@ -129,7 +129,7 @@ namespace Cedille2
     theorem subst_inter_ty : [σ]inter_ty t1 t2 = inter_ty ([σ]t1) ([^σ]t2) := by unfold Subst.apply; simp
 
     @[simp]
-    theorem subst_refl : [σ]refl t = refl ([σ]t) := by unfold Subst.apply; simp
+    theorem subst_refl : [σ]refl g1 g2 t1 t2 = refl g1 g2 ([σ]t1) ([σ]t2) := by unfold Subst.apply; simp
 
     @[simp]
     theorem subst_eq : [σ]eq t1 t2 = eq ([σ]t1) ([σ]t2) := by unfold Subst.apply; simp

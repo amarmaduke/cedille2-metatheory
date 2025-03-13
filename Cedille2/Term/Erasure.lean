@@ -19,17 +19,11 @@ namespace Cedille2.Term
   | .fst t => erase t
   | .snd t => erase t
   | .inter_ty A B => .inter_ty (erase A) (erase B)
-  | .refl _ => .lam (.var .type 0)
+  | .refl _ _ _ _ => .lam (.var .type 0)
   | .eq a b => .eq (erase a) (erase b)
   | .subst _ _ t => erase t
   | .phi a _ _ => erase a
   | .conv _ _ _ t => erase t
-  termination_by t => Term.size t
-  decreasing_by
-    all_goals (simp; try omega)
-    rw [size_of_subst]; omega
-    intro n; unfold action_size
-    cases n <;> simp
 end Cedille2.Term
 
 namespace Erased.Term

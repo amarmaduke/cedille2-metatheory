@@ -8,27 +8,18 @@ inductive Red : Term -> Term -> Prop where
 | beta : Red ((`λ(m)[A] b) `@(m2) t) (b β[t])
 | fst : Red ((Term.inter g1 g2 B t s).!1) t
 | snd : Red ((Term.inter g1 g2 B t s).!2) s
-| subst : Red (.subst Pr (.refl v) t) t
-| phi : Red (.phi a b (.refl t)) b
+| subst : Red (.subst Pr (.refl g1 g2 u v) t) t
+| phi : Red (.phi a b (.refl g1 g2 u v)) b
 -- Conv steps
-| conv_beta : Red
-  ((.conv g1 g2 (`∀(m1)[A1] B) (`λ(m2)[A2] b)) `@(m3) t)
-  (.conv g1 g2 (B β[t]) (b β[.conv g1 g2 A2 t]))
-| conv_fst : Red
-  ((.conv g1 g2 ([A]∩ B1) (.inter g3 g4 B2 t s)).!1)
-  (.conv g1 g2 A t)
-| conv_snd : Red
-  ((.conv g1 g2 ([A]∩ B1) (.inter g3 g4 B2 t s)).!2)
-  (.conv g1 g2 (B1 β[.conv g1 g2 A t]) s)
-| conv_subst : Red
-  ((.subst Pr (.conv g1 g2 (.eq a b) (.refl u)) t))
-  (.conv g1 g2 (Pr `@τ b `@τ (.conv g1 g2 (.eq a b) (.refl u))) t)
-| conv_phi : Red
-  (.phi a b (.conv g1 g2 (.eq x y) (.refl t)))
-  b
-| conv_conv : Red
-  (.conv g1 g2 A (.conv g3 g4 B t))
-  (.conv (g1 + g3) (g2 + g4) A t)
+| conv_lam : Red
+  (.conv g1 g2 (`∀(m1)[A] B) (`λ(m2)[C] t))
+  (`λ(m2)[A] .conv g1 g2 B (t β[.conv g2 g1 C #0]))
+| conv_inter : Red
+  (.conv g1 g2 ([A]∩ B) (.inter h1 h2 D t s))
+  (.inter h1 h2 B (.conv g1 g2 A t) (.conv g1 g2 (B β[.conv g1 g2 A t]) s))
+| conv_refl : Red
+  (.conv g1 g2 (.eq a b) (.refl h1 h2 u v))
+  (.refl (g1 + h1) (g2 + h2) a b)
 -- Congruences
 | lam_congr1 : Red A A' -> Red (.lam m A t) (.lam m A' t)
 | lam_congr2 : Red t t' -> Red (.lam m A t) (.lam m A t')
@@ -43,7 +34,8 @@ inductive Red : Term -> Term -> Prop where
 | snd_congr : Red t t' -> Red (.snd t) (.snd t')
 | inter_ty_congr1 : Red A A' -> Red (.inter_ty A B) (.inter_ty A' B)
 | inter_ty_congr2 : Red B B' -> Red (.inter_ty A B) (.inter_ty A B')
-| refl_congr : Red t t' -> Red (.refl t) (.refl t')
+| refl_congr1 : Red a a' -> Red (.refl g1 g2 a b) (.refl g1 g2 a' b)
+| refl_congr2 : Red b b' -> Red (.refl g1 g2 a b) (.refl g1 g2 a b')
 | eq_congr1 : Red A A' -> Red (.eq A B) (.eq A' B)
 | eq_congr2 : Red B B' -> Red (.eq A B) (.eq A B')
 | subst_congr1 : Red t1 t1' -> Red (.subst t1 t2 t3) (.subst t1' t2 t3)
@@ -64,9 +56,9 @@ inductive ParRed : Term -> Term -> Prop where
 | snd : ParRed s s' ->
   ParRed ((Term.inter g1 g2 B t s).!2) s'
 | subst : ParRed t t' ->
-  ParRed (.subst Pr (.refl v) t) t'
+  ParRed (.subst Pr (.refl g1 g2 u v) t) t'
 | phi : ParRed b b' ->
-  ParRed (.phi a b (.refl t)) b
+  ParRed (.phi a b (.refl g1 g2 u v)) b
 -- Conv steps
 | conv_beta : ParRed B B' -> ParRed A2 A2' -> ParRed b b' -> ParRed t t' ->
   ParRed
@@ -84,11 +76,11 @@ inductive ParRed : Term -> Term -> Prop where
   ParRed Pr Pr' -> ParRed a a' -> ParRed b b' ->
   ParRed u u' -> ParRed t t' ->
   ParRed
-  ((.subst Pr (.conv g1 g2 (.eq a b) (.refl u)) t))
-  (.conv g1 g2 (Pr' `@τ b' `@τ (.conv g1 g2 (.eq a' b') (.refl u'))) t')
+  ((.subst Pr (.conv g1 g2 (.eq a b) (.refl g1 g2 u v)) t))
+  (.conv g1 g2 (Pr' `@τ b' `@τ (.conv g1 g2 (.eq a' b') (.refl g1 g2 u' v))) t')
 | conv_phi : ParRed b b' ->
   ParRed
-  (.phi a b (.conv g1 g2 (.eq x y) (.refl t)))
+  (.phi a b (.conv g1 g2 (.eq x y) (.refl g1 g2 u v)))
   b'
 | conv_conv : ParRed A A' -> ParRed t t' ->
   ParRed
@@ -107,7 +99,7 @@ inductive ParRed : Term -> Term -> Prop where
 | snd_congr : ParRed t t' -> ParRed (.snd t) (.snd t')
 | inter_ty_congr : ParRed A A' -> ParRed B B' ->
   ParRed (.inter_ty A B) (.inter_ty A' B')
-| refl_congr : ParRed t t' -> ParRed (.refl t) (.refl t')
+| refl_congr : ParRed t t' -> ParRed (.refl g1 g2 u v) (.refl g1 g2 u' v)
 | eq_congr : ParRed A A' -> ParRed B B' ->
   ParRed (.eq A B) (.eq A' B')
 | subst_congr : ParRed t1 t1' -> ParRed t2 t2' -> ParRed t3 t3' ->
@@ -139,16 +131,16 @@ namespace Term
     let t' := compl t
     let s' := compl s
     conv g1 g2 (B' β[conv g1 g2 A' t']) s'
-  | subst _ (refl _) t => compl t
-  | subst Pr (conv g1 g2 (eq a b) (refl u)) t =>
+  | subst _ (refl _ _ _ _) t => compl t
+  | subst Pr (conv g1 g2 (eq a b) (refl h1 h2 u v)) t =>
     let Pr' := compl Pr
     let a' := compl a
     let b' := compl b
     let u' := compl u
     let t' := compl t
-    conv g1 g2 (Pr' `@τ b' `@τ (conv g1 g2 (eq a' b') (refl u'))) t'
-  | phi _ b (refl _) => compl b
-  | phi _ b (conv _ _ (eq _ _) (refl _)) => compl b
+    conv g1 g2 (Pr' `@τ b' `@τ (conv g1 g2 (eq a' b') (refl h1 h2 u' v))) t'
+  | phi _ b (refl _ _ _ _) => compl b
+  | phi _ b (conv _ _ (eq _ _) (refl _ _ _ _)) => compl b
   | conv g1 g2 A (conv g3 g4 _ t) =>
     conv (g1 + g3) (g2 + g4) (compl A) (compl t)
   | lam m A t => lam m (compl A) (compl t)
@@ -159,7 +151,7 @@ namespace Term
   | inter_ty A B => inter_ty (compl A) (compl B)
   | fst t => fst (compl t)
   | snd t => snd (compl t)
-  | refl t => refl (compl t)
+  | refl g1 g2 u v => refl g1 g2 (compl u) (compl v)
   | eq a b => eq (compl a) (compl b)
   | subst t1 t2 t3 =>
     subst (compl t1) (compl t2) (compl t3)
@@ -183,13 +175,14 @@ infix:39 " =β>* " => @Star Term ParRed
 infix:38 " ≡β≡ " => @Conv Term ParRed
 
 namespace ParRed
-  theorem red_refl : t =β> t := by
-  induction t <;> constructor <;> simp [*]
+  theorem red_refl : t =β> t := by sorry
+  -- induction t <;> constructor <;> simp [*]
 
   theorem red_subst_same σ : s =β> t -> [σ]s =β> [σ]t := by
   intro h; induction h generalizing σ <;> simp
   any_goals try apply red_refl
   any_goals try constructor <;> simp [*]
+  case _ => sorry
   case _ => sorry
   case _ => sorry
   case _ => sorry
@@ -213,6 +206,7 @@ namespace ParRed
   any_goals (solve | try case _ ih1 ih2 => constructor; apply ih1 _ _ h1 h2; apply ih2 _ _ h1 h2)
   any_goals (solve | try case _ ih1 ih2 ih3 =>
     constructor; apply ih1 _ _ h1 h2; apply ih2 _ _ h1 h2; apply ih3 _ _ h1 h2)
+  case _ => sorry
   case _ => sorry
   case _ => sorry
   case _ => sorry
@@ -262,6 +256,7 @@ namespace ParRed
 
   theorem triangle : t =β> s -> s =β> Term.compl t := by
   intro h; induction h <;> simp at * <;> try (constructor <;> simp [*])
+  case _ => sorry
   case _ => sorry
   case _ => sorry
   case _ => sorry

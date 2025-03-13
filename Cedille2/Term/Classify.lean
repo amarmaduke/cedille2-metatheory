@@ -126,6 +126,17 @@ namespace Cedille2.Term
   rw [size_of_subst lem]
 
   @[simp]
+  theorem size_of_const
+    : Term.size (t β[.const K]) = Term.size t
+  := by
+  have lem : ∀ n : Nat, action_size ((.su (.const K) :: I) n) = 0 := by
+    intro n; cases n
+    case _ => simp [action_size]
+    case _ => simp [action_size]
+  simp at lem
+  rw [size_of_subst lem]
+
+  @[simp]
   def classify : Term -> Class
   | .var .type _ => .term
   | .var .kind _ => .type
@@ -152,8 +163,8 @@ namespace Cedille2.Term
     if t.classify == .term then .term
     else .none
   | .inter_ty _ _ => .type
-  | .refl t =>
-    if t.classify == .term then .term
+  | .refl _ _ u v =>
+    if u.classify == .term && v.classify == .term then .term
     else .none
   | .subst _ e t =>
     if e.classify == .term && t.classify == .term
@@ -188,9 +199,6 @@ namespace Cedille2.Term
       simp [*]
     case _ e _ _ _ =>
       sorry
-  case _ => sorry
-  case _ => sorry
-  case _ => sorry
   case _ => sorry
   case _ => sorry
   case _ => sorry

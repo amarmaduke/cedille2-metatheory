@@ -111,9 +111,11 @@ namespace Cedille2.Proof
   case eq ih1 ih2 ih3 =>
     simp; constructor; apply ih1 h2 h3 j2
     apply ih2 h2 h3 j2; apply ih3 h2 h3 j2
-  case refl ih1 ih2 =>
+  case refl j1 j2 j3 j4 ih1 ih2 ih3 =>
     simp; constructor; apply ih1 h2 h3 j2
-    apply ih2 h2 h3 j2
+    apply ih2 h2 h3 j2; apply ih3 h2 h3 j2
+    rw [erase_subst, erase_subst]
+    apply Erased.convb_subst; apply j4
   case subst ih1 ih2 ih3 ih4 =>
     replace ih3 := ih3 h2 h3 j2; simp at ih3
     simp; constructor; apply ih1 h2 h3 j2
