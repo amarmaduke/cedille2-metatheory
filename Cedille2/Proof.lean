@@ -104,7 +104,7 @@ namespace Cedille2
     Judgment .prf Γ (t, B)
   | econv :
     Judgment .prf Γ (t, A) ->
-    Judgment .prf Γ (B, .const K) ->
+    Judgment .prf Γ (B, ★) ->
     A.erase ≡β[g1;g2]≡ B.erase ->
     Judgment .prf Γ (.conv g1 g2 B t, B)
 

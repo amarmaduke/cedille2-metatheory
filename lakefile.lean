@@ -5,8 +5,13 @@ package «cedille2» {
   -- add package configuration options here
 }
 
+require "leanprover-community" / "mathlib"
+
 lean_lib Common where
   roots := #[`Common]
+
+lean_lib SetTheory where
+  roots := #[`SetTheory]
 
 lean_lib Erased where
   roots := #[`Erased]
@@ -14,11 +19,11 @@ lean_lib Erased where
 lean_lib Fomega where
   roots := #[`Fomega]
 
+lean_lib CC where
+  roots := #[`CC]
+
 lean_lib Cedille2 where
   roots := #[`Cedille2]
-
-lean_lib WCCC where
-  roots := #[`WCCC]
 
 @[default_target]
 lean_exe «cedille» {

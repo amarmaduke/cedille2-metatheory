@@ -69,9 +69,9 @@ namespace FomegaModel
   | .all _ A B => (`λ[(U)] `λ[(U)] (u)) `@ (𝓉 A) `@ (𝓉 B β[canκ A] β[canτ A])
   | .lam _ A t =>
     if A.classify = .kind then
-      (`λ[(U)] `λ[𝒱 A] `λ[𝒯 A] 𝓉 t) `@ 𝒯 A
+      (`λ[(U)] `λ[𝒱 A] `λ[𝒯 A] 𝓉 t) `@ 𝓉 A
     else
-      (`λ[(U)] `λ[★] `λ[𝒯 A] 𝓉 t) `@ 𝒯 A
+      (`λ[(U)] `λ[★] `λ[𝒯 A] 𝓉 t) `@ 𝓉 A
   | .app _ f a =>
     if a.classify = .type then
       𝓉 f `@ 𝒯 a `@ 𝓉 a
@@ -82,9 +82,18 @@ namespace FomegaModel
   | .fst t => .fst (𝓉 t)
   | .snd t => .snd (𝓉 t)
   | .eq a b => drop2 (𝓉 a) (𝓉 b) (u)
-  | .refl t => drop1 (𝓉 t) (u)
+  | .refl _ _ a b => drop2 (𝓉 a) (𝓉 b) (u)
   | .subst Pr e t => .unit_rec (𝓉 Pr) (𝓉 e) (𝓉 t)
   | .phi a b e => .unit_rec (𝓉 a) (𝓉 e) (𝓉 b)
+  | .conv _ _ (`∀(m1)[A] B) (`λ(_)[C] t) =>
+    drop1 (𝓉 (`∀(m1)[A] B))
+      ((`λ[(U)] `λ[★] `λ[𝒯 A] drop1 (𝓉 B) (𝓉 t β[drop1 (𝓉 C) #0])) `@ 𝓉 C)
+  | .conv _ _ ([A]∩ B) (.inter _ _ D t s) =>
+    drop1 (𝓉 ([A]∩ B)) (drop1 (𝓉 D)
+      ((`λ[(U)] .pair (drop1 (𝓉 A) (𝓉 t)) (drop1 (𝓉 B) (𝓉 s))) `@ 𝓉 B))
+  | .conv _ _ (.eq a b) (.refl _ _ u v) =>
+    drop1 (𝓉 (.eq a b)) (drop2 (𝓉 u) (𝓉 v)
+      (drop2 (𝓉 a) (𝓉 b) (u)))
   | .conv _ _ A t => drop1 (𝓉 A) (𝓉 t)
   | _ => □
 

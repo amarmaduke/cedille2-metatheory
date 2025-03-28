@@ -49,6 +49,18 @@ namespace Plus
     cases ih; case _ u ih =>
       exists u; apply And.intro ih.1
       apply Star.step ih.2 r2
+
+  theorem stepr : R x y -> @Plus T R y z -> @Plus T R x z := by
+  intro r1 r2
+  induction r2 generalizing x
+  case _ r2 => apply Plus.step (Plus.start r1) r2
+  case _ r3 r4 ih => apply Plus.step (ih r1) r4
+
+  theorem stepr_from_star : R x y -> @Star T R y z -> @Plus T R x z := by
+  intro r1 r2
+  induction r2 generalizing x
+  case _ => apply Plus.start; apply r1
+  case _ r3 r4 ih => apply Plus.step (ih r1) r4
 end Plus
 
 namespace StarB
