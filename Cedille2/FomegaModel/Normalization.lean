@@ -42,7 +42,10 @@ namespace FomegaModel
       cases lem2; case _ V lem2 =>
       rw [lem2]; simp
       have lem3 := beta_type (.conv g2 g1 C #0) t; simp at lem3
-      have lem4 := 𝓉 (t β[.conv g2 g1 C #0]) = 𝓉 (`λ(m3)[W]w) := by sorry
+      have lem4 : 𝓉 (t β[.conv g2 g1 C #0]) = 𝓉 (`λ(m3)[W]w) := by sorry
+      rw [lem3] at lem4; simp at lem4
+      have lem5 : W.classify = .type := by sorry
+      rw [lem5] at lem4; simp at lem4
       sorry
     case inter => sorry
     case refl => sorry

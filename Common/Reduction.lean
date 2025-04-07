@@ -8,23 +8,23 @@ class ReductionTriangle (T : Type) (R : T -> T -> Prop) [ReductionCompletion T R
 
 variable {T : Type} {R : T -> T -> Prop}
 
-inductive Star : T -> T -> Prop where
-| refl : Star t t
-| step : Star x y -> R y z -> Star x z
+inductive Star (R : T -> T -> Prop) : T -> T -> Prop where
+| refl : Star R t t
+| step : Star R x y -> R y z -> Star R x z
 
-inductive Plus : T -> T -> Prop where
-| start : R t t' -> Plus t t'
-| step : Plus x y -> R y z -> Plus x z
+inductive Plus (R : T -> T -> Prop) : T -> T -> Prop where
+| start : R t t' -> Plus R t t'
+| step : Plus R x y -> R y z -> Plus R x z
 
-inductive StarB : Nat -> T -> T -> Prop where
-| refl : StarB n t t
-| step : StarB n x y -> R y z -> StarB (n + 1) x z
+inductive StarB (R : T -> T -> Prop) : Nat -> T -> T -> Prop where
+| refl : StarB R n t t
+| step : StarB R n x y -> R y z -> StarB R (n + 1) x z
 
-def ConvB (g1 g2 : Nat) (x y : T) : Prop :=
-  ∃ z, @StarB T R g1 x z ∧ @StarB T R g2 y z
+def ConvB (R : T -> T -> Prop) (g1 g2 : Nat) (x y : T) : Prop :=
+  ∃ z, StarB R g1 x z ∧ StarB R g2 y z
 
-def Conv (x y : T) : Prop :=
-  ∃ z, @Star T R x z ∧ @Star T R y z
+def Conv (R : T -> T -> Prop) (x y : T) : Prop :=
+  ∃ z, Star R x z ∧ Star R y z
 
 namespace Star
   theorem trans : @Star T R x y -> @Star T R y z -> @Star T R x z := by
@@ -323,21 +323,21 @@ def Normal (t : T) := ¬ (@Reducible T R t)
 abbrev NormalForm (t : T) (t' : T) := @Star T R t t' ∧ @Normal T R t'
 def WN (t : T) := ∃ t', @NormalForm T R t t'
 
-inductive SN : T -> Prop where
-| sn : (∀ y, R x y -> SN y) -> SN x
+inductive SN (R : T -> T -> Prop) : T -> Prop where
+| sn : (∀ y, R x y -> SN R y) -> SN R x
 
-inductive SNPlus : T -> Prop where
-| sn : (∀ y, @Plus T R x y -> SNPlus y) -> SNPlus x
+inductive SNPlus (R : T -> T -> Prop) : T -> Prop where
+| sn : (∀ y, Plus R x y -> SNPlus R y) -> SNPlus R x
 
-theorem snplus_impies_sn : @SNPlus T R t -> @SN T R t := by
+theorem snplus_impies_sn : SNPlus R t -> SN R t := by
 intro h; induction h; case _ t' _ ih =>
   constructor; intro t'' r
   apply ih t'' (Plus.start r)
 
 theorem sn_preimage (f : T -> T) x :
   (∀ x y, R x y -> R (f x) (f y)) ->
-  @SN T R (f x) ->
-  @SN T R x
+  SN R (f x) ->
+  SN R x
 := by
 intro h sh
 generalize zdef : f x = z at sh
@@ -347,35 +347,35 @@ case _ x' h' ih =>
   intro y r
   apply ih (f y) (h _ _ r) f y h rfl
 
-theorem sn_preservation_step : @SN T R t -> R t t' -> @SN T R t' := by
+theorem sn_preservation_step : SN R t -> R t t' -> SN R t' := by
 intro h red
 induction h
 case _ z h1 _h2 =>
   apply h1 _ red
 
-theorem sn_preservation : @SN T R t -> @Star T R t t' -> @SN T R t' := by
+theorem sn_preservation : SN R t -> @Star T R t t' -> SN R t' := by
 intro h red
 induction red
 case _ => simp [*]
 case _ _ r2 ih => apply sn_preservation_step ih r2
 
-theorem sn_star : (∀ y, @Star T R t y -> @SN T R y) -> @SN T R t := by
+theorem sn_star : (∀ y, @Star T R t y -> SN R y) -> SN R t := by
 intro h
 constructor
 intro y r
 apply h y (Star.step Star.refl r)
 
-theorem snplus_preservation_step : @SNPlus T R t -> R t t' -> @SNPlus T R t' := by
+theorem snplus_preservation_step : SNPlus R t -> R t t' -> SNPlus R t' := by
 intro h r; induction h; case _ z h _ =>
   apply h _ (Plus.start r)
 
-theorem snplus_preservation : @SNPlus T R t -> @Star T R t t' -> @SNPlus T R t' := by
+theorem snplus_preservation : SNPlus R t -> @Star T R t t' -> SNPlus R t' := by
 intro h r; induction r
 case _ => apply h
 case _ _ r2 ih =>
   apply snplus_preservation_step ih r2
 
-theorem sn_implies_snplus : @SN T R t -> @SNPlus T R t := by
+theorem sn_implies_snplus : SN R t -> SNPlus R t := by
 intro h; induction h; case _ t' _ ih =>
   constructor; intro t'' r
   have lem := Plus.destruct r
@@ -383,7 +383,7 @@ intro h; induction h; case _ t' _ ih =>
     have lem2 := ih z lem.1
     apply snplus_preservation lem2 lem.2
 
--- theorem sn_expansion_step : @SN T R t' -> R t t' -> @SN T R t := by
+-- theorem sn_expansion_step : SN R t' -> R t t' -> SN R t := by
 -- intro h red
 -- induction h generalizing t
 -- case _ z h ih =>

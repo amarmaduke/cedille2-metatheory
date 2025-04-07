@@ -10,6 +10,9 @@ require "leanprover-community" / "mathlib"
 lean_lib Common where
   roots := #[`Common]
 
+lean_lib Realizer where
+  roots := #[`Realizer]
+
 lean_lib SetTheory where
   roots := #[`SetTheory]
 
