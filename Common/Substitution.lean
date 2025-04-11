@@ -62,7 +62,9 @@ section
 
   def I : Subst T := λ n => .re n
   def S : Subst T := λ n => .re (n + 1)
+  def Sn (k : Nat) : Subst T := λ n => .re (n + k)
   def P : Subst T := λ n => .re (n - 1)
+  def Pn (k : Nat) : Subst T := λ n => .re (n - k)
 
   omit [SubstitutionType T] in
   @[simp]
@@ -74,7 +76,15 @@ section
 
   omit [SubstitutionType T] in
   @[simp]
+  theorem Sn_action : @Sn T k n = .re (n + k) := by unfold Sn; simp
+
+  omit [SubstitutionType T] in
+  @[simp]
   theorem P_action : @P T n = .re (n - 1) := by unfold P; simp
+
+  omit [SubstitutionType T] in
+  @[simp]
+  theorem Pn_action : @Pn T k n = .re (n - k) := by unfold Pn; simp
 
   omit [SubstitutionType T] in
   theorem to_I : Ren.to (λ x => x) = @I T := by
@@ -85,8 +95,16 @@ section
   unfold Ren.to; simp; unfold S; simp
 
   omit [SubstitutionType T] in
+  theorem to_Sn : Ren.to (λ x => x + k) = @Sn T k := by
+  unfold Ren.to; simp; unfold Sn; simp
+
+  omit [SubstitutionType T] in
   theorem to_P : Ren.to (λ x => x - 1) = @P T := by
   unfold Ren.to; simp; unfold P; simp
+
+  omit [SubstitutionType T] in
+  theorem to_Pn : Ren.to (λ x => x - k) = @Pn T k := by
+  unfold Ren.to; simp; unfold Pn; simp
 
   prefix:max "^" => Subst.lift
   notation:90 "[" σ "]" t:89 => Subst.apply σ t

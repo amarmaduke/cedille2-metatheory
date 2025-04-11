@@ -21,10 +21,12 @@ namespace Realizer
     | app f a => or (occurs n f) (occurs n a)
     | lam t => occurs (n + 1) t
 
-  inductive normal : Term -> Prop where
-  | var : normal (.var n)
-  | app : neutral u -> normal u -> normal v -> normal (u `@ v)
-  | lam : normal t -> normal (`λ t)
+    def K := `λ `λ .var 1
+
+    inductive normal : Term -> Prop where
+    | var : normal (.var n)
+    | app : neutral u -> normal u -> normal v -> normal (u `@ v)
+    | lam : normal t -> normal (`λ t)
 
     @[simp]
     def smap (lf : Subst.Lift Term) (f : Nat -> Subst.Action Term) : Term -> Term
@@ -117,5 +119,9 @@ namespace Realizer
     apply_id := Term.apply_id
     apply_compose := Term.apply_compose
     apply_stable := Term.apply_stable
+
+  def vlift (v : VarMap Term) : VarMap Term
+  | 0 => .var 0
+  | n + 1 => [S](v n)
 
 end Realizer

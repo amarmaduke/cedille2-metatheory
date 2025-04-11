@@ -12,42 +12,63 @@ def BinderInnerSetoidExt {X : Sort u} (x : X) (R1 : X -> X -> Prop) (R2 : X -> X
 def BinderFnSetoidExt {X : Sort u} (R1 : X -> X -> Prop) (R2 : X -> X -> Prop) (b : X -> (X -> X) -> X) :=
   ∀ {x1 x2 f1 f2}, x1 = x2 -> BinderInnerSetoidExt x1 R1 R2 f1 f2  -> b x1 f1 = b x2 f2
 
-structure CCModelBase where
+-- class CCModel where
+--   X : Type u
+--   inX : X -> X -> Prop
+
+class CCModel where
   X : Type u
   inX : X -> X -> Prop
-
-infix:40 "`∈" => CCModelBase.inX _
-
-structure CCModel extends CCModelBase where
   props : X
   app : X -> X -> X
   lam : X -> (X -> X) -> X
   prod : X -> (X -> X) -> X
-
-  -- lam_ext : BinderFnSetoidExt inX eqX lam
-  -- prod_ext : BinderFnSetoidExt inX eqX prod
-
   prod_intro : ∀ dom f F,
-    -- BinderInnerSetoidExt dom inX eqX f f ->
-    -- BinderInnerSetoidExt dom inX eqX F F ->
-    (∀ x, x `∈ dom -> f x `∈ F x) ->
-    lam dom f `∈ prod dom F
-
+    (∀ x, inX x dom -> inX (f x) (F x)) ->
+    inX (lam dom f) (prod dom F)
   prod_elim : ∀ dom f x F,
-    -- BinderInnerSetoidExt dom inX eqX F F ->
-    f `∈ prod dom F ->
-    x `∈ dom ->
-    app f x `∈ F x
-
+    inX f (prod dom F) ->
+    inX x dom ->
+    inX (app f x) (F x)
   impredicative_prod : ∀ dom F,
-    -- BinderInnerSetoidExt dom inX eqX F F ->
-    (∀ x, x `∈ dom -> F x `∈ props) ->
-    prod dom F `∈ props
-
+    (∀ x, inX x dom -> inX (F x) props) ->
+    inX (prod dom F) props
   beta_eq : ∀ dom F x,
-    -- BinderInnerSetoidExt dom inX eqX F F ->
-    x `∈ dom ->
+    inX x dom ->
     app (lam dom F) x = F x
+
+-- infix:40 "`∈" => CCModelBase.inX _
+
+-- structure CCModel extends CCModelBase where
+--   props : X
+--   app : X -> X -> X
+--   lam : X -> (X -> X) -> X
+--   prod : X -> (X -> X) -> X
+
+--   -- lam_ext : BinderFnSetoidExt inX eqX lam
+--   -- prod_ext : BinderFnSetoidExt inX eqX prod
+
+--   prod_intro : ∀ dom f F,
+--     -- BinderInnerSetoidExt dom inX eqX f f ->
+--     -- BinderInnerSetoidExt dom inX eqX F F ->
+--     (∀ x, x `∈ dom -> f x `∈ F x) ->
+--     lam dom f `∈ prod dom F
+
+--   prod_elim : ∀ dom f x F,
+--     -- BinderInnerSetoidExt dom inX eqX F F ->
+--     f `∈ prod dom F ->
+--     x `∈ dom ->
+--     app f x `∈ F x
+
+--   impredicative_prod : ∀ dom F,
+--     -- BinderInnerSetoidExt dom inX eqX F F ->
+--     (∀ x, x `∈ dom -> F x `∈ props) ->
+--     prod dom F `∈ props
+
+--   beta_eq : ∀ dom F x,
+--     -- BinderInnerSetoidExt dom inX eqX F F ->
+--     x `∈ dom ->
+--     app (lam dom F) x = F x
 
 -- theorem cc_eqX_equiv : @Equivalence ZFSet (·=·) := by sorry
 

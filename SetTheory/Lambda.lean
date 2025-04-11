@@ -1,4 +1,5 @@
 import Mathlib.SetTheory.ZFC.Basic
+import Realizer
 import SetTheory.Classical
 import SetTheory.Relation
 import SetTheory.Function
@@ -84,7 +85,30 @@ namespace ZFSet.Lambda
 
   noncomputable def pure_lambda_set := lambda_set Nat.zero
 
+  def from_realizer : Realizer.Term -> ZFSet
+  | .var n => var n.to_zfset
+  | .lam t => abs (from_realizer t)
+  | .app u v => app (from_realizer u) (from_realizer v)
 
+  theorem from_realizer_mem : from_realizer t ∈ pure_lambda_set := by sorry
 
+  theorem from_realizer_inj : from_realizer t = from_realizer u -> t = u := by sorry
+
+  theorem inter_sat_ax : A ->
+    (∀ x:A, Realizer.Sat.mem u (F x)) <-> Realizer.Sat.mem u (Realizer.Sat.inter_sat A F)
+  := by sorry
+
+  noncomputable def isat S := ZFSet.sep (λ x => ∃ t, Realizer.Sat.mem t S ∧ x = from_realizer t) pure_lambda_set
+
+  noncomputable def compl_sat (P : Realizer.Term -> Prop) :=
+    Realizer.Sat.inter_sat (PSigma (λ S => ∀ t, SN Realizer.Red t -> P t -> Realizer.Sat.mem t S)) (λ p => p.1)
+
+  noncomputable def ssat (x : ZFSet) := compl_sat (λ t => from_realizer t ∈ x)
+
+  theorem isat_id : ssat (isat s) = s := by sorry
+
+  noncomputable def repl_sat (F : ZFSet -> ZFSet) := Classical.image F (powerset pure_lambda_set)
+
+  theorem repl_sat_ax : z ∈ repl_sat f <-> ∃ A, z = f A := by sorry
 
 end ZFSet.Lambda
