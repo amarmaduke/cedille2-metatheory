@@ -67,7 +67,7 @@ namespace Realizer
 
     theorem prod_sat_elim : mem u (prod_sat A B) -> mem v A -> mem (u `@ v) B := by sorry
 
-    def inter_sat (A : Type) (F : A -> SatSet) : SatSet := by
+    def inter_sat (A : Type u) (F : A -> SatSet) : SatSet := by
       unfold SatSet; constructor
       case fst => apply inter A (λ a => (F a).1)
       case snd => apply is_can_inter (λ a => (F a).2)

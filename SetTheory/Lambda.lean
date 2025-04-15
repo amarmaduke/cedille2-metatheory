@@ -107,7 +107,8 @@ namespace ZFSet.Lambda
 
   theorem isat_id : ssat (isat s) = s := by sorry
 
-  noncomputable def repl_sat (F : ZFSet -> ZFSet) := Classical.image F (powerset pure_lambda_set)
+  noncomputable def repl_sat (F : Realizer.Sat.SatSet -> ZFSet) :=
+    Classical.image (λ P => F (ssat P)) (powerset pure_lambda_set)
 
   theorem repl_sat_ax : z ∈ repl_sat f <-> ∃ A, z = f A := by sorry
 

@@ -7,7 +7,7 @@ namespace CC.Model
 
   variable [M : CCModel]
 
-  structure Interp (X : Type) where
+  structure Interp (X : Type u) where
     i : VarMap X -> X
     tm : VarMap Realizer.Term -> Realizer.Term
 
@@ -75,7 +75,25 @@ namespace CC.Model
 
   def red m n := ∀ j, Plus Realizer.Red (tm j m) (tm j n)
 
+  theorem red_app1 : red f f' -> red (app f a) (app f' a) := by sorry
+
+  theorem red_app2 : red a a' -> red (app f a) (app f a') := by sorry
+
+  theorem red_abs1 : red A A' -> red (abs A t) (abs A' t) := by sorry
+
+  theorem red_abs2 : red t t' -> red (abs A t) (abs A t') := by sorry
+
+  theorem red_prod1 : red A A' -> red (prod A B) (prod A' B) := by sorry
+
+  theorem red_prod2 : red B B' -> red (prod A B) (prod A B') := by sorry
+
+  theorem red_beta : red (app (abs A b) t) (subst b t) := by sorry
+
   def conv m n := ∀ j, Conv Realizer.Red (tm j m) (tm j n)
+
+  theorem red_conv : red t s -> conv t s := by sorry
+
+  theorem conv_beta : conv t t' -> conv b b' -> conv (app (abs A b) t) (subst t' b') := by sorry
 
   theorem simul m :
     SN Realizer.Red m ->
@@ -93,7 +111,18 @@ namespace CC.Model
     | .nil => x
     | .cons T f => M.lam (interp i T) (λ y => cst_fun (VarMap.cons y i) f x)
 
+  theorem witness_prod :
+    (∀ i, M.inX x (interp i U)) ->
+    M.inX (cst_fun i e x) (interp i (prod_list e U))
+  := by sorry
+
   def kind_ok T := ∃ e, ∃ U, T = prod_list e U ∧ (∃ x, ∀ i, M.inX x (interp i U))
+
+  theorem prop_kind_ok : kind_ok prop := by sorry
+
+  theorem prod_kind_ok : kind_ok U -> kind_ok (prod T U) := by sorry
+
+  theorem kind_ok_witness : kind_ok T -> ∃ x, M.inX x (interp i T) := by sorry
 
 
 end CC.Model

@@ -2,21 +2,19 @@ import Common
 
 namespace CC
 
-  inductive Binder where
-  | lam | pi
-
   inductive Term where
   | var : Nat -> Term
   | const : Const -> Term
-  | binder : Binder -> Term -> Term -> Term
-  | app : Term -> Term -> Term
+  | lam : Term -> Term -> Term
+  | app : Term -> Term -> Term -> Term
+  | pi : Term -> Term -> Term
 
   notation "★" => Term.const Const.type
   notation "□" => Term.const Const.kind
   notation "#" t:max => Term.var t
-  notation:100 "`λ[" A "]" t:100 => Term.binder Binder.lam A t
-  notation:100 "Π[" A "]" B:100 => Term.binder Binder.pi A B
-  notation:100 f:100 "`@" a:110 => Term.app f a
+  notation:100 "`λ[" A "]" t:100 => Term.lam A t
+  notation:100 "Π[" A "]" B:100 => Term.pi A B
+  notation:100 f:100 "`@[" A "]" a:110 => Term.app A f a
 
   -- Parsing check
   -- #check ∀ t s, t `@ s = t `@ s
@@ -24,26 +22,9 @@ namespace CC
   -- #check ∀ a b c d, `λ[a] `λ[b] b `@ a `@ #4 = d
   -- #check ∀ a b c d, Π[a] `λ[b] Π[c] `λ[d] #2 `@ b = Π[#0] `λ[d] a `@ b
 
-  inductive Ctx where
-  | top : Ctx
-  | binder1 : Binder -> Ctx -> Term -> Ctx
-  | binder2 : Binder -> Term -> Ctx -> Ctx
-  | app1 : Ctx -> Term -> Ctx
-  | app2 : Term -> Ctx -> Ctx
-
-  notation "lam1" => Ctx.binder1 Binder.lam
-  notation "lam2" => Ctx.binder2 Binder.lam
-  notation "pi1" => Ctx.binder1 Binder.pi
-  notation "pi2" => Ctx.binder2 Binder.pi
-
-  structure Loc where
-    ctx : Ctx
-    it : Term
-
-  notation:100 Γ " ⊢ " t:100 => Loc.mk Γ t
-
-  -- Parsing Check
-  -- #check ∀ a b c d e, e ⊢ `λ[a] b = e ⊢ a `@ b `@ #0
+  @[simp]
+  instance inst_InhabitedTerm : Inhabited Term where
+    default := ★
 
   namespace Term
     @[simp]
@@ -53,8 +34,9 @@ namespace CC
       | .re y => var y
       | .su t => t
     | const k => const k
-    | app t1 t2 => app (smap lf f t1) (smap lf f t2)
-    | binder b A t => binder b (smap lf f A) (smap lf (lf f) t)
+    | app t1 t2 t3 => app (smap lf f t1) (smap lf f t2) (smap lf f t3)
+    | lam A t => lam (smap lf f A) (smap lf (lf f) t)
+    | pi A B => pi (smap lf f A) (smap lf (lf f) B)
   end Term
 
   @[simp low]
@@ -81,13 +63,19 @@ namespace CC
     unfold substType_Term; unfold smap; simp
 
     @[simp]
-    theorem subst_app : [σ](app t1 t2) = app ([σ]t1) ([σ]t2) := by
+    theorem subst_app : [σ](app t1 t2 t3) = app ([σ]t1) ([σ]t2) ([σ]t3) := by
     unfold Subst.apply
     unfold SubstitutionType.smap
     unfold substType_Term; simp
 
     @[simp]
-    theorem subst_lam : [σ](binder b A t) = binder b ([σ]A) ([^σ]t) := by
+    theorem subst_lam : [σ](lam A t) = lam ([σ]A) ([^σ]t) := by
+    unfold Subst.apply
+    unfold SubstitutionType.smap
+    unfold substType_Term; simp
+
+    @[simp]
+    theorem subst_pi : [σ](pi A B) = pi ([σ]A) ([^σ]B) := by
     unfold Subst.apply
     unfold SubstitutionType.smap
     unfold substType_Term; simp
@@ -117,18 +105,24 @@ namespace CC
     theorem apply_compose {s : Term} {σ τ : Subst Term} : [τ][σ]s = [τ ⊙ σ]s := by
     solve_compose Term, apply_stable, s, σ, τ
 
+    inductive MemConst (c : Const) : Term -> Prop where
+    | const : MemConst c (.const c)
+    | prod1 : MemConst c A -> MemConst c (Π[A] B)
+    | prod2 : MemConst c B -> MemConst c (Π[A] B)
+    | lam1 : MemConst c A -> MemConst c (`λ[A] t)
+    | lam2 : MemConst c t -> MemConst c (`λ[A] t)
+    | app1 : MemConst c f -> MemConst c (f `@[T] a)
+    | app2 : MemConst c a -> MemConst c (f `@[T] a)
+
+    inductive Red : Term -> Term -> Prop where
+    | beta : Red ((`λ[A] b) `@[T] t) (b β[t])
+    | lam1 : Red A A' -> Red (`λ[A] t) (`λ[A'] t)
+    | lam2 : Red t t' -> Red (`λ[A] t) (`λ[A] t')
+    | app1 : Red f f' -> Red (f `@[T] a) (f' `@[T] a)
+    | app2 : Red a a' -> Red (f `@[T] a) (f `@[T] a')
+    | pi1 : Red A A' -> Red (Π[A] B) (Π[A'] B)
+    | pi2 : Red B B' -> Red (Π[A] B) (Π[A] B')
+
   end Term
-
-  namespace Loc
-
-    def get_type : Nat -> Ctx -> Option Loc
-    | n + 1, .binder2 _ _ Γ => get_type n Γ
-    | 0, .binder2 _ A Γ => .some (Γ ⊢ A)
-    | n, .binder1 _ Γ _ => get_type n Γ
-    | n, .app1 Γ _ => get_type n Γ
-    | n, .app2 _ Γ => get_type n Γ
-    | _, .top => .none
-
-  end Loc
 
 end CC

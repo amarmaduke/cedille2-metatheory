@@ -34,7 +34,7 @@ namespace Realizer
     ((`λ m) `@ u) ∈ X
   := by sorry
 
-  def inter (X : Type) (F : X -> Set Term) t := SN Red t ∧ ∀ x, F x t
+  def inter (X : Type u) (F : X -> Set Term) t := SN Red t ∧ ∀ x, F x t
 
   theorem is_can_inter : (∀ x : X, is_candidate (F x)) -> is_candidate (inter X F) := by sorry
 

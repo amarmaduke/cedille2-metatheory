@@ -93,4 +93,73 @@ namespace ZFSet
   theorem dep_func_incl_func : dep_func A B ⊆ func A (⋃₀ (Classical.image B A)) := by sorry
 
   theorem dep_func_elim : f ∈ dep_func A B -> x ∈ A -> app f x ∈ B x := by sorry
+
+  def is_cc_fun (A f : ZFSet) : Prop := ∀ c, c ∈ f -> c = pair (fst c) (snd c) ∧ fst c ∈ A
+
+  noncomputable def cc_lam (x : ZFSet) (y : ZFSet -> ZFSet) : ZFSet :=
+    supremum x (λ x' => Classical.image (λ y' => pair x' y') (y x'))
+
+  theorem cc_lam_def : (z ∈ cc_lam dom f) <-> ∃ x, x ∈ dom ∧ ∃ y, y ∈ f x ∧ z = pair x y
+  := by sorry
+
+  theorem is_cc_fun_lam : is_cc_fun A (cc_lam A F) := by sorry
+
+  theorem cc_impredicative_lam : (∀ x, x ∈ dom -> F x = ∅) -> cc_lam dom F = ∅ := by sorry
+
+  def cc_app (x y : ZFSet) : ZFSet := .Rel.image (ZFSet.sep (λ p => fst p = y) x)
+
+  theorem pair_in_app : pair x z ∈ f <-> z ∈ cc_app f x := by sorry
+
+  theorem cc_app_empty : cc_app ∅ x = ∅ := by sorry
+
+  theorem cc_beta_eq : x ∈ dom -> cc_app (cc_lam dom F) x = F x := by sorry
+
+  theorem cc_eta_eq' : is_cc_fun dom f -> f = cc_lam dom (λ x => cc_app f x) := by sorry
+
+  noncomputable def cc_prod (x : ZFSet) (y : ZFSet -> ZFSet) : ZFSet :=
+    Classical.image (λ f => cc_lam x (λ x' => app f x')) (dep_func x y)
+
+  theorem cc_prod_is_cc_fun : f ∈ cc_prod A B -> is_cc_fun A f := by sorry
+
+  noncomputable def cc_arr A B := cc_prod A (λ _ => B)
+
+  theorem cc_prod_intro :
+    (∀ x, x ∈ dom -> f x ∈ F x) ->
+    cc_lam dom f ∈ cc_prod dom F
+  := by sorry
+
+  theorem cc_prod_elim :
+    f ∈ cc_prod dom F ->
+    x ∈ dom ->
+    cc_app f x ∈ F x
+  := by sorry
+
+  theorem cc_app_compatible :
+    f ∈ cc_prod A B ->
+    B' = B v ->
+    v ∈ A ->
+    cc_app f v ∈ B'
+  := by sorry
+
+  theorem cc_arr_intro :
+    (∀ x, x ∈ A -> F x ∈ B) ->
+    cc_lam A F ∈ cc_arr A B
+  := by sorry
+
+  theorem cc_arr_elim :
+    f ∈ cc_arr A B ->
+    x ∈ A ->
+    cc_app f x ∈ B
+  := by sorry
+
+  theorem cc_eta_eq :
+    f ∈ cc_prod dom F ->
+    f = cc_lam dom (λ x => cc_app f x)
+  := by sorry
+
+  theorem cc_prod_covariant :
+    (∀ x, x ∈ dom -> F x ⊆ G x) ->
+    cc_prod dom F ⊆ cc_prod dom G
+  := by sorry
+
 end ZFSet

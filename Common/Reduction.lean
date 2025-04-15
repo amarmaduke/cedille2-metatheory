@@ -1,12 +1,12 @@
 import Common.Substitution
 
-class ReductionCompletion (T : Type) (R : T -> T -> Prop) where
+class ReductionCompletion (T : Type u) (R : T -> T -> Prop) where
   compl : T -> T
 
-class ReductionTriangle (T : Type) (R : T -> T -> Prop) [ReductionCompletion T R] where
+class ReductionTriangle (T : Type u) (R : T -> T -> Prop) [ReductionCompletion T R] where
   triangle : R t s -> R s (ReductionCompletion.compl R t)
 
-variable {T : Type} {R : T -> T -> Prop}
+variable {T : Type u} {R : T -> T -> Prop}
 
 inductive Star (R : T -> T -> Prop) : T -> T -> Prop where
 | refl : Star R t t

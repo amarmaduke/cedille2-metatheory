@@ -9,7 +9,7 @@ namespace CC.Model
   class SNAddon [M : CCModel] where
     real : M.X -> Realizer.Sat.SatSet
     real_sort : real M.props = Realizer.Sat.SNSat
-    real_prod A B := real (M.prod A B) =
+    real_prod A B : real (M.prod A B) =
       (Realizer.Sat.prod_sat (real A) (Realizer.Sat.inter_sat
         (PSigma (λ x => M.inX x A)) (λ p => real (B p.1))))
     daimon : M.X
@@ -37,8 +37,16 @@ namespace CC.Model
     ∀ i j, val_ok e i j -> interp i t = interp i t'
 
   theorem model_strong_normalization e t A :
-    wf e -> typed e t A -> SN red_term t
-  := by sorry
+    wf e -> typed e t A -> SN red t
+  := by
+  intro h1 h2
+  unfold typed at h2; unfold wf at h1
+  casesm* ∃ _, _; case _ i j h1 =>
+    replace h2 := h2 i j h1; unfold in_int at h2
+    cases h2; case _ h2 h3 =>
+      cases A <;> simp at h3
+      case _ => sorry
+      case _ v => sorry
 
   def kinded e T := typed e T kind ∨ typed e T prop
 
