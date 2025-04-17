@@ -2,16 +2,16 @@
 def Ren : Type := Nat -> Nat
 
 namespace Subst
-  inductive Action (T : Type) : Type where
+  inductive Action (T : Type u) : Type u where
   | re : Nat -> Action T
   | su : T -> Action T
 
-  def Lift (X : Type) : Type := (Nat -> Action X) -> Nat -> Action X
+  def Lift (X : Type u) : Type u := (Nat -> Action X) -> Nat -> Action X
 end Subst
 
-def Subst (T : Type) : Type := Nat -> Subst.Action T
+def Subst (T : Type u) : Type u := Nat -> Subst.Action T
 
-class SubstitutionType (T : Type) where
+class SubstitutionType (T : Type u) where
   smap : Subst.Lift T -> (Nat -> Subst.Action T) -> T -> T
 
 def seq_cons : T -> (Nat -> T) -> (Nat -> T)
@@ -22,8 +22,7 @@ infix:70 "::" => seq_cons
 
 section
   variable
-    {F : Type -> Type}
-    {T : Type} [SubstitutionType T]
+    {T : Type u} [SubstitutionType T]
 
   open SubstitutionType
 
@@ -120,7 +119,7 @@ end
 
 section
   open SubstitutionType
-  class SubstitutionTypeLaws (T : Type) [SubstitutionType T] where
+  class SubstitutionTypeLaws (T : Type u) [SubstitutionType T] where
     apply_id {t : T} : [I]t = t
     apply_compose {s : T} {σ τ : Subst T} : [τ][σ]s = [τ ⊙ σ]s
     apply_stable {σ : Subst T} : r.to = σ -> Ren.apply r = Subst.apply σ
@@ -134,7 +133,7 @@ namespace Subst
   unfold seq_cons; simp
 
 section
-  variable {T : Type} [SubstitutionType T] [SubstitutionTypeLaws T]
+  variable {T : Type u} [SubstitutionType T] [SubstitutionTypeLaws T]
 
   open SubstitutionType
   open SubstitutionTypeLaws
@@ -431,7 +430,7 @@ namespace Subst
   theorem map_I_compose_right [SubstitutionType A] [SubstitutionType B] {f : A -> B}
     : map f (σ ⊙ I) = map f σ
   := by
-  apply map_rename_compose_right
+  unfold Subst.compose; simp
 
   theorem map_S_compose_left [SubstitutionType A] [SubstitutionType B] {f : A -> B}
     : (∀ t, f ([S]t) = [S](f t)) -> map f (S ⊙ τ) = S ⊙ (map f τ)

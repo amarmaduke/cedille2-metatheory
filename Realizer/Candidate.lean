@@ -12,27 +12,87 @@ namespace Realizer
 
   def weak_chain (t : Term) : Set Term := λ u => t -β>* u
 
-  theorem weakest_candidates : ∀ t, SN Red t -> weak_candidate (weak_chain t) := by sorry
+  theorem weakest_candidates : ∀ t, SN Red t -> weak_candidate (weak_chain t) := by
+  intro t h1; constructor
+  case _ =>
+    intro t' h
+    apply sn_preservation h1 h
+  case _ =>
+    intro t' u h r; unfold weak_chain at *
+    apply Star.trans h r
+  case _ =>
+    apply Exists.intro t
+    apply Star.refl
 
   structure is_candidate (X : Set Term) : Prop where
     sn : ∀ t, t ∈ X -> SN Red t
     red : ∀ t u, t ∈ X -> t -β>* u -> u ∈ X
     exp : ∀ t, t.neutral -> (∀ u, t -β> u -> u ∈ X) -> t ∈ X
 
-  theorem sn_is_candidate : is_candidate (SN Red) := by sorry
+  theorem sn_is_candidate : is_candidate (SN Red) := by
+  constructor
+  case _ => intro t h; apply h
+  case _ => intro t u h r; apply sn_preservation h r
+  case _ => intro t h1 h2; constructor; apply h2
 
-  theorem var_in_cand : is_candidate X -> .var n ∈ X := by sorry
+  theorem var_in_cand : is_candidate X -> .var n ∈ X := by
+  intro h; cases h; case _ h1 h2 h3 =>
+    apply h3; unfold Term.neutral; simp
+    intro u r; cases r
 
-  theorem weaker_cand : is_candidate X -> weak_candidate X := by sorry
+  theorem weaker_cand : is_candidate X -> weak_candidate X := by
+  intro h; have lem := h
+  cases h; case _ h1 h2 h3 =>
+    constructor; apply h1; apply h2
+    apply Exists.intro (.var 0); apply var_in_cand lem
 
-  theorem sat1_in_cand : is_candidate X -> SN Red u -> (.var n `@ u) ∈ X := by sorry
+  theorem sat1_in_cand : is_candidate X -> SN Red u -> (.var n `@ u) ∈ X := by
+  intro h1 h2
+  induction h2; case _ t' h ih =>
+    cases h1; case _ h1 h2 h3 =>
+      apply h3; unfold Term.neutral; simp
+      intro u' h4; cases h4
+      case _ t'' r => apply ih _ r
+      case _ v r => cases r
 
   theorem cand_sat :
     is_candidate X ->
     Term.occurs 0 m ∨ SN Red u ->
-    u β[m] ∈ X ->
+    m β[u] ∈ X ->
     ((`λ m) `@ u) ∈ X
-  := by sorry
+  := by
+  intro h1 h2 h3
+  cases h1; case _ q1 q2 q3 =>
+    have lem1 : SN Red u := by
+      cases h2
+      case _ h =>
+        have lem : m β[u] = [S]m := by sorry
+        rw [lem] at h3; replace q1 := q1 _ h3
+        sorry
+      case _ h => apply h
+    clear h2; induction lem1; case _ z hz ihz =>
+      have lem2 : SN Red m := by
+        have lem := q1 _ h3
+        sorry
+      induction lem2; case _ w hw ihw =>
+        apply q3; unfold Term.neutral; simp
+        intro u' r; cases r
+        case _ => apply h3
+        case _ z' r =>
+          have lem3 : w β[z] -β>* w β[z'] := by
+            sorry
+          apply ihz _ r (q2 _ _ h3 lem3)
+        case _ w' r =>
+          cases r; case _ w' r =>
+            have lem3 : w β[z] -β>* w' β[z] := by sorry
+            apply @ihw _ r _ (q2 _ _ h3 lem3)
+            intro y r2 h4
+            have lem4 : w β[z] -β>* w β[y] := by sorry
+            replace ihz := ihz y r2 (q2 _ _ h3 lem4)
+            have lem5 : (`λ w `@ y) -β>* (`λ w' `@ y) := by sorry
+            apply q2 _ _ ihz lem5
+
+
 
   def inter (X : Type u) (F : X -> Set Term) t := SN Red t ∧ ∀ x, F x t
 

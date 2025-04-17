@@ -6,28 +6,28 @@ import Realizer.Candidate
 
 namespace Realizer
 
-  structure SaturatedSetTheory where
-    Sat : Type
-    eq : Sat -> Sat -> Prop
-    mem : Term -> Sat -> Prop
-    eq_def : eq X Y <-> (∀ t, mem t X <-> mem t Y)
-    incl A B := ∀ t, mem t A -> mem t B
-    sat_sn {S : Sat} : mem t S -> SN Red t
-    mem_exp {S : Sat} :
-      Term.occurs 0 m ∨ SN Red u ->
-      mem (u β[m]) S ->
-      mem ((`λ m) `@ u) S
-    daimon : Term
-    var_sat : ∀ (S : Sat), mem daimon S
-    mem_context : (∀ S, mem u S -> mem u' S) -> ∀ S, mem (u `@ v) S -> mem (u' `@ v) S
-    sn_sat : Sat
-    sn_sat_intro : SN Red t -> mem t sn_sat
-    prod_sat : Sat -> Sat -> Sat
-    prod_sat_intro : (∀ v, mem v A -> mem (v β[m]) B) -> mem (`λ m) (prod_sat A B)
-    prod_sat_elim : mem u (prod_sat A B) -> mem v A -> mem (u `@ v) B
-    inter_sat : ∀ (A : Type), (A -> Sat) -> Sat
-    inter_sat_intro : A -> (∀ x:A, mem u (F x)) -> mem u (inter_sat A F)
-    inter_sat_elim : mem u (inter_sat A F) -> ∀ x:A, mem u (F x)
+  -- structure SaturatedSetTheory where
+  --   Sat : Type
+  --   eq : Sat -> Sat -> Prop
+  --   mem : Term -> Sat -> Prop
+  --   eq_def : eq X Y <-> (∀ t, mem t X <-> mem t Y)
+  --   incl A B := ∀ t, mem t A -> mem t B
+  --   sat_sn {S : Sat} : mem t S -> SN Red t
+  --   mem_exp {S : Sat} :
+  --     Term.occurs 0 m ∨ SN Red u ->
+  --     mem (u β[m]) S ->
+  --     mem ((`λ m) `@ u) S
+  --   daimon : Term
+  --   var_sat : ∀ (S : Sat), mem daimon S
+  --   mem_context : (∀ S, mem u S -> mem u' S) -> ∀ S, mem (u `@ v) S -> mem (u' `@ v) S
+  --   sn_sat : Sat
+  --   sn_sat_intro : SN Red t -> mem t sn_sat
+  --   prod_sat : Sat -> Sat -> Sat
+  --   prod_sat_intro : (∀ v, mem v A -> mem (v β[m]) B) -> mem (`λ m) (prod_sat A B)
+  --   prod_sat_elim : mem u (prod_sat A B) -> mem v A -> mem (u `@ v) B
+  --   inter_sat : ∀ (A : Type), (A -> Sat) -> Sat
+  --   inter_sat_intro : A -> (∀ x:A, mem u (F x)) -> mem u (inter_sat A F)
+  --   inter_sat_elim : mem u (inter_sat A F) -> ∀ x:A, mem u (F x)
 
   namespace Sat
     @[simp]
@@ -36,15 +36,25 @@ namespace Realizer
     def mem t (S : SatSet) := S.1 t
     def eq X Y := ∀ t, mem t X <-> mem t Y
 
-    theorem eq_def : eq X Y <-> (∀ t, mem t X <-> mem t Y) := by sorry
+    theorem eq_def : eq X Y <-> (∀ t, mem t X <-> mem t Y) := by
+    unfold eq; simp
 
     def incl_sat A B := ∀ t, mem t A -> mem t B
 
-    theorem sat_sn {S : SatSet} : mem t S -> SN Red t := by sorry
+    theorem sat_sn {S : SatSet} : mem t S -> SN Red t := by
+    unfold mem; intro h; unfold SatSet at S
+    cases S; case _ x y =>
+      simp at h; cases y; case _ y1 y2 y3 =>
+        apply y1 _ h
 
     def daimon := Term.var 0
 
-    theorem var_sat : ∀ (S : SatSet), mem daimon S := by sorry
+    theorem var_sat : ∀ (S : SatSet), mem daimon S := by
+    intro S; unfold daimon; unfold mem
+    cases S; case _ x y =>
+      simp; cases y; case _ y1 y2 y3 =>
+        apply y3; unfold Term.neutral; simp
+        intro u r; cases r
 
     theorem mem_exp (S : SatSet) :
       Term.occurs 0 m ∨ SN Red u ->

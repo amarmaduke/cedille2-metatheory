@@ -61,7 +61,8 @@ namespace CC.Model
   theorem prod_intro :
     (∀ x, inX x dom -> inX (f x) (F x)) ->
     inX (sn_lam dom f) (sn_prod dom F)
-  := by sorry
+  := by
+  intro h; unfold inX; apply sn_prod_intro; apply h
 
   theorem prod_elim :
     inX f (sn_prod dom F) ->
