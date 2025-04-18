@@ -1,15 +1,41 @@
 import Common.Substitution
 
+class Reflexive (R : T -> T -> Prop) where
+  refl t : R t t
+
 class ReductionRespectsSubstitution (T : Type u) [SubstitutionType T] [SubstitutionTypeLaws T] (R : T -> T -> Prop) where
   subst  σ : R t s -> R ([σ]t) ([σ]s)
 
-class ReductionRespectsReducingSubstitution (T : Type u) [SubstitutionType T] [SubstitutionTypeLaws T] (R : T -> T -> Prop) where
-  refl t : R t t
+class ReductionRespectsReducingSubstitution
+  (T : Type u)
+  [SubstitutionType T]
+  [SubstitutionTypeLaws T]
+  (R : T -> T -> Prop)
+  [Reflexive R]
+where
   subst σ τ :
     (∀ n t, σ n = .su t -> ∃ t', τ n = .su t' ∧ R t t') ->
     (∀ n k, σ n = .re k -> τ n = .re k) ->
     R t s ->
     R ([σ]t) ([τ]s)
+
+section
+  variable {T : Type u} {R : T -> T -> Prop} [Reflexive R]
+  variable [SubstitutionType T] [SubstitutionTypeLaws T]
+  variable [ReductionRespectsReducingSubstitution T R]
+
+  instance inst_ReductionRespectsSubstitution_from_ReductionRespectsReducingSubstitution
+    : ReductionRespectsSubstitution T R
+  where
+    subst := by {
+      intro t s σ r
+      apply ReductionRespectsReducingSubstitution.subst σ σ _ _ r
+      case _ =>
+        intro n t h; apply Exists.intro t
+        apply And.intro h; apply Reflexive.refl
+      case _ => intro n k h; apply h
+    }
+end
 
 class ReductionTriangle (T : Type u) (R : T -> T -> Prop) where
   compl : T -> T
@@ -35,6 +61,42 @@ def ConvB (R : T -> T -> Prop) (g1 g2 : Nat) (x y : T) : Prop :=
 def Conv (R : T -> T -> Prop) (x y : T) : Prop :=
   ∃ z, Star R x z ∧ Star R y z
 
+namespace StarB
+  @[simp]
+  def star (f : T -> T) : Nat -> T -> T
+  | 0, t => t
+  | n + 1, t => star f n (f t)
+
+  theorem weaken k : StarB R g x y -> StarB R (g + k) x y := by
+  intro r; induction r generalizing k
+  case _ => constructor
+  case _ n _ _ _ _ r2 ih =>
+    have lem : n + 1 + k = n + k + 1 := by omega
+    rw [lem]; apply StarB.step (ih k) r2
+
+  theorem trans : StarB R g1 x y -> StarB R g2 y z -> StarB R (g1 + g2) x z := by
+  intro r1 r2; induction r2 generalizing g1 x
+  case _ n t => apply weaken n r1
+  case _ n a b c _ r2 ih => apply StarB.step (ih r1) r2
+
+  theorem promote (Rprm : ∀ {x y}, R1 x y -> R2 x y) :
+    StarB R1 n x y -> StarB R2 n x y
+  := by
+  intro r; induction r
+  case _ => constructor
+  case _ _ r ih => constructor; apply ih; apply Rprm r
+
+  theorem star_sound n t : (∀ t, R t (f t)) -> StarB R n t (star f n t) := by
+  intro h
+  have lem : ∀ {t n}, R (star f n t) (star f n (f t)) := by
+    intro t n; induction n generalizing t; simp; apply h _
+    case _ n ih => simp; apply ih
+  induction n
+  case _ => simp; constructor
+  case _ n ih =>
+    constructor; apply ih; simp; apply lem
+end StarB
+
 namespace Star
   theorem trans : Star R x y -> Star R y z -> Star R x z := by
   intro r1 r2; induction r2 generalizing x
@@ -47,6 +109,20 @@ namespace Star
   intro r; induction r
   case _ => constructor
   case _ _ r ih => constructor; apply ih; apply Rprm r
+
+  theorem destruct : Star R x z -> (∃ y, R x y ∧ Star R y z) ∨ x = z := by
+  intro h; induction h
+  case _ => apply Or.inr rfl
+  case _ u v r1 r2 ih =>
+    cases ih
+    case _ ih =>
+      cases ih; case _ w ih =>
+      apply Or.inl; apply Exists.intro w
+      apply And.intro ih.1
+      apply Star.step ih.2 r2
+    case _ ih =>
+      subst ih; apply Or.inl
+      apply Exists.intro v; apply And.intro r2 Star.refl
 
   theorem congr3_1 t2 t3 (f : T -> T -> T -> T) :
   (∀ {t1 t2 t3 t1'}, R t1 t1' -> R (f t1 t2 t3) (f t1' t2 t3)) ->
@@ -147,10 +223,13 @@ namespace Star
     case _ y z r1 r2 ih =>
       replace r2 := ReductionRespectsSubstitution.subst σ r2
       apply Star.step ih r2
+
+    theorem beta_same : Star R t s -> Star R (t β[x]) (s β[x]) := by
+    intro h; apply subst_same; apply h
   end
 
   section
-    variable [SubstitutionType T] [SubstitutionTypeLaws T] [ReductionRespectsReducingSubstitution T R]
+    variable [SubstitutionType T] [SubstitutionTypeLaws T] [Reflexive R] [ReductionRespectsReducingSubstitution T R]
 
     theorem subst σ τ :
       (∀ n t, σ n = .su t -> ∃ t', τ n = .su t' ∧ R t t') ->
@@ -159,14 +238,19 @@ namespace Star
       Star R ([σ]t) ([τ]s)
     := by
     intro h1 h2 r; induction r
-    case _ => sorry
+    case _ =>
+      have lem1 : R t t := Reflexive.refl t
+      have lem2 : R ([σ]t) ([τ]t) := by
+        apply ReductionRespectsReducingSubstitution.subst σ τ h1 h2 lem1
+      apply Star.step Star.refl lem2
     case _ y z r1 r2 ih =>
       apply Star.step ih
       apply ReductionRespectsReducingSubstitution.subst τ τ _ _ r2
       case _ =>
         intro n t h
-        sorry
-      case _ => sorry
+        apply Exists.intro t; apply And.intro h
+        apply Reflexive.refl
+      case _ => intro n k h; apply h
   end
 
   section
@@ -223,42 +307,6 @@ namespace Plus
   case _ => apply Plus.start; apply r1
   case _ r3 r4 ih => apply Plus.step (ih r1) r4
 end Plus
-
-namespace StarB
-  @[simp]
-  def star (f : T -> T) : Nat -> T -> T
-  | 0, t => t
-  | n + 1, t => star f n (f t)
-
-  theorem weaken k : StarB R g x y -> StarB R (g + k) x y := by
-  intro r; induction r generalizing k
-  case _ => constructor
-  case _ n _ _ _ _ r2 ih =>
-    have lem : n + 1 + k = n + k + 1 := by omega
-    rw [lem]; apply StarB.step (ih k) r2
-
-  theorem trans : StarB R g1 x y -> StarB R g2 y z -> StarB R (g1 + g2) x z := by
-  intro r1 r2; induction r2 generalizing g1 x
-  case _ n t => apply weaken n r1
-  case _ n a b c _ r2 ih => apply StarB.step (ih r1) r2
-
-  theorem promote (Rprm : ∀ {x y}, R1 x y -> R2 x y) :
-    StarB R1 n x y -> StarB R2 n x y
-  := by
-  intro r; induction r
-  case _ => constructor
-  case _ _ r ih => constructor; apply ih; apply Rprm r
-
-  theorem star_sound n t : (∀ t, R t (f t)) -> StarB R n t (star f n t) := by
-  intro h
-  have lem : ∀ {t n}, R (star f n t) (star f n (f t)) := by
-    intro t n; induction n generalizing t; simp; apply h _
-    case _ n ih => simp; apply ih
-  induction n
-  case _ => simp; constructor
-  case _ n ih =>
-    constructor; apply ih; simp; apply lem
-end StarB
 
 namespace ConvB
   @[simp]
@@ -369,59 +417,79 @@ inductive SN (R : T -> T -> Prop) : T -> Prop where
 inductive SNPlus (R : T -> T -> Prop) : T -> Prop where
 | sn : (∀ y, Plus R x y -> SNPlus R y) -> SNPlus R x
 
-theorem snplus_impies_sn : SNPlus R t -> SN R t := by
-intro h; induction h; case _ t' _ ih =>
-  constructor; intro t'' r
-  apply ih t'' (Plus.start r)
+namespace SNPlus
+  theorem impies_sn : SNPlus R t -> SN R t := by
+  intro h; induction h; case _ t' _ ih =>
+    constructor; intro t'' r
+    apply ih t'' (Plus.start r)
 
-theorem sn_preimage (f : T -> T) x :
-  (∀ x y, R x y -> R (f x) (f y)) ->
-  SN R (f x) ->
-  SN R x
-:= by
-intro h sh
-generalize zdef : f x = z at sh
-induction sh generalizing f x
-case _ x' h' ih =>
-  subst zdef; constructor
+  theorem preservation_step : SNPlus R t -> R t t' -> SNPlus R t' := by
+  intro h r; induction h; case _ z h _ =>
+    apply h _ (Plus.start r)
+
+  theorem preservation : SNPlus R t -> Star R t t' -> SNPlus R t' := by
+  intro h r; induction r
+  case _ => apply h
+  case _ _ r2 ih =>
+    apply preservation_step ih r2
+end SNPlus
+
+namespace SN
+  theorem preimage (f : T -> T) x :
+    (∀ x y, R x y -> R (f x) (f y)) ->
+    SN R (f x) ->
+    SN R x
+  := by
+  intro h sh
+  generalize zdef : f x = z at sh
+  induction sh generalizing f x
+  case _ x' h' ih =>
+    subst zdef; constructor
+    intro y r
+    apply ih (f y) (h _ _ r) f y h rfl
+
+  section
+    variable [SubstitutionType T] [SubstitutionTypeLaws T] [ReductionRespectsSubstitution T R] [Reflexive R]
+
+    omit [Reflexive R] in
+    theorem subst_preimage : SN R ([σ]t) -> SN R t := by
+    intro r; apply preimage (Subst.apply σ) t _ r
+    intro x y r; apply ReductionRespectsSubstitution.subst
+    apply r
+
+    omit [SubstitutionTypeLaws T] [ReductionRespectsSubstitution T R] in
+    theorem subst : SN R t -> SN R ([σ]t) := by
+    intro r; induction r
+    case _ x h2 ih =>
+      apply ih; apply Reflexive.refl
+  end
+
+  theorem preservation_step : SN R t -> R t t' -> SN R t' := by
+  intro h red
+  induction h
+  case _ z h1 _h2 =>
+    apply h1 _ red
+
+  theorem preservation : SN R t -> Star R t t' -> SN R t' := by
+  intro h red
+  induction red
+  case _ => simp [*]
+  case _ _ r2 ih => apply preservation_step ih r2
+
+  theorem star : (∀ y, Star R t y -> SN R y) -> SN R t := by
+  intro h
+  constructor
   intro y r
-  apply ih (f y) (h _ _ r) f y h rfl
+  apply h y (Star.step Star.refl r)
 
-theorem sn_preservation_step : SN R t -> R t t' -> SN R t' := by
-intro h red
-induction h
-case _ z h1 _h2 =>
-  apply h1 _ red
-
-theorem sn_preservation : SN R t -> Star R t t' -> SN R t' := by
-intro h red
-induction red
-case _ => simp [*]
-case _ _ r2 ih => apply sn_preservation_step ih r2
-
-theorem sn_star : (∀ y, Star R t y -> SN R y) -> SN R t := by
-intro h
-constructor
-intro y r
-apply h y (Star.step Star.refl r)
-
-theorem snplus_preservation_step : SNPlus R t -> R t t' -> SNPlus R t' := by
-intro h r; induction h; case _ z h _ =>
-  apply h _ (Plus.start r)
-
-theorem snplus_preservation : SNPlus R t -> Star R t t' -> SNPlus R t' := by
-intro h r; induction r
-case _ => apply h
-case _ _ r2 ih =>
-  apply snplus_preservation_step ih r2
-
-theorem sn_implies_snplus : SN R t -> SNPlus R t := by
-intro h; induction h; case _ t' _ ih =>
-  constructor; intro t'' r
-  have lem := Plus.destruct r
-  cases lem; case _ z lem =>
-    have lem2 := ih z lem.1
-    apply snplus_preservation lem2 lem.2
+  theorem implies_snplus : SN R t -> SNPlus R t := by
+  intro h; induction h; case _ t' _ ih =>
+    constructor; intro t'' r
+    have lem := Plus.destruct r
+    cases lem; case _ z lem =>
+      have lem2 := ih z lem.1
+      apply SNPlus.preservation lem2 lem.2
+end SN
 
 -- theorem sn_expansion_step : SN R t' -> R t t' -> SN R t := by
 -- intro h red

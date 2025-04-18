@@ -16,7 +16,7 @@ namespace Realizer
   intro t h1; constructor
   case _ =>
     intro t' h
-    apply sn_preservation h1 h
+    apply SN.preservation h1 h
   case _ =>
     intro t' u h r; unfold weak_chain at *
     apply Star.trans h r
@@ -32,7 +32,7 @@ namespace Realizer
   theorem sn_is_candidate : is_candidate (SN Red) := by
   constructor
   case _ => intro t h; apply h
-  case _ => intro t u h r; apply sn_preservation h r
+  case _ => intro t u h r; apply SN.preservation h r
   case _ => intro t h1 h2; constructor; apply h2
 
   theorem var_in_cand : is_candidate X -> .var n ∈ X := by
@@ -91,8 +91,6 @@ namespace Realizer
             replace ihz := ihz y r2 (q2 _ _ h3 lem4)
             have lem5 : (`λ w `@ y) -β>* (`λ w' `@ y) := by sorry
             apply q2 _ _ ihz lem5
-
-
 
   def inter (X : Type u) (F : X -> Set Term) t := SN Red t ∧ ∀ x, F x t
 
