@@ -110,6 +110,13 @@ namespace Star
   case _ => constructor
   case _ _ r ih => constructor; apply ih; apply Rprm r
 
+  theorem stepr : R x y -> Star R y z -> Star R x z := by
+  intro h r; induction r generalizing x
+  case _ => apply Star.step Star.refl h
+  case _ r1 r2 ih =>
+    replace ih := ih h
+    apply Star.step ih r2
+
   theorem destruct : Star R x z -> (∃ y, R x y ∧ Star R y z) ∨ x = z := by
   intro h; induction h
   case _ => apply Or.inr rfl
@@ -132,87 +139,87 @@ namespace Star
   intro fh h2
   induction h2
   case _ => apply refl
-  case _ _h3 h4 ih =>
+  case _ h4 ih =>
     have h5 := @fh _ t2 t3 _ h4
     apply trans ih (Star.step Star.refl h5)
 
-  -- theorem congr3_2 t1 t3 (f : Term -> Term -> Term -> Term) :
-  --   (∀ {t1 t2 t3 t2'}, t2 -β> t2' -> f t1 t2 t3 -β> f t1 t2' t3) ->
-  --   t2 -β>* t2' ->
-  --   f t1 t2 t3 -β>* f t1 t2' t3
-  -- := by
-  -- intro fh h2
-  -- induction h2
-  -- case _ => apply refl
-  -- case _ h3 _h4 ih =>
-  --   have h5 := @fh t1 _ t3 _ h3
-  --   apply trans (RedStar.step h5 refl) ih
+  theorem congr3_2 t1 t3 (f : T -> T -> T -> T) :
+  (∀ {t1 t2 t3 t2'}, R t2 t2' -> R (f t1 t2 t3) (f t1 t2' t3)) ->
+  Star R t2 t2' ->
+  Star R (f t1 t2 t3) (f t1 t2' t3)
+  := by
+  intro fh h2
+  induction h2
+  case _ => apply refl
+  case _ h4 ih =>
+    have h5 := @fh t1 _ t3 _ h4
+    apply trans ih (Star.step Star.refl h5)
 
-  -- theorem congr3_3 t1 t2 (f : Term -> Term -> Term -> Term) :
-  --   (∀ {t1 t2 t3 t3'}, t3 -β> t3' -> f t1 t2 t3 -β> f t1 t2 t3') ->
-  --   t3 -β>* t3' ->
-  --   f t1 t2 t3 -β>* f t1 t2 t3'
-  -- := by
-  -- intro fh h2
-  -- induction h2
-  -- case _ => apply refl
-  -- case _ h3 _h4 ih =>
-  --   have h5 := @fh t1 t2 _ _ h3
-  --   apply trans (RedStar.step h5 refl) ih
+  theorem congr3_3 t1 t2 (f : T -> T -> T -> T) :
+  (∀ {t1 t2 t3 t3'}, R t3 t3' -> R (f t1 t2 t3) (f t1 t2 t3')) ->
+  Star R t3 t3' ->
+  Star R (f t1 t2 t3) (f t1 t2 t3')
+  := by
+  intro fh h2
+  induction h2
+  case _ => apply refl
+  case _ h4 ih =>
+    have h5 := @fh t1 t2 _ _ h4
+    apply trans ih (Star.step Star.refl h5)
 
-  -- theorem congr3 (f : Term -> Term -> Term -> Term) :
-  --   (∀ {t1 t2 t3 t1'}, t1 -β> t1' -> f t1 t2 t3 -β> f t1' t2 t3) ->
-  --   (∀ {t1 t2 t3 t2'}, t2 -β> t2' -> f t1 t2 t3 -β> f t1 t2' t3) ->
-  --   (∀ {t1 t2 t3 t3'}, t3 -β> t3' -> f t1 t2 t3 -β> f t1 t2 t3') ->
-  --   t1 -β>* t1' -> t2 -β>* t2' -> t3 -β>* t3' ->
-  --   f t1 t2 t3 -β>* f t1' t2' t3'
-  -- := by
-  -- intro f1 f2 f3 h1 h2 h3
-  -- have r1 := congr3_1 t2 t3 f f1 h1
-  -- have r2 := congr3_2 t1' t3 f f2 h2
-  -- have r3 := congr3_3 t1' t2' f f3 h3
-  -- apply trans r1; apply trans r2; apply trans r3; apply refl
+  theorem congr3 (f : T -> T -> T -> T) :
+    (∀ {t1 t2 t3 t1'}, R t1 t1' -> R (f t1 t2 t3) (f t1' t2 t3)) ->
+    (∀ {t1 t2 t3 t2'}, R t2 t2' -> R (f t1 t2 t3) (f t1 t2' t3)) ->
+    (∀ {t1 t2 t3 t3'}, R t3 t3' -> R (f t1 t2 t3) (f t1 t2 t3')) ->
+    Star R t1 t1' -> Star R t2 t2' -> Star R t3 t3' ->
+    Star R (f t1 t2 t3) (f t1' t2' t3')
+  := by
+  intro f1 f2 f3 h1 h2 h3
+  have r1 := congr3_1 t2 t3 f f1 h1
+  have r2 := congr3_2 t1' t3 f f2 h2
+  have r3 := congr3_3 t1' t2' f f3 h3
+  apply trans r1; apply trans r2; apply trans r3; apply refl
 
-  -- theorem congr2_1 t2 (f : Term -> Term -> Term) :
-  --   (∀ {t1 t2 t1'}, t1 -β> t1' -> f t1 t2 -β> f t1' t2) ->
-  --   t1 -β>* t1' ->
-  --   f t1 t2 -β>* f t1' t2
-  -- := by
-  -- intro fh h
-  -- apply congr3_1 t2 .none (λ t1 t2 _t3 => f t1 t2)
-  -- intro t1 t2 _t3 t1' h; apply fh h
-  -- exact h
+  theorem congr2_1 t2 (f : T -> T -> T) :
+    (∀ {t1 t2 t1'}, R t1 t1' -> R (f t1 t2) (f t1' t2)) ->
+    Star R t1 t1' ->
+    Star R (f t1 t2) (f t1' t2)
+  := by
+  intro fh h
+  apply congr3_1 t2 t2 (λ t1 t2 _t3 => f t1 t2)
+  intro t1 t2 _t3 t1' h; apply fh h
+  exact h
 
-  -- theorem congr2_2 t1 (f : Term -> Term -> Term) :
-  --   (∀ {t1 t2 t2'}, t2 -β> t2' -> f t1 t2 -β> f t1 t2') ->
-  --   t2 -β>* t2' ->
-  --   f t1 t2 -β>* f t1 t2'
-  -- := by
-  -- intro fh h
-  -- apply congr3_2 t1 .none (λ t1 t2 _t3 => f t1 t2)
-  -- intro t1 t2 _t3 t1' h; apply fh h
-  -- exact h
+  theorem congr2_2 t1 (f : T -> T -> T) :
+    (∀ {t1 t2 t2'}, R t2 t2' -> R (f t1 t2) (f t1 t2')) ->
+    Star R t2 t2' ->
+    Star R (f t1 t2) (f t1 t2')
+  := by
+  intro fh h
+  apply congr3_2 t1 t1 (λ t1 t2 _t3 => f t1 t2)
+  intro t1 t2 _t3 t1' h; apply fh h
+  exact h
 
-  -- theorem congr2 (f : Term -> Term -> Term) :
-  --   (∀ {t1 t2 t1'}, t1 -β> t1' -> f t1 t2 -β> f t1' t2) ->
-  --   (∀ {t1 t2 t2'}, t2 -β> t2' -> f t1 t2 -β> f t1 t2') ->
-  --   t1 -β>* t1' -> t2 -β>* t2' ->
-  --   f t1 t2 -β>* f t1' t2'
-  -- := by
-  -- intro f1 f2 h1 h2
-  -- have r1 := congr2_1 t2 f f1 h1
-  -- have r2 := congr2_2 t1' f f2 h2
-  -- apply trans r1; apply trans r2; apply refl
+  theorem congr2 (f : T -> T -> T) :
+    (∀ {t1 t2 t1'}, R t1 t1' -> R (f t1 t2) (f t1' t2)) ->
+    (∀ {t1 t2 t2'}, R t2 t2' -> R (f t1 t2) (f t1 t2')) ->
+    Star R t1 t1' -> Star R t2 t2' ->
+    Star R (f t1 t2) (f t1' t2')
+  := by
+  intro f1 f2 h1 h2
+  have r1 := congr2_1 t2 f f1 h1
+  have r2 := congr2_2 t1' f f2 h2
+  apply trans r1; apply trans r2; apply refl
 
-  -- theorem congr1 (f : Term -> Term) :
-  --   (∀ {t1 t1'}, t1 -β> t1' -> f t1 -β> f t1') ->
-  --   t1 -β>* t1' ->
-  --   f t1 -β>* f t1'
-  -- := by
-  -- intro fh h
-  -- apply congr2_1 .none (λ t1 _t2 => f t1)
-  -- intro t1 _t2 t1' h; apply fh h
-  -- exact h
+  theorem congr1 (f : T -> T) :
+    (∀ {t1 t1'}, R t1 t1' -> R (f t1) (f t1')) ->
+    Star R t1 t1' ->
+    Star R (f t1) (f t1')
+  := by
+  intro fh h
+  apply congr2_1 t1 (λ t1 _t2 => f t1)
+  intro t1 _t2 t1' h; apply fh h
+  exact h
 
   section
     variable [SubstitutionType T] [SubstitutionTypeLaws T] [ReductionRespectsSubstitution T R]
@@ -449,19 +456,12 @@ namespace SN
     apply ih (f y) (h _ _ r) f y h rfl
 
   section
-    variable [SubstitutionType T] [SubstitutionTypeLaws T] [ReductionRespectsSubstitution T R] [Reflexive R]
+    variable [SubstitutionType T] [SubstitutionTypeLaws T] [ReductionRespectsSubstitution T R]
 
-    omit [Reflexive R] in
     theorem subst_preimage : SN R ([σ]t) -> SN R t := by
     intro r; apply preimage (Subst.apply σ) t _ r
     intro x y r; apply ReductionRespectsSubstitution.subst
     apply r
-
-    omit [SubstitutionTypeLaws T] [ReductionRespectsSubstitution T R] in
-    theorem subst : SN R t -> SN R ([σ]t) := by
-    intro r; induction r
-    case _ x h2 ih =>
-      apply ih; apply Reflexive.refl
   end
 
   theorem preservation_step : SN R t -> R t t' -> SN R t' := by

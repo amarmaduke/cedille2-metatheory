@@ -52,8 +52,8 @@ namespace Realizer
     cases h1; case _ h1 h2 h3 =>
       apply h3; unfold Term.neutral; simp
       intro u' h4; cases h4
-      case _ t'' r => apply ih _ r
       case _ v r => cases r
+      case _ t'' r => apply ih _ r
 
   theorem cand_sat :
     is_candidate X ->
@@ -66,22 +66,20 @@ namespace Realizer
     have lem1 : SN Red u := by
       cases h2
       case _ h =>
-        have lem : m β[u] = [S]m := by sorry
-        rw [lem] at h3; replace q1 := q1 _ h3
+        -- Sketch:
+        --   occurs 0 m = true => u ∈ m β[u]
+        --   but, SN (m β[u]), hence u ∈ SN (m β[u])
+        --   therefore, SN u
         sorry
       case _ h => apply h
     clear h2; induction lem1; case _ z hz ihz =>
       have lem2 : SN Red m := by
         have lem := q1 _ h3
-        sorry
+        apply SN.subst_preimage lem
       induction lem2; case _ w hw ihw =>
         apply q3; unfold Term.neutral; simp
         intro u' r; cases r
         case _ => apply h3
-        case _ z' r =>
-          have lem3 : w β[z] -β>* w β[z'] := by
-            sorry
-          apply ihz _ r (q2 _ _ h3 lem3)
         case _ w' r =>
           cases r; case _ w' r =>
             have lem3 : w β[z] -β>* w' β[z] := by sorry
@@ -91,16 +89,75 @@ namespace Realizer
             replace ihz := ihz y r2 (q2 _ _ h3 lem4)
             have lem5 : (`λ w `@ y) -β>* (`λ w' `@ y) := by sorry
             apply q2 _ _ ihz lem5
+        case _ z' r =>
+          have lem3 : w β[z] -β>* w β[z'] := by
+            sorry
+          apply ihz _ r (q2 _ _ h3 lem3)
 
   def inter (X : Type u) (F : X -> Set Term) t := SN Red t ∧ ∀ x, F x t
 
-  theorem is_can_inter : (∀ x : X, is_candidate (F x)) -> is_candidate (inter X F) := by sorry
+  theorem is_can_inter : (∀ x : X, is_candidate (F x)) -> is_candidate (inter X F) := by
+  intro h; constructor
+  case _ =>
+    intro t h2; unfold inter at h2
+    cases h2; case _ h2 h3 =>
+      apply h2
+  case _ =>
+    intro t u h2 r; unfold inter at *
+    cases h2; case _ h2 h3 =>
+      replace h2 := SN.preservation h2 r
+      apply And.intro h2; intro x
+      replace h := h x; cases h; case _ q1 q2 q3 =>
+        apply q2 _ _ (h3 x) r
+  case _ =>
+    intro t h2 h3; unfold inter at *
+    apply And.intro
+    case _ =>
+      constructor; intro y r
+      replace h3 := h3 _ r
+      apply h3.1
+    case _ =>
+      intro x; cases (h x); case _ q1 q2 q3 =>
+        apply q3 _ h2; intro u r
+        replace h3 := h3 _ r
+        apply h3.2
 
-  theorem is_can_weak : is_candidate X -> is_candidate (λ t => SN Red t ∧ X t) := by sorry
+  theorem is_can_weak : is_candidate X -> is_candidate (λ t => SN Red t ∧ X t) := by
+  intro h; cases h; case _ q1 q2 q3 =>
+    constructor
+    case _ => intro t h; apply h.1
+    case _ =>
+      intro t u h r; apply And.intro
+      apply SN.preservation h.1 r
+      apply q2 _ _ h.2 r
+    case _ =>
+      intro t h1 h2
+      have lem := q3 _ h1 (λ u r => (h2 u r).2)
+      apply And.intro (q1 _ lem) lem
 
   def Neutral : Set Term := λ t => SN Red t ∧ ∃ u, t -β>* u ∧ Term.normal u ∧ Term.neutral u
 
-  theorem neutral_is_cand : is_candidate Neutral := by sorry
+  theorem neutral_is_cand : is_candidate Neutral := by
+  unfold Neutral; constructor
+  case _ => intro t h; apply h.1
+  case _ =>
+    intro t u h r
+    cases h; case _ h1 h2 =>
+    cases h2; case _ t' h2 =>
+      apply And.intro; apply SN.preservation h1 r
+      have lem := Red.confluence r h2.1
+      cases lem; case _ w wr =>
+        apply Exists.intro w; apply And.intro wr.1
+        sorry
+  case _ =>
+    intro t h1 h2; apply And.intro
+    case _ =>
+      constructor; intro y r
+      replace h2 := h2 _ r
+      apply h2.1
+    case _ =>
+
+      sorry
 
   section
     variable (P : Set Term)
