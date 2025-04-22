@@ -181,5 +181,54 @@ namespace Realizer
   instance instReductionRespectsSubstitution_Red : ReductionRespectsSubstitution Term Red where
     subst := Red.subst_same
 
+  theorem normal_no_redex : t.normal -> ∀ t', ¬ t -β> t' := by
+  intro h t' r
+  induction h generalizing t'
+  case _ => cases r
+  case _ h1 h2 h3 ih1 ih2 =>
+    cases r
+    case _ => unfold Term.neutral at h1; simp at h1
+    case _ r => apply ih1 _ r
+    case _ r => apply ih2 _ r
+  case _ h ih =>
+    cases r
+    case _ r => apply ih _ r
+
+  theorem redex_decide t : t.normal ∨ (∃ t', t -β> t') := by
+  induction t
+  case var => apply Or.inl; constructor
+  case app f a ih1 ih2 =>
+    cases ih1
+    case inl ih1 =>
+      cases ih2
+      case inl ih2 =>
+        generalize zdef : f.neutral = z
+        cases z
+        case false =>
+          unfold Term.neutral at zdef
+          cases f <;> simp at zdef
+          case lam b =>
+            apply Or.inr; apply Exists.intro (b β[a])
+            apply Red.beta
+        case true =>
+          apply Or.inl; constructor
+          apply zdef; apply ih1; apply ih2
+      case inr ih2 =>
+        cases ih2; case intro a' r =>
+          apply Or.inr; apply Exists.intro (f `@ a')
+          apply Red.app_congr2 r
+    case inr ih1 =>
+      cases ih1; case intro f' r =>
+        apply Or.inr; apply Exists.intro (f' `@ a)
+        apply Red.app_congr1 r
+  case lam t ih =>
+    cases ih
+    case inl ih =>
+      apply Or.inl; constructor
+      apply ih
+    case inr ih =>
+      cases ih; case intro t' r =>
+      apply Or.inr; apply Exists.intro (`λ t')
+      apply Red.lam_congr r
 
 end Realizer

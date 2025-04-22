@@ -148,7 +148,13 @@ namespace Realizer
       have lem := Red.confluence r h2.1
       cases lem; case _ w wr =>
         apply Exists.intro w; apply And.intro wr.1
-        sorry
+        have lem := Star.destruct wr.2
+        cases lem
+        case inl lem =>
+          cases lem; case intro z lem =>
+            exfalso; apply normal_no_redex h2.2.1 _ lem.1
+        case inr lem =>
+          subst lem; apply And.intro h2.2.1 h2.2.2
   case _ =>
     intro t h1 h2; apply And.intro
     case _ =>
@@ -156,40 +162,180 @@ namespace Realizer
       replace h2 := h2 _ r
       apply h2.1
     case _ =>
-
-      sorry
+      have lem := redex_decide t
+      cases lem
+      case inl lem =>
+        apply Exists.intro t
+        apply And.intro Star.refl
+        apply And.intro lem h1
+      case inr lem =>
+        cases lem; case intro t' lem =>
+          replace h2 := h2 t' lem
+          cases h2; case intro h2 h3 =>
+          cases h3; case intro u h3 =>
+            apply Exists.intro u
+            apply And.intro (Star.stepr lem h3.1)
+            apply h3.2
 
   section
     variable (P : Set Term)
 
     def compl : Set Term := λ t => ∀ C, is_candidate C -> (∀ u, SN Red u -> u ∈ P -> u ∈ C) -> t ∈ C
 
-    theorem is_can_compl : is_candidate (compl P) := by sorry
+    theorem is_can_compl : is_candidate (compl P) := by
+    constructor
+    case sn =>
+      intro t h; unfold compl at h
+      apply h (SN Red); apply sn_is_candidate
+      intro u h1 h2; apply h1
+    case red =>
+      unfold compl
+      intro t u h1 r C h2 h3
+      replace h1 := h1 C h2 h3
+      cases h2; case mk q1 q2 q3 =>
+        apply q2 _ _ h1 r
+    case exp =>
+      unfold compl
+      intro t h1 h2 C h3 h4
+      have lem := h3
+      cases h3; case mk q1 q2 q3 =>
+        apply q3 _ h1; intro u r
+        apply h2 u r C lem h4
 
-    theorem compl_intro : SN Red t -> t ∈ P -> t ∈ compl P := by sorry
+    theorem compl_intro : SN Red t -> t ∈ P -> t ∈ compl P := by
+    intro h1 h2; unfold compl; intro C h3 h4
+    apply h4 _ h1 h2
 
-    theorem compl_elim : t ∈ compl P -> (∃ u, t =β= u ∧ u ∈ compl P ∧ u ∈ P) ∨ Neutral t := by sorry
+    theorem compl_elim : t ∈ compl P -> (∃ u, t =β= u ∧ u ∈ compl P ∧ u ∈ P) ∨ Neutral t := by
+    intro h; unfold compl at h
+    apply h
+    case _ =>
+      constructor
+      case sn =>
+        intro t' h2
+        cases h2
+        case inl h2 =>
+          cases h2; case intro u h2 =>
+          cases h2; case intro h2 h3 =>
+          cases h3; case intro h3 h4 =>
+          cases h2; case intro w h2 =>
+            unfold compl at h3
+            have lem1 := h (SN Red) sn_is_candidate (λ _ x _ => x)
+            have lem2 := h3 (SN Red) sn_is_candidate (λ _ x _ => x)
+            have lem3 := SN.preservation lem2 h2.2
+            sorry
+        case inr h2 =>
+          unfold Neutral at h2
+          apply h2.1
+      case red =>
+        intro v u h2 r
+        cases h2
+        case inl h2 =>
+          cases h2; case intro u' h2 =>
+            apply Or.inl; apply Exists.intro u'
+            -- sketch: looks good
+            sorry
+        case inr h2 =>
+          unfold Neutral at h2
+          apply Or.inr
+          -- sketch: looks good
+          sorry
+      case exp =>
+        intro t' h1 h2
+        have lem := redex_decide t'
+        cases lem
+        case inl lem => sorry
+        case inr lem =>
+          cases lem; case intro t'' lem =>
+            replace h2 := h2 _ lem
+            cases h2
+            case inl h2 =>
+              apply Or.inl
+              -- sketch: looks good
+              sorry
+            case inr h2 =>
+              unfold Neutral at h2
+              apply Or.inr
+              -- sketch: idk, maybe
+              sorry
+    case _ =>
+      intro u h1 h2
+      have lem := compl_intro P h1 h2
+      apply Or.inl; apply Exists.intro u
+      apply And.intro Conv.refl
+      apply And.intro lem h2
   end
 
   def arrow (X Y : Set Term) : Set Term := λ t => ∀ u, u ∈ X -> (t `@ u) ∈ Y
 
-  theorem weak_cand_arrow : weak_candidate X -> is_candidate Y -> is_candidate (arrow X Y) := by sorry
+  theorem weak_cand_arrow : weak_candidate X -> is_candidate Y -> is_candidate (arrow X Y) := by
+  intro h1 h2; unfold arrow
+  cases h1; case mk q1 q2 q3 =>
+  cases h2; case mk z1 z2 z3 =>
+  cases q3; case intro w q3 =>
+    constructor
+    case sn =>
+      intro t h
+      have lem1 := h _ q3
+      have lem2 := z1 _ lem1
+      -- sketch: SN terms have SN subterms
+      sorry
+    case red =>
+      intro t u h r v hv
+      have lem1 := h _ hv
+      replace r := Star.congr2_1 v Term.app Red.app_congr1 r
+      apply z2 _ _ lem1 r
+    case exp =>
+      intro t h1 h2 u hu
+      have lem := q1 _ hu
+      induction lem
+      case sn x h ih =>
+        apply z3; unfold Term.neutral; simp
+        intro u' r
+        cases r
+        case _ b => unfold Term.neutral at h1; simp at h1
+        case _ t' r =>
+          apply h2 _ r _ hu
+        case _ x' r =>
+          apply ih _ r
+          apply q2 _ _ hu (Star.step Star.refl r)
 
   theorem weak_lam_sound_arrow :
     (∀ t, t ∈ X -> SN Red t) ->
     is_candidate Y ->
-    (∀ n, n ∈ X -> (n β[m]) ∈ Y) ->
+    (∀ n, n ∈ X -> (m β[n]) ∈ Y) ->
     (`λ m) ∈ arrow X Y
-  := by sorry
+  := by
+  intro h1 h2 h3; unfold arrow; intro u h4
+  have lem := h2
+  cases h2; case mk q1 q2 q3 =>
+    apply q3; unfold Term.neutral; simp
+    intro u' r
+    apply q2 _ _ _ (Star.step Star.refl r)
+    apply cand_sat lem
+    apply Or.inr; apply h1 _ h4
+    apply h3 _ h4
 
-  theorem is_candidate_arrow : is_candidate X -> is_candidate Y -> is_candidate (arrow X Y) := by sorry
+  theorem is_candidate_arrow : is_candidate X -> is_candidate Y -> is_candidate (arrow X Y) := by
+  intro h1 h2; apply weak_cand_arrow _ h2
+  apply weaker_cand h1
 
   theorem lam_sound_arrow :
     is_candidate X ->
     is_candidate Y ->
-    (∀ n, n ∈ X -> (n β[m]) ∈ Y) ->
+    (∀ n, n ∈ X -> (m β[n]) ∈ Y) ->
     (`λ m) ∈ arrow X Y
-  := by sorry
+  := by
+  intro h1 h2 h3; unfold arrow; intro u h4
+  have lem1 := h1; have lem2 := h2
+  cases h1; case mk q1 q2 q3 =>
+  cases h2; case mk z1 z2 z3 =>
+    apply z3; unfold Term.neutral; simp
+    intro u' r
+    apply z2 _ _ _ (Star.step Star.refl r)
+    apply cand_sat lem2
+    apply Or.inr; apply q1 _ h4
+    apply h3 _ h4
 
   def pi (X : Set Term) (Y : Term -> Set Term) : Set Term :=
     λ t => ∀ u u', u =β= u' -> u ∈ X -> u' ∈ X -> (t `@ u) ∈ Y u'
@@ -197,8 +343,26 @@ namespace Realizer
   theorem is_cand_pi (Y : Term -> Set Term) :
     is_candidate X ->
     (∀ u, is_candidate (Y u)) ->
-    is_candidate (pi x y)
-  := by sorry
+    is_candidate (pi X Y)
+  := by
+  intro h1 h2; unfold pi
+  constructor
+  case sn =>
+    intro t h
+    have lem : SN Red (t `@ (.var 0)) := by
+      apply (h2 (.var 0)).sn; apply h
+      apply Conv.refl
+      apply var_in_cand h1
+      apply var_in_cand h1
+    -- sketch: subterm of SN is SN
+    sorry
+  case red =>
+    intro t u h3 r v v' h4 h5 h6
+    have lem := h3 v v' h4 h5 h6
+    replace r := Star.congr2_1 v Term.app Red.app_congr1 r
+    apply (h2 v').red _ _ lem r
+  case exp =>
+    sorry
 
   theorem lam_sound_pi :
     is_candidate X ->
@@ -209,11 +373,16 @@ namespace Realizer
 
   def union (X Y : Set Term) : Set Term := compl (λ t => t ∈ X ∨ t ∈ Y)
 
-  theorem is_cand_union : is_candidate (union X Y) := by sorry
+  theorem is_cand_union : is_candidate (union X Y) := by
+  unfold union; apply is_can_compl
 
-  theorem is_cand_union1 : is_candidate X -> t ∈ X -> t ∈ union X Y := by sorry
+  theorem is_cand_union1 : is_candidate X -> t ∈ X -> t ∈ union X Y := by
+  intro h1 h2; unfold union; apply compl_intro
+  apply h1.sn; apply h2; apply Or.inl h2
 
-  theorem is_cand_union2 : is_candidate Y -> t ∈ Y -> t ∈ union X Y := by sorry
+  theorem is_cand_union2 : is_candidate Y -> t ∈ Y -> t ∈ union X Y := by
+  intro h1 h2; unfold union; apply compl_intro
+  apply h1.sn; apply h2; apply Or.inr h2
 
   theorem cand_context :
     (∀ X, is_candidate X -> u ∈ X -> u' ∈ X) ->
