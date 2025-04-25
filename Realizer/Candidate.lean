@@ -208,62 +208,82 @@ namespace Realizer
 
     theorem compl_elim : t ∈ compl P -> (∃ u, t =β= u ∧ u ∈ compl P ∧ u ∈ P) ∨ Neutral t := by
     intro h; unfold compl at h
-    apply h
-    case _ =>
-      constructor
-      case sn =>
-        intro t' h2
-        cases h2
-        case inl h2 =>
-          cases h2; case intro u h2 =>
+    have lem : (SN Red t) ∧ ((∃ u, t =β= u ∧ u ∈ compl P ∧ u ∈ P) ∨ Neutral t) := by
+      apply h
+      case _ =>
+        constructor
+        case sn =>
+          intro t' h2
           cases h2; case intro h2 h3 =>
-          cases h3; case intro h3 h4 =>
-          cases h2; case intro w h2 =>
-            unfold compl at h3
-            have lem1 := h (SN Red) sn_is_candidate (λ _ x _ => x)
-            have lem2 := h3 (SN Red) sn_is_candidate (λ _ x _ => x)
-            have lem3 := SN.preservation lem2 h2.2
-            sorry
-        case inr h2 =>
-          unfold Neutral at h2
-          apply h2.1
-      case red =>
-        intro v u h2 r
-        cases h2
-        case inl h2 =>
-          cases h2; case intro u' h2 =>
-            apply Or.inl; apply Exists.intro u'
-            -- sketch: looks good
-            sorry
-        case inr h2 =>
-          unfold Neutral at h2
-          apply Or.inr
-          -- sketch: looks good
-          sorry
-      case exp =>
-        intro t' h1 h2
-        have lem := redex_decide t'
-        cases lem
-        case inl lem => sorry
-        case inr lem =>
-          cases lem; case intro t'' lem =>
-            replace h2 := h2 _ lem
-            cases h2
-            case inl h2 =>
-              apply Or.inl
+            apply h2
+        case red =>
+          intro v u h2 r
+          cases h2; case intro h3 h2 =>
+          cases h2
+          case inl h2 =>
+            have lem := SN.preservation h3 r
+            cases h2; case intro u' h2 =>
+              apply And.intro lem
+              apply Or.inl; apply Exists.intro u'
               -- sketch: looks good
               sorry
-            case inr h2 =>
-              unfold Neutral at h2
-              apply Or.inr
-              -- sketch: idk, maybe
+          case inr h2 =>
+            have lem := SN.preservation h3 r
+            unfold Neutral at h2
+            apply And.intro lem
+            apply Or.inr
+            -- sketch: looks good
+            sorry
+        case exp =>
+          intro t' h1 h2
+          have lem := redex_decide t'
+          cases lem
+          case inl lem =>
+            have lem2 : SN Red t' := by
+              -- t' is normal
               sorry
-    case _ =>
-      intro u h1 h2
-      have lem := compl_intro P h1 h2
-      apply Or.inl; apply Exists.intro u
-      apply And.intro Conv.refl
-      apply And.intro lem h2
+            apply And.intro lem2; apply Or.inr
+            unfold Neutral; apply And.intro lem2
+            apply Exists.intro t'; apply And.intro Star.refl
+            apply And.intro lem h1
+          case inr lem =>
+            cases lem; case intro t'' lem =>
+              have q := h2 _ lem
+              cases q; case intro h3 h4 =>
+              cases h4
+              case inl h4 =>
+                have lem2 : SN Red t' := by
+                  constructor; intro y r
+                  have lem := h2 y r
+                  apply lem.1
+                apply And.intro lem2; apply Or.inl
+                cases h4; case _ u h4 =>
+                  have lem3 : t' =β= u := by
+                    -- obvious
+                    sorry
+                  apply Exists.intro u
+                  apply And.intro lem3
+                  apply And.intro h4.2.1 h4.2.2
+              case inr h4 =>
+                unfold Neutral at h4
+                have lem2 : SN Red t' := by
+                  constructor; intro y r
+                  have lem := h2 y r
+                  apply lem.1
+                apply And.intro lem2; apply Or.inr
+                unfold Neutral; apply And.intro lem2
+                cases h4.2; case _ u h4 =>
+                  apply Exists.intro u
+                  apply And.intro (Star.stepr lem h4.1)
+                  apply And.intro h4.2.1 h4.2.2
+      case _ =>
+        intro u h1 h2
+        apply And.intro h1
+        have lem := compl_intro P h1 h2
+        apply Or.inl; apply Exists.intro u
+        apply And.intro Conv.refl
+        apply And.intro lem h2
+    apply lem.2
   end
 
   def arrow (X Y : Set Term) : Set Term := λ t => ∀ u, u ∈ X -> (t `@ u) ∈ Y
